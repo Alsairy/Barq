@@ -108,10 +108,6 @@ public class UserStory : TenantEntity
     public Guid? AssigneeId { get; set; }
     public virtual User? Assignee { get; set; }
 
-    /// <summary>
-    /// Test cases for this user story
-    /// </summary>
-    public virtual ICollection<TestCase> TestCases { get; set; } = new List<TestCase>();
 
     /// <summary>
     /// AI tasks related to this user story

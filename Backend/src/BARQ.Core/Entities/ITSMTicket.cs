@@ -206,7 +206,7 @@ public class ITSMTicketUpdate : TenantEntity
     /// <summary>
     /// User who created the update
     /// </summary>
-    public Guid? UpdatedById { get; set; }
+    public Guid? UpdatedByUserId { get; set; }
     public virtual User? UpdatedBy { get; set; }
 
     /// <summary>
