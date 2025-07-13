@@ -135,6 +135,49 @@ public class User : TenantEntity
     public string? Language { get; set; } = "en";
 
     /// <summary>
+    /// Email verification token
+    /// </summary>
+    [MaxLength(500)]
+    public string? EmailVerificationToken { get; set; }
+
+    /// <summary>
+    /// Email verification token expiry
+    /// </summary>
+    public DateTime? EmailVerificationTokenExpiry { get; set; }
+
+    /// <summary>
+    /// Email verified status (alternative to EmailConfirmed)
+    /// </summary>
+    public bool EmailVerified { get; set; } = false;
+
+    /// <summary>
+    /// Password changed date
+    /// </summary>
+    public DateTime? PasswordChangedAt { get; set; }
+
+    /// <summary>
+    /// </summary>
+    [MaxLength(500)]
+    public string? MfaSecretKey { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public bool MfaEnabled { get; set; } = false;
+
+    /// <summary>
+    /// </summary>
+    public DateTime? MfaEnabledAt { get; set; }
+
+    /// <summary>
+    /// </summary>
+    [MaxLength(500)]
+    public string? MfaRecoveryToken { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public DateTime? MfaRecoveryTokenExpiry { get; set; }
+
+    /// <summary>
     /// Organization this user belongs to
     /// </summary>
     public virtual Organization Organization { get; set; } = null!;
