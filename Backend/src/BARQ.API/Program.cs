@@ -77,6 +77,16 @@ builder.Services.AddScoped<IThreatDetectionService, ThreatDetectionService>();
 builder.Services.AddScoped<ISiemIntegrationService, SiemIntegrationService>();
 builder.Services.AddScoped<TdeConfiguration>();
 
+builder.Services.AddScoped<IComplianceService, ComplianceService>();
+builder.Services.AddScoped<IGdprComplianceService, GdprComplianceService>();
+builder.Services.AddScoped<IHipaaComplianceService, HipaaComplianceService>();
+builder.Services.AddScoped<ISoxComplianceService, SoxComplianceService>();
+
+builder.Services.AddSingleton<WafConfiguration>();
+builder.Services.AddSingleton<SecurityHeadersConfiguration>();
+builder.Services.AddSingleton<RateLimitConfiguration>();
+builder.Services.AddSingleton<InputValidationConfiguration>();
+
 builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
@@ -94,8 +104,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only"))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
+            ClockSkew = TimeSpan.FromMinutes(5),
+            RequireExpirationTime = true,
+            ValidateActor = false,
+            ValidateTokenReplay = false
         };
+        
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = false;
+        options.IncludeErrorDetails = builder.Environment.IsDevelopment();
     });
 
 builder.Services.AddAuthorization();
@@ -107,15 +125,34 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("SecurePolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials()
+                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        }
+        else
+        {
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://barq.app" })
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID", "X-Correlation-ID")
+                  .AllowCredentials()
+                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        }
     });
 });
 
 var app = builder.Build();
+
+// Configure security middleware pipeline in proper order
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -123,9 +160,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("SecurePolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
