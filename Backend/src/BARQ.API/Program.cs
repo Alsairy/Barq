@@ -10,6 +10,7 @@ using AutoMapper;
 using BARQ.Infrastructure.Data;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.Repositories;
+using BARQ.Core.Repositories;
 using BARQ.Core.Services;
 using BARQ.Application.Services.Users;
 using BARQ.Application.Services.Authentication;
@@ -47,6 +48,10 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.AuditLog>, GenericRepository<BARQ.Core.Entities.AuditLog>>();
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.User>, GenericRepository<BARQ.Core.Entities.User>>();
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.Organization>, GenericRepository<BARQ.Core.Entities.Organization>>();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(BARQ.Application.Commands.Users.RegisterUserCommand).Assembly));
 
