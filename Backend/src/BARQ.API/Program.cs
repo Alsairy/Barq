@@ -15,14 +15,22 @@ using BARQ.Application.Services.Users;
 using BARQ.Application.Services.Authentication;
 using BARQ.Application.Services.Organizations;
 using BARQ.Application.Services.BusinessLogic;
+using BARQ.Application.Services.Security;
+using BARQ.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "BARQ")
+    .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
     .WriteTo.Console()
     .WriteTo.File("logs/barq-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/security/security-.txt", 
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {CorrelationId} {SourceContext} {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -61,6 +69,19 @@ builder.Services.AddScoped<ITenantContextService, TenantContextService>();
 builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();
 builder.Services.AddScoped<IValidationPipelineService, ValidationPipelineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
+builder.Services.AddScoped<ISecurityMonitoringService, SecurityMonitoringService>();
+builder.Services.AddScoped<IThreatDetectionService, ThreatDetectionService>();
+builder.Services.AddScoped<ISiemIntegrationService, SiemIntegrationService>();
+builder.Services.AddScoped<TdeConfiguration>();
+
+builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Security-Monitor/1.0");
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

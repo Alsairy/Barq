@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using BARQ.Core.Enums;
+using BARQ.Core.Attributes;
 
 namespace BARQ.Core.Entities;
 
@@ -14,6 +15,7 @@ public class User : TenantEntity
     [Required]
     [MaxLength(256)]
     [EmailAddress]
+    [SearchableEncrypted]
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
@@ -21,6 +23,7 @@ public class User : TenantEntity
     /// </summary>
     [Required]
     [MaxLength(100)]
+    [PiiField]
     public string FirstName { get; set; } = string.Empty;
 
     /// <summary>
@@ -28,6 +31,7 @@ public class User : TenantEntity
     /// </summary>
     [Required]
     [MaxLength(100)]
+    [PiiField]
     public string LastName { get; set; } = string.Empty;
 
     /// <summary>
@@ -40,6 +44,7 @@ public class User : TenantEntity
     /// User's phone number
     /// </summary>
     [MaxLength(20)]
+    [PiiField]
     public string? PhoneNumber { get; set; }
 
     /// <summary>
