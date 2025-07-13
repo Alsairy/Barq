@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using BARQ.Infrastructure.Data;
+using BARQ.Core.Repositories;
 
 namespace BARQ.Infrastructure.Repositories;
 

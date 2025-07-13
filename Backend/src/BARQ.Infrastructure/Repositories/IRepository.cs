@@ -7,6 +7,9 @@ public interface IRepository<T> where T : class
     Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>>? predicate = null, 
+                                  Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+                                  int? skip = null, int? take = null, CancellationToken cancellationToken = default);
     Task<T> AddAsync(T entity, CancellationToken cancellationToken = default);
     Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default);
     Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
