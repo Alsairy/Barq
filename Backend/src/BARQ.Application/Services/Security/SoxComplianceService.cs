@@ -142,6 +142,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             return _changeControlLogs
                 .Where(c => c.RequestDate >= fromDate && c.RequestDate <= toDate)
                 .OrderByDescending(c => c.RequestDate)
@@ -158,6 +159,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Auditing access controls for system: {SystemName}", systemName);
 
             var usersReviewed = new List<string> { "Financial Manager", "Accounting Clerk", "CFO", "Controller" };
@@ -207,6 +209,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Validating documentation compliance for process: {ProcessName}", processName);
 
             var hasDocumentation = true;
@@ -237,6 +240,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Assessing internal controls for area: {ControlArea}", controlArea);
 
             return new InternalControlsAssessmentDto
@@ -295,7 +299,7 @@ public class SoxComplianceService : ISoxComplianceService
         {
             _logger.LogInformation("Validating audit trail compliance for system: {SystemName}", systemName);
 
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.Source == systemName &&
                      a.Timestamp >= fromDate &&
                      a.Timestamp <= toDate);
@@ -391,6 +395,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Conducting compliance testing for control: {ControlName}", controlName);
 
             var testPassed = true;
@@ -423,6 +428,7 @@ public class SoxComplianceService : ISoxComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             return new ManagementAssertionDto
             {
                 ControlObjective = controlObjective,

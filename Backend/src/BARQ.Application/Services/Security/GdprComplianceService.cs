@@ -120,6 +120,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var latestConsent = _consentRecords
                 .Where(c => c.UserId == userId && c.ConsentType == consentType)
                 .OrderByDescending(c => c.ConsentDate)
@@ -247,7 +248,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.DataSubjectId == userId.ToString() &&
                      (fromDate == null || a.Timestamp >= fromDate) &&
                      (toDate == null || a.Timestamp <= toDate));
@@ -274,6 +275,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Conducting privacy impact assessment for process: {ProcessName}", processName);
 
             var risks = new List<string> { "Data breach risk", "Unauthorized access", "Data retention violations" };
@@ -327,6 +329,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var validBases = new[] { "Consent", "Contract", "Legal obligation", "Vital interests", "Public task", "Legitimate interests" };
             var isValid = validBases.Contains(lawfulBasis);
 
@@ -350,6 +353,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var retentionPeriods = new Dictionary<string, TimeSpan>
             {
                 ["PersonalData"] = TimeSpan.FromDays(2555), // 7 years
@@ -426,6 +430,7 @@ public class GdprComplianceService : IGdprComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             return _consentRecords
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.ConsentDate);
@@ -481,6 +486,7 @@ public class GdprComplianceService : IGdprComplianceService
 
     private async Task<DataSubjectRightsResponseDto> ProcessRectificationRequestAsync(DataSubjectRequestDto request)
     {
+        await Task.CompletedTask;
         return new DataSubjectRightsResponseDto
         {
             RequestId = Guid.NewGuid(),
@@ -524,6 +530,7 @@ public class GdprComplianceService : IGdprComplianceService
 
     private async Task<DataSubjectRightsResponseDto> ProcessRestrictionRequestAsync(DataSubjectRequestDto request)
     {
+        await Task.CompletedTask;
         return new DataSubjectRightsResponseDto
         {
             RequestId = Guid.NewGuid(),
@@ -542,7 +549,7 @@ public class GdprComplianceService : IGdprComplianceService
             EntityName = "GDPR",
             EntityId = userId ?? Guid.NewGuid(),
             Action = eventType,
-            UserId = "GDPR-System",
+            UserId = Guid.NewGuid(),
             Timestamp = DateTime.UtcNow,
             Description = description,
             ComplianceFramework = "GDPR",

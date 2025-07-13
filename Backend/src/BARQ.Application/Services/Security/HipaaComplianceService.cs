@@ -68,6 +68,7 @@ public class HipaaComplianceService : IHipaaComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var query = _phiAccessLogs.AsQueryable();
 
             if (patientId.HasValue)
@@ -148,6 +149,7 @@ public class HipaaComplianceService : IHipaaComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Validating PHI encryption for location: {DataLocation}, Method: {EncryptionMethod}", dataLocation, encryptionMethod);
 
             var approvedMethods = new[] { "AES-256", "RSA-2048", "TLS 1.3", "FIPS 140-2" };
@@ -212,6 +214,7 @@ public class HipaaComplianceService : IHipaaComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             _logger.LogInformation("Conducting HIPAA risk assessment for system: {SystemName}", systemName);
 
             var threats = new List<string>
@@ -295,7 +298,7 @@ public class HipaaComplianceService : IHipaaComplianceService
         {
             _logger.LogInformation("Validating audit log compliance from {FromDate} to {ToDate}", fromDate, toDate);
 
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.Timestamp >= fromDate && a.Timestamp <= toDate);
 
             var totalEntries = auditLogs.Count();
@@ -406,6 +409,7 @@ public class HipaaComplianceService : IHipaaComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var query = _workforceTrainingRecords.AsQueryable();
 
             if (userId.HasValue)
@@ -444,6 +448,7 @@ public class HipaaComplianceService : IHipaaComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             var procedures = planType switch
             {
                 "Data Backup" => new[] { "Daily automated backups", "Weekly full system backup", "Monthly backup verification" },

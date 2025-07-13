@@ -140,7 +140,7 @@ public class WafMiddleware
             @"(\||&|;|\$\(|\`)",
             @"(\b(cat|ls|pwd|whoami|id|uname|ps|netstat|ifconfig|ping|nslookup|dig|wget|curl)\b)",
             @"(\b(cmd|powershell|bash|sh|zsh|csh|tcsh)\b)",
-            @"(\.\./|\.\.\\")",
+            @"(\.\./|\.\.\\)",
             @"(/etc/passwd|/etc/shadow|/etc/hosts)",
             @"(\b(rm|del|format|fdisk|mkfs)\b)",
             @"(\b(nc|netcat|telnet|ssh|ftp|tftp)\b)"
@@ -153,12 +153,12 @@ public class WafMiddleware
     {
         var pathPatterns = new[]
         {
-            @"(\.\./|\.\.\\")",
+            @"(\.\./|\.\.\\)",
             @"(%2e%2e%2f|%2e%2e%5c)",
             @"(\.\.%2f|\.\.%5c)",
             @"(%252e%252e%252f|%252e%252e%255c)",
             @"(\\\.\\\.\\|/\.\./)",
-            @"(\.\.\\\.\.\\")",
+            @"(\.\.\\\.\.\\)",
             @"(/etc/|/proc/|/sys/|/dev/)",
             @"(\\windows\\|\\system32\\)"
         };

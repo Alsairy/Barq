@@ -236,7 +236,7 @@ public class InputValidationMiddleware
             @"data:text/html",
             @"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b)",
             @"(\||&|;|\$\(|\`)",
-            @"(\.\./|\.\.\\")",
+            @"(\.\./|\.\.\\)",
             @"(%2e%2e%2f|%2e%2e%5c)",
             @"(eval\s*\(|setTimeout\s*\(|setInterval\s*\()",
             @"(document\.|window\.|location\.)",

@@ -83,7 +83,7 @@ public class ComplianceService : IComplianceService
         {
             _logger.LogInformation("Generating compliance report for framework: {Framework}, Period: {FromDate} to {ToDate}", framework, fromDate, toDate);
 
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.ComplianceFramework == framework &&
                      a.Timestamp >= fromDate &&
                      a.Timestamp <= toDate &&
@@ -147,7 +147,7 @@ public class ComplianceService : IComplianceService
         {
             var violations = new List<ComplianceViolationDto>();
 
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.ComplianceFramework == framework &&
                      a.ComplianceStatus == "VIOLATION" &&
                      (fromDate == null || a.Timestamp >= fromDate) &&
@@ -163,7 +163,7 @@ public class ComplianceService : IComplianceService
                     Description = log.Description ?? "No description available",
                     Severity = log.Severity ?? "Medium",
                     DetectedAt = log.Timestamp,
-                    DetectedBy = log.UserId,
+                    DetectedBy = log.UserId.ToString(),
                     Status = "Open",
                     OrganizationId = log.TenantId
                 });
@@ -207,6 +207,7 @@ public class ComplianceService : IComplianceService
     {
         try
         {
+            await Task.CompletedTask;
             return new ComplianceConfigurationDto
             {
                 Framework = framework,
@@ -246,7 +247,7 @@ public class ComplianceService : IComplianceService
     {
         try
         {
-            var auditLogs = await _auditLogRepository.GetAllAsync(
+            var auditLogs = await _auditLogRepository.FindAsync(
                 a => a.ComplianceFramework == framework &&
                      a.Timestamp >= fromDate &&
                      a.Timestamp <= toDate);
@@ -259,9 +260,9 @@ public class ComplianceService : IComplianceService
                 EntityType = log.EntityName,
                 EntityId = log.EntityId,
                 Changes = log.NewValues ?? "No changes recorded",
-                PerformedBy = log.UserId,
+                PerformedBy = log.UserId.ToString(),
                 Timestamp = log.Timestamp,
-                IpAddress = log.IpAddress ?? "Unknown",
+                IpAddress = log.IPAddress ?? "Unknown",
                 UserAgent = log.UserAgent ?? "Unknown",
                 OrganizationId = log.TenantId
             });
@@ -309,6 +310,7 @@ public class ComplianceService : IComplianceService
 
     private async Task<ComplianceAssessmentDto> AssessGdprComplianceAsync(Guid? organizationId)
     {
+        await Task.CompletedTask;
         var score = 85.0m;
         var gaps = new List<string> { "Data retention policies need review", "Consent management could be improved" };
         var recommendations = new List<string> { "Implement automated data deletion", "Enhance consent tracking" };
@@ -329,6 +331,7 @@ public class ComplianceService : IComplianceService
 
     private async Task<ComplianceAssessmentDto> AssessHipaaComplianceAsync(Guid? organizationId)
     {
+        await Task.CompletedTask;
         var score = 90.0m;
         var gaps = new List<string> { "Workforce training records incomplete" };
         var recommendations = new List<string> { "Complete workforce training documentation" };
@@ -349,6 +352,7 @@ public class ComplianceService : IComplianceService
 
     private async Task<ComplianceAssessmentDto> AssessSoxComplianceAsync(Guid? organizationId)
     {
+        await Task.CompletedTask;
         var score = 88.0m;
         var gaps = new List<string> { "Some financial controls need documentation updates" };
         var recommendations = new List<string> { "Update control documentation", "Enhance segregation of duties" };
@@ -369,6 +373,7 @@ public class ComplianceService : IComplianceService
 
     private async Task<ComplianceAssessmentDto> AssessIso27001ComplianceAsync(Guid? organizationId)
     {
+        await Task.CompletedTask;
         var score = 82.0m;
         var gaps = new List<string> { "Information security policies need updates", "Risk assessment documentation incomplete" };
         var recommendations = new List<string> { "Update security policies", "Complete risk assessments" };
@@ -477,9 +482,9 @@ public class ComplianceService : IComplianceService
             EntityName = "Compliance",
             EntityId = Guid.NewGuid(),
             Action = eventType,
-            UserId = "System",
+            UserId = Guid.NewGuid(),
             Timestamp = DateTime.UtcNow,
-            TenantId = organizationId,
+            TenantId = organizationId ?? Guid.Empty,
             ComplianceFramework = framework,
             ComplianceEventType = eventType,
             Description = description,

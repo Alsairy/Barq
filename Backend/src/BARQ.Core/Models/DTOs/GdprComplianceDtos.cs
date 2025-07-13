@@ -153,8 +153,10 @@ public class KeyEscrowDto
     public string KeyId { get; set; } = string.Empty;
     public string Reason { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public string AuthorizationRequired { get; set; } = string.Empty;
 }
 
 public class KeyUsageAuditDto
@@ -164,7 +166,9 @@ public class KeyUsageAuditDto
     public string Operation { get; set; } = string.Empty;
     public string EntityType { get; set; } = string.Empty;
     public Guid EntityId { get; set; }
-    public DateTime UsedAt { get; set; }
-    public string UsedBy { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public Guid UserId { get; set; }
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
     public string IpAddress { get; set; } = string.Empty;
 }
