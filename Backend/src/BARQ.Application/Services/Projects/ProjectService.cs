@@ -76,7 +76,7 @@ public class ProjectService : IProjectService
             var tenantId = _tenantProvider.GetTenantId();
             
             var existingProject = await _projectRepository.FirstOrDefaultAsync(p => 
-                p.Name == request.Name && p.OrganizationId == request.OrganizationId);
+                p.Name == request.Name && p.TenantId == request.OrganizationId);
             if (existingProject != null)
             {
                 return new ProjectResponse
@@ -96,13 +96,13 @@ public class ProjectService : IProjectService
                 };
             }
 
-            var projectManager = await _userRepository.GetByIdAsync(request.ProjectManagerId);
-            if (projectManager == null)
+            var projectOwner = await _userRepository.GetByIdAsync(request.ProjectManagerId);
+            if (projectOwner == null)
             {
                 return new ProjectResponse
                 {
                     Success = false,
-                    Message = "Project manager not found"
+                    Message = "Project owner not found"
                 };
             }
 
@@ -111,24 +111,20 @@ public class ProjectService : IProjectService
                 Id = Guid.NewGuid(),
                 Name = request.Name,
                 Description = request.Description,
-                Type = request.Type,
+                ProjectType = request.Type,
                 Priority = request.Priority,
                 Status = ProjectStatus.Planning,
                 StartDate = request.StartDate,
-                EndDate = request.EndDate,
+                TargetEndDate = request.EndDate,
                 Budget = request.Budget,
-                ActualCost = 0,
-                ProgressPercentage = 0,
-                OrganizationId = request.OrganizationId,
-                ProjectManagerId = request.ProjectManagerId,
+                ProjectOwnerId = request.ProjectManagerId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             if (request.AIConfiguration != null)
             {
-                project.IsAIEnabled = request.AIConfiguration.IsAIEnabled;
-                project.AIConfiguration = System.Text.Json.JsonSerializer.Serialize(request.AIConfiguration.Settings);
+                project.AIConfiguration = System.Text.Json.JsonSerializer.Serialize(request.AIConfiguration);
             }
 
             await _projectRepository.AddAsync(project);
@@ -143,10 +139,9 @@ public class ProjectService : IProjectService
                         Id = Guid.NewGuid(),
                         ProjectId = project.Id,
                         UserId = memberId,
-                        Role = ProjectRole.TeamMember,
+                        Role = "TeamMember",
                         JoinedAt = DateTime.UtcNow,
-                        IsActive = true,
-                        AllocationPercentage = 100
+                        IsActive = true
                     };
                     await _projectMemberRepository.AddAsync(projectMember);
                 }
@@ -157,10 +152,9 @@ public class ProjectService : IProjectService
                 Id = Guid.NewGuid(),
                 ProjectId = project.Id,
                 UserId = request.ProjectManagerId,
-                Role = ProjectRole.ProjectManager,
+                Role = "ProjectManager",
                 JoinedAt = DateTime.UtcNow,
-                IsActive = true,
-                AllocationPercentage = 100
+                IsActive = true
             };
             await _projectMemberRepository.AddAsync(projectManagerMember);
 
@@ -242,8 +236,7 @@ public class ProjectService : IProjectService
 
             if (request.AIConfiguration != null)
             {
-                project.IsAIEnabled = request.AIConfiguration.IsAIEnabled;
-                project.AIConfiguration = System.Text.Json.JsonSerializer.Serialize(request.AIConfiguration.Settings);
+                project.AIConfiguration = System.Text.Json.JsonSerializer.Serialize(request.AIConfiguration);
             }
 
             await _projectRepository.UpdateAsync(project);
@@ -492,7 +485,7 @@ public class ProjectService : IProjectService
                 else
                 {
                     existingMember.IsActive = true;
-                    existingMember.Role = request.Role;
+                    existingMember.Role = request.Role.ToString();
                     existingMember.AllocationPercentage = request.AllocationPercentage;
                     await _projectMemberRepository.UpdateAsync(existingMember);
                 }
@@ -504,7 +497,7 @@ public class ProjectService : IProjectService
                     Id = Guid.NewGuid(),
                     ProjectId = request.ProjectId,
                     UserId = request.UserId,
-                    Role = request.Role,
+                    Role = request.Role.ToString(),
                     JoinedAt = DateTime.UtcNow,
                     IsActive = true,
                     AllocationPercentage = request.AllocationPercentage
@@ -516,7 +509,7 @@ public class ProjectService : IProjectService
 
             await LogAuditAsync("PROJECT_MEMBER_ADDED", $"User {user.Email} added to project {project.Name}", request.ProjectId);
 
-            var memberDto = _mapper.Map<ProjectMemberDto>(existingMember ?? new ProjectMember { UserId = request.UserId, Role = request.Role });
+            var memberDto = _mapper.Map<ProjectMemberDto>(existingMember ?? new ProjectMember { UserId = request.UserId, Role = request.Role.ToString() });
             _logger.LogInformation("Project member added: {UserId} to {ProjectId}", request.UserId, request.ProjectId);
 
             return new ProjectMemberResponse
@@ -553,7 +546,7 @@ public class ProjectService : IProjectService
                 };
             }
 
-            projectMember.Role = request.Role ?? projectMember.Role;
+            projectMember.Role = request.Role?.ToString() ?? projectMember.Role;
             projectMember.AllocationPercentage = request.AllocationPercentage ?? projectMember.AllocationPercentage;
             projectMember.IsActive = request.IsActive ?? projectMember.IsActive;
 
@@ -668,8 +661,8 @@ public class ProjectService : IProjectService
             var analytics = new ProjectAnalyticsDto
             {
                 ProjectId = projectId,
-                CompletionPercentage = project.ProgressPercentage,
-                BudgetUtilization = project.Budget > 0 ? (project.ActualCost / project.Budget) * 100 : 0
+                CompletionPercentage = project.ProgressPercentage ?? 0,
+                BudgetUtilization = project.Budget > 0 ? ((project.ActualCost ?? 0) / project.Budget.Value) * 100 : 0
             };
 
             _logger.LogInformation("Project analytics retrieved for: {ProjectId}", projectId);
@@ -834,7 +827,7 @@ public class ProjectService : IProjectService
             var metrics = new ProjectHealthMetricsDto
             {
                 ScheduleHealth = project.EndDate.HasValue && project.EndDate >= DateTime.UtcNow ? 100 : 0,
-                BudgetHealth = project.Budget > 0 ? Math.Max(0, 100 - ((project.ActualCost / project.Budget) * 100)) : 100,
+                BudgetHealth = project.Budget > 0 ? (byte)Math.Max(0, 100 - (((project.ActualCost ?? 0) / project.Budget.Value) * 100)) : (byte)100,
                 OverallHealth = 85
             };
 
@@ -948,16 +941,16 @@ public class ProjectService : IProjectService
         }
     }
 
-    public async Task<IEnumerable<ProjectResourceDto>> GetProjectResourcesAsync(Guid projectId)
+    public Task<IEnumerable<ProjectResourceDto>> GetProjectResourcesAsync(Guid projectId)
     {
         try
         {
-            return new List<ProjectResourceDto>();
+            return Task.FromResult<IEnumerable<ProjectResourceDto>>(new List<ProjectResourceDto>());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving project resources: {ProjectId}", projectId);
-            return new List<ProjectResourceDto>();
+            return Task.FromResult<IEnumerable<ProjectResourceDto>>(new List<ProjectResourceDto>());
         }
     }
 
@@ -1013,10 +1006,10 @@ public class ProjectService : IProjectService
             return new ProjectBudgetDto
             {
                 ProjectId = projectId,
-                TotalBudget = project.Budget,
-                AllocatedBudget = project.Budget,
-                SpentBudget = project.ActualCost,
-                RemainingBudget = project.Budget - project.ActualCost
+                TotalBudget = project.Budget ?? 0,
+                AllocatedBudget = project.Budget ?? 0,
+                SpentBudget = project.ActualCost ?? 0,
+                RemainingBudget = (project.Budget ?? 0) - (project.ActualCost ?? 0)
             };
         }
         catch (Exception ex)
@@ -1043,11 +1036,11 @@ public class ProjectService : IProjectService
             var costAnalysis = new ProjectCostAnalysisDto
             {
                 ProjectId = projectId,
-                TotalBudget = project.Budget,
-                ActualCost = project.ActualCost,
-                ProjectedCost = project.ActualCost * 1.1m,
-                CostVariance = project.Budget - project.ActualCost,
-                CostPerformanceIndex = project.Budget > 0 ? project.ActualCost / project.Budget : 0
+                TotalBudget = project.Budget ?? 0,
+                ActualCost = project.ActualCost ?? 0,
+                ProjectedCost = (project.ActualCost ?? 0) * 1.1m,
+                CostVariance = (project.Budget ?? 0) - (project.ActualCost ?? 0),
+                CostPerformanceIndex = (project.Budget ?? 0) > 0 ? (project.ActualCost ?? 0) / (project.Budget ?? 0) : 0
             };
 
             return new ProjectCostAnalysisResponse
@@ -1137,16 +1130,16 @@ public class ProjectService : IProjectService
         }
     }
 
-    public async Task<IEnumerable<ProjectRiskDto>> GetProjectRisksAsync(Guid projectId)
+    public Task<IEnumerable<ProjectRiskDto>> GetProjectRisksAsync(Guid projectId)
     {
         try
         {
-            return new List<ProjectRiskDto>();
+            return Task.FromResult<IEnumerable<ProjectRiskDto>>(new List<ProjectRiskDto>());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving project risks: {ProjectId}", projectId);
-            return new List<ProjectRiskDto>();
+            return Task.FromResult<IEnumerable<ProjectRiskDto>>(new List<ProjectRiskDto>());
         }
     }
 
@@ -1159,12 +1152,12 @@ public class ProjectService : IProjectService
                 Id = Guid.NewGuid(),
                 Action = action,
                 EntityName = "Project",
-                EntityId = entityId,
+                EntityId = entityId ?? Guid.Empty,
                 Description = description,
                 UserId = _tenantProvider.GetCurrentUserId(),
                 TenantId = _tenantProvider.GetTenantId(),
                 Timestamp = DateTime.UtcNow,
-                IpAddress = "127.0.0.1"
+                IPAddress = "127.0.0.1"
             };
 
             await _auditLogRepository.AddAsync(auditLog);

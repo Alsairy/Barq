@@ -13,6 +13,10 @@ public class ProjectMember : TenantEntity
     public DateTime? LeftAt { get; set; }
     
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// </summary>
+    public decimal? AllocationPercentage { get; set; } = 100;
     
     public Guid ProjectId { get; set; }
     public virtual Project Project { get; set; } = null!;

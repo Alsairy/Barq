@@ -162,5 +162,13 @@ public class AITask : TenantEntity
     /// </summary>
     public Guid? AssigneeId { get; set; }
     public virtual User? Assignee { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public Guid? UserId 
+    { 
+        get => AssigneeId; 
+        set => AssigneeId = value; 
+    }
 }
 

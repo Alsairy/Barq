@@ -40,37 +40,31 @@ public class WorkflowService : IWorkflowService
         _tenantProvider = tenantProvider;
     }
 
-    public async Task<WorkflowExecutionResult> CreateWorkflowInstanceAsync(CreateWorkflowInstanceRequest request)
+    public async Task<WorkflowInstance> CreateWorkflowInstanceAsync(Guid templateId, Guid initiatorId, object? workflowData = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var tenantId = _tenantProvider.GetTenantId();
             
-            var template = await _workflowTemplateRepository.GetByIdAsync(request.TemplateId);
+            var template = await _workflowTemplateRepository.GetByIdAsync(templateId);
             if (template == null)
             {
-                return new WorkflowExecutionResult
-                {
-                    Success = false,
-                    ErrorMessage = "Workflow template not found"
-                };
+                throw new InvalidOperationException("Workflow template not found");
             }
 
             var workflowInstance = new WorkflowInstance
             {
                 Id = Guid.NewGuid(),
-                TemplateId = request.TemplateId,
-                Name = request.Name ?? template.Name,
-                Description = request.Description ?? template.Description,
-                Status = WorkflowStatus.Created,
-                Priority = request.Priority ?? WorkflowPriority.Medium,
-                CreatedBy = request.CreatedBy,
+                WorkflowTemplateId = templateId,
+                Name = template.Name,
+                Description = template.Description,
+                Status = WorkflowStatus.Pending,
+                Priority = ProjectPriority.Medium,
+                InitiatorId = initiatorId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 TenantId = tenantId,
-                EntityId = request.EntityId,
-                EntityType = request.EntityType,
-                Data = System.Text.Json.JsonSerializer.Serialize(request.InitialData ?? new Dictionary<string, object>())
+                WorkflowData = System.Text.Json.JsonSerializer.Serialize(workflowData ?? new Dictionary<string, object>())
             };
 
             await _workflowInstanceRepository.AddAsync(workflowInstance);
@@ -80,26 +74,16 @@ public class WorkflowService : IWorkflowService
 
             _logger.LogInformation("Workflow instance created: {WorkflowId}", workflowInstance.Id);
 
-            return new WorkflowExecutionResult
-            {
-                Success = true,
-                WorkflowInstanceId = workflowInstance.Id,
-                Status = workflowInstance.Status,
-                Message = "Workflow instance created successfully"
-            };
+            return workflowInstance;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating workflow instance: {TemplateName}", request.Name);
-            return new WorkflowExecutionResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message
-            };
+            _logger.LogError(ex, "Error creating workflow instance: {TemplateId}", templateId);
+            throw;
         }
     }
 
-    public async Task<WorkflowExecutionResult> StartWorkflowAsync(Guid workflowInstanceId, Guid startedBy)
+    public async Task<WorkflowExecutionResult> StartWorkflowAsync(Guid workflowInstanceId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -109,22 +93,21 @@ public class WorkflowService : IWorkflowService
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = "Workflow instance not found"
+                    ErrorDetails = "Workflow instance not found"
                 };
             }
 
-            if (workflowInstance.Status != WorkflowStatus.Created)
+            if (workflowInstance.Status != WorkflowStatus.Pending)
             {
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = $"Cannot start workflow in status: {workflowInstance.Status}"
+                    ErrorDetails = $"Cannot start workflow in status: {workflowInstance.Status}"
                 };
             }
 
             workflowInstance.Status = WorkflowStatus.InProgress;
             workflowInstance.StartedAt = DateTime.UtcNow;
-            workflowInstance.StartedBy = startedBy;
             workflowInstance.UpdatedAt = DateTime.UtcNow;
 
             await _workflowInstanceRepository.UpdateAsync(workflowInstance);
@@ -137,8 +120,7 @@ public class WorkflowService : IWorkflowService
             return new WorkflowExecutionResult
             {
                 Success = true,
-                WorkflowInstanceId = workflowInstanceId,
-                Status = workflowInstance.Status,
+                NewStatus = workflowInstance.Status,
                 Message = "Workflow started successfully"
             };
         }
@@ -148,12 +130,12 @@ public class WorkflowService : IWorkflowService
             return new WorkflowExecutionResult
             {
                 Success = false,
-                ErrorMessage = ex.Message
+                ErrorDetails = ex.Message
             };
         }
     }
 
-    public async Task<WorkflowExecutionResult> ApproveWorkflowStepAsync(Guid workflowInstanceId, string stepId, Guid approvedBy, string? comments = null)
+    public async Task<WorkflowExecutionResult> ApproveStepAsync(Guid workflowInstanceId, Guid stepId, string? comments = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -163,16 +145,16 @@ public class WorkflowService : IWorkflowService
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = "Workflow instance not found"
+                    ErrorDetails = "Workflow instance not found"
                 };
             }
 
-            if (workflowInstance.Status != WorkflowStatus.InProgress && workflowInstance.Status != WorkflowStatus.PendingApproval)
+            if (workflowInstance.Status != WorkflowStatus.InProgress && workflowInstance.Status != WorkflowStatus.WaitingForApproval)
             {
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = $"Cannot approve workflow step in status: {workflowInstance.Status}"
+                    ErrorDetails = $"Cannot approve workflow step in status: {workflowInstance.Status}"
                 };
             }
 
@@ -182,15 +164,14 @@ public class WorkflowService : IWorkflowService
             await _workflowInstanceRepository.UpdateAsync(workflowInstance);
             await _unitOfWork.SaveChangesAsync();
 
-            await LogAuditAsync("WORKFLOW_STEP_APPROVED", $"Workflow step approved: {stepId} by {approvedBy}", workflowInstanceId);
+            await LogAuditAsync("WORKFLOW_STEP_APPROVED", $"Workflow step approved: {stepId}", workflowInstanceId);
 
             _logger.LogInformation("Workflow step approved: {WorkflowId}, Step: {StepId}", workflowInstanceId, stepId);
 
             return new WorkflowExecutionResult
             {
                 Success = true,
-                WorkflowInstanceId = workflowInstanceId,
-                Status = workflowInstance.Status,
+                NewStatus = workflowInstance.Status,
                 Message = "Workflow step approved successfully"
             };
         }
@@ -200,12 +181,12 @@ public class WorkflowService : IWorkflowService
             return new WorkflowExecutionResult
             {
                 Success = false,
-                ErrorMessage = ex.Message
+                ErrorDetails = ex.Message
             };
         }
     }
 
-    public async Task<WorkflowExecutionResult> RejectWorkflowStepAsync(Guid workflowInstanceId, string stepId, Guid rejectedBy, string reason)
+    public async Task<WorkflowExecutionResult> RejectStepAsync(Guid workflowInstanceId, Guid stepId, string reason, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -215,7 +196,7 @@ public class WorkflowService : IWorkflowService
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = "Workflow instance not found"
+                    ErrorDetails = "Workflow instance not found"
                 };
             }
 
@@ -225,15 +206,14 @@ public class WorkflowService : IWorkflowService
             await _workflowInstanceRepository.UpdateAsync(workflowInstance);
             await _unitOfWork.SaveChangesAsync();
 
-            await LogAuditAsync("WORKFLOW_STEP_REJECTED", $"Workflow step rejected: {stepId} by {rejectedBy}. Reason: {reason}", workflowInstanceId);
+            await LogAuditAsync("WORKFLOW_STEP_REJECTED", $"Workflow step rejected: {stepId}. Reason: {reason}", workflowInstanceId);
 
             _logger.LogInformation("Workflow step rejected: {WorkflowId}, Step: {StepId}", workflowInstanceId, stepId);
 
             return new WorkflowExecutionResult
             {
                 Success = true,
-                WorkflowInstanceId = workflowInstanceId,
-                Status = workflowInstance.Status,
+                NewStatus = workflowInstance.Status,
                 Message = "Workflow step rejected"
             };
         }
@@ -243,12 +223,12 @@ public class WorkflowService : IWorkflowService
             return new WorkflowExecutionResult
             {
                 Success = false,
-                ErrorMessage = ex.Message
+                ErrorDetails = ex.Message
             };
         }
     }
 
-    public async Task<WorkflowExecutionResult> CancelWorkflowAsync(Guid workflowInstanceId, Guid cancelledBy, string? reason = null)
+    public async Task<WorkflowExecutionResult> CancelWorkflowAsync(Guid workflowInstanceId, Guid userId, string? reason = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -258,16 +238,16 @@ public class WorkflowService : IWorkflowService
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = "Workflow instance not found"
+                    ErrorDetails = "Workflow instance not found"
                 };
             }
 
-            if (workflowInstance.Status == WorkflowStatus.Completed || workflowInstance.Status == WorkflowStatus.Cancelled)
+            if (workflowInstance.Status == WorkflowStatus.Approved || workflowInstance.Status == WorkflowStatus.Cancelled)
             {
                 return new WorkflowExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = $"Cannot cancel workflow in status: {workflowInstance.Status}"
+                    ErrorDetails = $"Cannot cancel workflow in status: {workflowInstance.Status}"
                 };
             }
 
@@ -278,15 +258,14 @@ public class WorkflowService : IWorkflowService
             await _workflowInstanceRepository.UpdateAsync(workflowInstance);
             await _unitOfWork.SaveChangesAsync();
 
-            await LogAuditAsync("WORKFLOW_CANCELLED", $"Workflow cancelled by {cancelledBy}. Reason: {reason}", workflowInstanceId);
+            await LogAuditAsync("WORKFLOW_CANCELLED", $"Workflow cancelled by {userId}. Reason: {reason}", workflowInstanceId);
 
             _logger.LogInformation("Workflow cancelled: {WorkflowId}", workflowInstanceId);
 
             return new WorkflowExecutionResult
             {
                 Success = true,
-                WorkflowInstanceId = workflowInstanceId,
-                Status = workflowInstance.Status,
+                NewStatus = workflowInstance.Status,
                 Message = "Workflow cancelled successfully"
             };
         }
@@ -296,7 +275,7 @@ public class WorkflowService : IWorkflowService
             return new WorkflowExecutionResult
             {
                 Success = false,
-                ErrorMessage = ex.Message
+                ErrorDetails = ex.Message
             };
         }
     }
@@ -318,14 +297,13 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowInstanceStatus
             {
-                WorkflowInstanceId = workflowInstanceId,
+                InstanceId = workflowInstanceId,
                 Status = workflowInstance.Status,
-                CurrentStep = "Step1",
-                Progress = CalculateProgress(workflowInstance),
-                CreatedAt = workflowInstance.CreatedAt,
-                StartedAt = workflowInstance.StartedAt,
-                CompletedAt = workflowInstance.CompletedAt,
-                LastUpdated = workflowInstance.UpdatedAt
+                CurrentStepIndex = 1,
+                CurrentStepName = "Step1",
+                ProgressPercentage = CalculateProgress(workflowInstance),
+                TotalSteps = 5,
+                CompletedSteps = 1
             };
         }
         catch (Exception ex)
@@ -333,14 +311,18 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error getting workflow status: {WorkflowId}", workflowInstanceId);
             return new WorkflowInstanceStatus
             {
-                WorkflowInstanceId = workflowInstanceId,
-                Status = WorkflowStatus.Unknown,
-                ErrorMessage = ex.Message
+                InstanceId = workflowInstanceId,
+                Status = WorkflowStatus.Created,
+                CurrentStepIndex = 0,
+                CurrentStepName = "Error",
+                ProgressPercentage = 0,
+                TotalSteps = 0,
+                CompletedSteps = 0
             };
         }
     }
 
-    public async Task<List<WorkflowHistoryEntry>> GetWorkflowHistoryAsync(Guid workflowInstanceId)
+    public async Task<IEnumerable<WorkflowHistoryEntry>> GetWorkflowHistoryAsync(Guid workflowInstanceId)
     {
         try
         {
@@ -352,15 +334,15 @@ public class WorkflowService : IWorkflowService
             {
                 Id = log.Id,
                 WorkflowInstanceId = workflowInstanceId,
-                Action = log.Action,
-                Description = log.Description,
+                Action = log.Action ?? "Unknown",
+                Description = log.Description ?? "No description",
                 UserId = log.UserId,
                 Timestamp = log.Timestamp,
-                Details = new Dictionary<string, object>
+                Details = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
                 {
-                    { "IpAddress", log.IpAddress ?? "Unknown" },
+                    { "IPAddress", log.IPAddress ?? "Unknown" },
                     { "UserAgent", "Unknown" }
-                }
+                })
             }).OrderByDescending(h => h.Timestamp).ToList();
 
             _logger.LogInformation("Retrieved {Count} history entries for workflow: {WorkflowId}", historyEntries.Count, workflowInstanceId);
@@ -384,7 +366,7 @@ public class WorkflowService : IWorkflowService
                 return false;
             }
 
-            var template = await _workflowTemplateRepository.GetByIdAsync(workflowInstance.TemplateId);
+            var template = await _workflowTemplateRepository.GetByIdAsync(workflowInstance.WorkflowTemplateId);
             if (template == null || !template.SlaHours.HasValue)
             {
                 return false;
@@ -444,23 +426,18 @@ public class WorkflowService : IWorkflowService
             var query = _workflowInstanceRepository.GetQueryable()
                 .Where(w => w.Status == WorkflowStatus.InProgress || w.Status == WorkflowStatus.PendingApproval);
 
-            if (userId.HasValue)
-            {
-                query = query.Where(w => w.CreatedBy == userId.Value || w.StartedBy == userId.Value);
-            }
-
-            var workflows = await _workflowInstanceRepository.FindAsync(query);
+            var workflows = await _workflowInstanceRepository.GetAsync(w => 
+                userId.HasValue ? (w.InitiatorId == userId.Value || w.CurrentAssigneeId == userId.Value) : true);
 
             var workflowStatuses = workflows.Select(w => new WorkflowInstanceStatus
             {
-                WorkflowInstanceId = w.Id,
+                InstanceId = w.Id,
                 Status = w.Status,
-                CurrentStep = "Step1",
-                Progress = CalculateProgress(w),
-                CreatedAt = w.CreatedAt,
-                StartedAt = w.StartedAt,
-                CompletedAt = w.CompletedAt,
-                LastUpdated = w.UpdatedAt
+                CurrentStepIndex = 1,
+                CurrentStepName = "Step1",
+                ProgressPercentage = CalculateProgress(w),
+                TotalSteps = 5,
+                CompletedSteps = 1
             }).ToList();
 
             _logger.LogInformation("Retrieved {Count} active workflows", workflowStatuses.Count);
@@ -489,7 +466,7 @@ public class WorkflowService : IWorkflowService
                 CreatedAt = w.CreatedAt,
                 StartedAt = w.StartedAt,
                 CompletedAt = w.CompletedAt,
-                LastUpdated = w.UpdatedAt
+                LastUpdated = w.UpdatedAt ?? DateTime.UtcNow
             }).ToList();
 
             _logger.LogInformation("Retrieved {Count} workflows with status {Status}", workflowStatuses.Count, status);
@@ -516,6 +493,202 @@ public class WorkflowService : IWorkflowService
         };
     }
 
+    public async Task<WorkflowExecutionResult> RequestChangesAsync(Guid workflowInstanceId, Guid userId, string reason, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var workflowInstance = await _workflowInstanceRepository.GetByIdAsync(workflowInstanceId);
+            if (workflowInstance == null)
+            {
+                return new WorkflowExecutionResult
+                {
+                    Success = false,
+                    ErrorDetails = "Workflow instance not found"
+                };
+            }
+
+            workflowInstance.Status = WorkflowStatus.PendingApproval;
+            workflowInstance.UpdatedAt = DateTime.UtcNow;
+
+            await _workflowInstanceRepository.UpdateAsync(workflowInstance);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("WORKFLOW_CHANGES_REQUESTED", $"Changes requested by {userId}. Reason: {reason}", workflowInstanceId);
+
+            _logger.LogInformation("Changes requested for workflow: {WorkflowId}", workflowInstanceId);
+
+            return new WorkflowExecutionResult
+            {
+                Success = true,
+                NewStatus = workflowInstance.Status,
+                Message = "Changes requested successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error requesting changes for workflow: {WorkflowId}", workflowInstanceId);
+            return new WorkflowExecutionResult
+            {
+                Success = false,
+                ErrorDetails = ex.Message
+            };
+        }
+    }
+
+    public async Task<WorkflowExecutionResult> EscalateWorkflowAsync(Guid workflowInstanceId, string reason, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var workflowInstance = await _workflowInstanceRepository.GetByIdAsync(workflowInstanceId);
+            if (workflowInstance == null)
+            {
+                return new WorkflowExecutionResult
+                {
+                    Success = false,
+                    ErrorDetails = "Workflow instance not found"
+                };
+            }
+
+            workflowInstance.Priority = ProjectPriority.High;
+            workflowInstance.UpdatedAt = DateTime.UtcNow;
+
+            await _workflowInstanceRepository.UpdateAsync(workflowInstance);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("WORKFLOW_ESCALATED", $"Workflow escalated. Reason: {reason}", workflowInstanceId);
+
+            _logger.LogInformation("Workflow escalated: {WorkflowId}", workflowInstanceId);
+
+            return new WorkflowExecutionResult
+            {
+                Success = true,
+                NewStatus = workflowInstance.Status,
+                Message = "Workflow escalated successfully"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error escalating workflow: {WorkflowId}", workflowInstanceId);
+            return new WorkflowExecutionResult
+            {
+                Success = false,
+                ErrorDetails = ex.Message
+            };
+        }
+    }
+
+    public async Task<IEnumerable<WorkflowInstance>> GetPendingApprovalsAsync(Guid userId, WorkflowType? workflowType = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = _workflowInstanceRepository.GetQueryable()
+                .Where(w => w.Status == WorkflowStatus.PendingApproval);
+
+            var workflows = await _workflowInstanceRepository.GetAsync(w => 
+                w.Status == WorkflowStatus.PendingApproval && 
+                (!workflowType.HasValue || w.WorkflowTemplate.Name == workflowType.Value.ToString()));
+
+            _logger.LogInformation("Retrieved {Count} pending approvals for user: {UserId}", workflows.Count(), userId);
+            return workflows;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pending approvals for user: {UserId}", userId);
+            return new List<WorkflowInstance>();
+        }
+    }
+
+    public async Task<bool> UpdateWorkflowDataAsync(Guid workflowInstanceId, object workflowData, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var workflowInstance = await _workflowInstanceRepository.GetByIdAsync(workflowInstanceId);
+            if (workflowInstance == null)
+            {
+                return false;
+            }
+
+            workflowInstance.Data = System.Text.Json.JsonSerializer.Serialize(workflowData);
+            workflowInstance.UpdatedAt = DateTime.UtcNow;
+
+            await _workflowInstanceRepository.UpdateAsync(workflowInstance);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("WORKFLOW_DATA_UPDATED", "Workflow data updated", workflowInstanceId);
+
+            _logger.LogInformation("Workflow data updated: {WorkflowId}", workflowInstanceId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating workflow data: {WorkflowId}", workflowInstanceId);
+            return false;
+        }
+    }
+
+    public async Task<int> ProcessSLABreachesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var activeWorkflows = await _workflowInstanceRepository.FindAsync(w => 
+                w.Status == WorkflowStatus.InProgress || w.Status == WorkflowStatus.PendingApproval);
+
+            var breachedWorkflows = new List<WorkflowInstance>();
+
+            foreach (var workflow in activeWorkflows)
+            {
+                var isBreached = await CheckSlaBreachAsync(workflow.Id);
+                if (isBreached)
+                {
+                    breachedWorkflows.Add(workflow);
+                }
+            }
+
+            foreach (var workflow in breachedWorkflows)
+            {
+                await SendWorkflowNotificationAsync(workflow.Id, "SLA_BREACH", new List<Guid> { workflow.InitiatorId }, "SLA breach detected");
+            }
+
+            _logger.LogInformation("Processed {Count} SLA breaches", breachedWorkflows.Count);
+            return breachedWorkflows.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing SLA breaches");
+            return 0;
+        }
+    }
+
+    public async Task<bool> SendWorkflowNotificationAsync(Guid workflowInstanceId, WorkflowNotificationType notificationType, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var workflowInstance = await _workflowInstanceRepository.GetByIdAsync(workflowInstanceId);
+            if (workflowInstance == null)
+            {
+                _logger.LogWarning("Workflow instance not found for notification: {WorkflowId}", workflowInstanceId);
+                return false;
+            }
+
+            var recipientIds = new List<Guid> { workflowInstance.InitiatorId };
+            if (workflowInstance.CurrentAssigneeId.HasValue)
+            {
+                recipientIds.Add(workflowInstance.CurrentAssigneeId.Value);
+            }
+
+            await SendWorkflowNotificationAsync(workflowInstanceId, notificationType.ToString(), recipientIds);
+
+            await LogAuditAsync("WORKFLOW_NOTIFICATION_SENT", $"Notification sent: {notificationType}", workflowInstanceId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending workflow notification: {WorkflowId}", workflowInstanceId);
+            return false;
+        }
+    }
+
     private async Task LogAuditAsync(string action, string description, Guid? entityId = null)
     {
         try
@@ -525,12 +698,12 @@ public class WorkflowService : IWorkflowService
                 Id = Guid.NewGuid(),
                 Action = action,
                 EntityName = "WorkflowInstance",
-                EntityId = entityId,
+                EntityId = entityId ?? Guid.Empty,
                 Description = description,
                 UserId = _tenantProvider.GetCurrentUserId(),
                 TenantId = _tenantProvider.GetTenantId(),
                 Timestamp = DateTime.UtcNow,
-                IpAddress = "127.0.0.1"
+                IPAddress = "127.0.0.1"
             };
 
             await _auditLogRepository.AddAsync(auditLog);
@@ -539,5 +712,59 @@ public class WorkflowService : IWorkflowService
         {
             _logger.LogError(ex, "Error logging audit: {Action}", action);
         }
+    }
+
+    public async Task<WorkflowInstance> CreateWorkflowAsync(CreateWorkflowRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow creation not yet implemented");
+    }
+
+    public async Task<WorkflowExecutionResult> ApproveWorkflowAsync(ApproveWorkflowRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow approval not yet implemented");
+    }
+
+    public async Task<WorkflowExecutionResult> RejectWorkflowAsync(RejectWorkflowRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow rejection not yet implemented");
+    }
+
+    public async Task<IEnumerable<WorkflowInstance>> GetProjectWorkflowsAsync(Guid projectId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Project workflows retrieval not yet implemented");
+    }
+
+    public async Task<object> GetWorkflowAnalyticsAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow analytics not yet implemented");
+    }
+
+    public async Task<IEnumerable<WorkflowTemplate>> GetWorkflowTemplatesAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow templates retrieval not yet implemented");
+    }
+
+    public async Task<WorkflowTemplate> CreateWorkflowTemplateAsync(CreateWorkflowTemplateRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow template creation not yet implemented");
+    }
+
+    public async Task<object> CheckSlaBreachesAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("SLA breaches check not yet implemented");
+    }
+
+    public async Task<object> GetWorkflowPerformanceAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Workflow performance retrieval not yet implemented");
     }
 }

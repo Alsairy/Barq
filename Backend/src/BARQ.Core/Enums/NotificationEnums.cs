@@ -36,5 +36,6 @@ public enum NotificationChannel
     Slack = 5,
     Teams = 6,
     Webhook = 7,
-    Dashboard = 8
+    Dashboard = 8,
+    RealTime = 9
 }

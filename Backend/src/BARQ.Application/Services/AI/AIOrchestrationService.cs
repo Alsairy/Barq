@@ -37,108 +37,91 @@ public class AIOrchestrationService : IAIOrchestrationService
         _tenantProvider = tenantProvider;
     }
 
-    public async Task<AITaskResult> ExecuteTaskAsync(AITaskRequest request, CancellationToken cancellationToken = default)
+    public async Task<AITaskResult> ExecuteTaskAsync(AITask task, CancellationToken cancellationToken = default)
     {
         try
         {
             var tenantId = _tenantProvider.GetTenantId();
             
-            var aiTask = new AITask
-            {
-                Id = Guid.NewGuid(),
-                TaskType = request.TaskType,
-                Priority = request.Priority,
-                Status = AITaskStatus.Pending,
-                Input = System.Text.Json.JsonSerializer.Serialize(request.Input),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                ProjectId = request.ProjectId,
-                UserId = request.UserId,
-                TenantId = tenantId,
-                MaxRetries = request.MaxRetries ?? 3,
-                RetryCount = 0
-            };
-
-            await _aiTaskRepository.AddAsync(aiTask);
+            task.Status = AITaskStatus.Running;
+            task.UpdatedAt = DateTime.UtcNow;
+            
+            await _aiTaskRepository.UpdateAsync(task);
             await _unitOfWork.SaveChangesAsync();
 
-            await LogAuditAsync("AI_TASK_CREATED", $"AI task created: {request.TaskType}", aiTask.Id);
+            await LogAuditAsync("AI_TASK_STARTED", $"AI task started: {task.TaskType}", task.Id);
 
-            var bestProvider = await GetBestProviderAsync(request.TaskType, request.Requirements, cancellationToken);
+            var bestProvider = await GetBestProviderAsync(task.TaskType, tenantId, null);
             if (bestProvider == null)
             {
-                aiTask.Status = AITaskStatus.Failed;
-                aiTask.ErrorMessage = "No suitable AI provider found";
-                await _aiTaskRepository.UpdateAsync(aiTask);
+                task.Status = AITaskStatus.Failed;
+                task.ErrorMessage = "No suitable AI provider found";
+                await _aiTaskRepository.UpdateAsync(task);
                 await _unitOfWork.SaveChangesAsync();
 
                 return new AITaskResult
                 {
-                    TaskId = aiTask.Id,
-                    Status = AITaskStatus.Failed,
+                    TaskId = task.Id,
+                    Success = false,
                     ErrorMessage = "No suitable AI provider found",
-                    ExecutionTime = TimeSpan.Zero,
-                    Cost = 0,
-                    QualityScore = 0
+                    ExecutionTimeMs = 0,
+                    Provider = AIProvider.OpenAI
                 };
             }
 
-            aiTask.ProviderId = bestProvider.Id;
-            aiTask.Status = AITaskStatus.Running;
-            aiTask.StartedAt = DateTime.UtcNow;
-            await _aiTaskRepository.UpdateAsync(aiTask);
+            task.AIProvider = bestProvider.Provider;
+            task.Status = AITaskStatus.Running;
+            task.StartedAt = DateTime.UtcNow;
+            await _aiTaskRepository.UpdateAsync(task);
             await _unitOfWork.SaveChangesAsync();
 
-            var result = await ExecuteTaskWithProviderAsync(aiTask, bestProvider, cancellationToken);
+            var result = await ExecuteTaskWithProviderAsync(task, bestProvider, cancellationToken);
 
-            aiTask.Status = result.Status;
-            aiTask.Output = result.Output;
-            aiTask.ErrorMessage = result.ErrorMessage;
-            aiTask.CompletedAt = DateTime.UtcNow;
-            aiTask.ExecutionTime = result.ExecutionTime;
-            aiTask.Cost = result.Cost;
-            aiTask.QualityScore = result.QualityScore;
+            task.Status = result.Success ? AITaskStatus.Completed : AITaskStatus.Failed;
+            task.OutputData = result.ResultData;
+            task.ErrorMessage = result.ErrorMessage;
+            task.CompletedAt = DateTime.UtcNow;
+            task.UpdatedAt = DateTime.UtcNow;
 
-            await _aiTaskRepository.UpdateAsync(aiTask);
+            await _aiTaskRepository.UpdateAsync(task);
             await _unitOfWork.SaveChangesAsync();
 
-            await LogAuditAsync("AI_TASK_COMPLETED", $"AI task completed: {aiTask.Status}", aiTask.Id);
+            await LogAuditAsync("AI_TASK_COMPLETED", $"AI task completed: {task.Status}", task.Id);
 
-            _logger.LogInformation("AI task executed: {TaskId} with status {Status}", aiTask.Id, result.Status);
+            _logger.LogInformation("AI task executed: {TaskId} with status {Status}", task.Id, task.Status);
 
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error executing AI task: {TaskType}", request.TaskType);
+            _logger.LogError(ex, "Error executing AI task: {TaskType}", task.TaskType);
             return new AITaskResult
             {
-                TaskId = Guid.NewGuid(),
-                Status = AITaskStatus.Failed,
+                TaskId = task.Id,
+                Success = false,
                 ErrorMessage = ex.Message,
-                ExecutionTime = TimeSpan.Zero,
-                Cost = 0,
-                QualityScore = 0
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
             };
         }
     }
 
-    public async Task<List<AITaskResult>> ExecuteMultipleTasksAsync(List<AITaskRequest> requests, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<AITaskResult>> ExecuteTasksAsync(IEnumerable<AITask> tasks, CancellationToken cancellationToken = default)
     {
         try
         {
             var results = new List<AITaskResult>();
-            var tasks = new List<Task<AITaskResult>>();
+            var taskList = new List<Task<AITaskResult>>();
 
-            foreach (var request in requests)
+            foreach (var task in tasks)
             {
-                tasks.Add(ExecuteTaskAsync(request, cancellationToken));
+                taskList.Add(ExecuteTaskAsync(task, cancellationToken));
             }
 
-            var completedTasks = await Task.WhenAll(tasks);
+            var completedTasks = await Task.WhenAll(taskList);
             results.AddRange(completedTasks);
 
-            _logger.LogInformation("Executed {Count} AI tasks in batch", requests.Count);
+            _logger.LogInformation("Executed {Count} AI tasks in batch", tasks.Count());
             return results;
         }
         catch (Exception ex)
@@ -148,16 +131,15 @@ public class AIOrchestrationService : IAIOrchestrationService
         }
     }
 
-    public async Task<AIProviderConfiguration?> GetBestProviderAsync(AITaskType taskType, AITaskRequirements? requirements = null, CancellationToken cancellationToken = default)
+    public async Task<AIProviderConfiguration?> GetBestProviderAsync(AITaskType taskType, Guid tenantId, AITaskRequirements? requirements = null)
     {
         try
         {
-            var tenantId = _tenantProvider.GetTenantId();
             var providers = await _providerRepository.FindAsync(p => 
                 p.TenantId == tenantId && 
                 p.IsActive && 
                 p.IsHealthy &&
-                p.SupportedTaskTypes.Contains(taskType.ToString()));
+                p.SupportedTaskTypes != null && p.SupportedTaskTypes.Contains(taskType.ToString()));
 
             if (!providers.Any())
             {
@@ -168,8 +150,8 @@ public class AIOrchestrationService : IAIOrchestrationService
             var bestProvider = providers
                 .Where(p => requirements == null || MeetsRequirements(p, requirements))
                 .OrderByDescending(p => p.SuccessRate ?? 0)
-                .ThenBy(p => p.AverageCost ?? decimal.MaxValue)
-                .ThenByDescending(p => p.AverageResponseTime ?? TimeSpan.MaxValue)
+                .ThenBy(p => p.CostPerToken ?? decimal.MaxValue)
+                .ThenByDescending(p => p.AverageResponseTimeMs ?? long.MaxValue)
                 .FirstOrDefault();
 
             if (bestProvider != null)
@@ -186,7 +168,7 @@ public class AIOrchestrationService : IAIOrchestrationService
         }
     }
 
-    public async Task<AITaskStatus> GetTaskStatusAsync(Guid taskId, CancellationToken cancellationToken = default)
+    public async Task<AITaskStatus> GetTaskStatusAsync(Guid taskId)
     {
         try
         {
@@ -220,13 +202,13 @@ public class AIOrchestrationService : IAIOrchestrationService
             return new AITaskResult
             {
                 TaskId = task.Id,
-                Status = task.Status,
-                Output = task.Output,
+                Success = task.Status == AITaskStatus.Completed,
+                ResultData = task.OutputData,
                 ErrorMessage = task.ErrorMessage,
-                ExecutionTime = task.ExecutionTime ?? TimeSpan.Zero,
+                ExecutionTimeMs = task.ProcessingTimeMs ?? 0,
                 Cost = task.Cost ?? 0,
                 QualityScore = task.QualityScore ?? 0,
-                ProviderId = task.ProviderId
+                Provider = AIProvider.OpenAI
             };
         }
         catch (Exception ex)
@@ -236,7 +218,7 @@ public class AIOrchestrationService : IAIOrchestrationService
         }
     }
 
-    public async Task<bool> CancelTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
+    public async Task<bool> CancelTaskAsync(Guid taskId)
     {
         try
         {
@@ -272,55 +254,44 @@ public class AIOrchestrationService : IAIOrchestrationService
         }
     }
 
-    public async Task<AIProviderValidationResult> ValidateProviderConfigurationAsync(Guid providerId, CancellationToken cancellationToken = default)
+    public Task<AIProviderValidationResult> ValidateProviderAsync(AIProviderConfiguration configuration, CancellationToken cancellationToken = default)
     {
         try
         {
-            var provider = await _providerRepository.GetByIdAsync(providerId);
-            if (provider == null)
-            {
-                return new AIProviderValidationResult
-                {
-                    IsValid = false,
-                    ErrorMessage = "Provider not found"
-                };
-            }
-
             var validationErrors = new List<string>();
 
-            if (string.IsNullOrEmpty(provider.Name))
+            if (string.IsNullOrEmpty(configuration.Name))
                 validationErrors.Add("Provider name is required");
 
-            if (string.IsNullOrEmpty(provider.ApiEndpoint))
+            if (string.IsNullOrEmpty(configuration.EndpointUrl))
                 validationErrors.Add("API endpoint is required");
 
-            if (string.IsNullOrEmpty(provider.ApiKey))
+            if (string.IsNullOrEmpty(configuration.ApiKey))
                 validationErrors.Add("API key is required");
 
-            if (!provider.SupportedTaskTypes.Any())
+            if (configuration.SupportedTaskTypes == null || !configuration.SupportedTaskTypes.Any())
                 validationErrors.Add("At least one supported task type is required");
 
             var isValid = !validationErrors.Any();
 
-            return new AIProviderValidationResult
+            return Task.FromResult(new AIProviderValidationResult
             {
                 IsValid = isValid,
-                ErrorMessage = isValid ? null : string.Join("; ", validationErrors),
-                ValidationErrors = validationErrors
-            };
+                Errors = validationErrors
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating provider configuration: {ProviderId}", providerId);
-            return new AIProviderValidationResult
+            _logger.LogError(ex, "Error validating provider configuration: {ProviderId}", configuration.Id);
+            return Task.FromResult(new AIProviderValidationResult
             {
                 IsValid = false,
-                ErrorMessage = ex.Message
-            };
+                Errors = new List<string> { ex.Message }
+            });
         }
     }
 
-    public async Task<AIProviderHealthStatus> CheckProviderHealthAsync(Guid providerId, CancellationToken cancellationToken = default)
+    public async Task<AIProviderHealthStatus> GetProviderHealthAsync(Guid providerId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -329,22 +300,20 @@ public class AIOrchestrationService : IAIOrchestrationService
             {
                 return new AIProviderHealthStatus
                 {
-                    ProviderId = providerId,
                     IsHealthy = false,
-                    Status = "Provider not found",
-                    LastChecked = DateTime.UtcNow
+                    CheckedAt = DateTime.UtcNow,
+                    Issues = new List<string> { "Provider not found" }
                 };
             }
 
             var healthStatus = new AIProviderHealthStatus
             {
-                ProviderId = providerId,
                 IsHealthy = provider.IsHealthy,
-                Status = provider.IsHealthy ? "Healthy" : "Unhealthy",
-                ResponseTime = provider.AverageResponseTime ?? TimeSpan.Zero,
-                LastChecked = DateTime.UtcNow,
-                SuccessRate = provider.SuccessRate ?? 0,
-                ErrorRate = 100 - (provider.SuccessRate ?? 0)
+                CheckedAt = DateTime.UtcNow,
+                ResponseTimeMs = provider.AverageResponseTimeMs ?? 0,
+                ErrorRate = 100 - (provider.SuccessRate ?? 0),
+                AvailableCapacity = 100,
+                Issues = provider.IsHealthy ? new List<string>() : new List<string> { "Provider is unhealthy" }
             };
 
             return healthStatus;
@@ -354,15 +323,14 @@ public class AIOrchestrationService : IAIOrchestrationService
             _logger.LogError(ex, "Error checking provider health: {ProviderId}", providerId);
             return new AIProviderHealthStatus
             {
-                ProviderId = providerId,
                 IsHealthy = false,
-                Status = $"Health check failed: {ex.Message}",
-                LastChecked = DateTime.UtcNow
+                CheckedAt = DateTime.UtcNow,
+                Issues = new List<string> { $"Health check failed: {ex.Message}" }
             };
         }
     }
 
-    public async Task UpdateProviderMetricsAsync(Guid providerId, AIProviderMetrics metrics, CancellationToken cancellationToken = default)
+    public async Task UpdateProviderMetricsAsync(Guid providerId, AIProviderMetrics metrics)
     {
         try
         {
@@ -374,9 +342,9 @@ public class AIOrchestrationService : IAIOrchestrationService
             }
 
             provider.SuccessRate = metrics.SuccessRate;
-            provider.AverageResponseTime = metrics.AverageResponseTime;
-            provider.AverageCost = metrics.AverageCost;
-            provider.IsHealthy = metrics.IsHealthy;
+            provider.AverageResponseTimeMs = (long)metrics.AverageResponseTimeMs;
+            provider.TotalCost = metrics.TotalCost;
+            provider.IsHealthy = metrics.SuccessRate > 80;
             provider.UpdatedAt = DateTime.UtcNow;
 
             await _providerRepository.UpdateAsync(provider);
@@ -404,19 +372,21 @@ public class AIOrchestrationService : IAIOrchestrationService
             if (userId.HasValue)
                 query = query.Where(t => t.UserId == userId.Value);
 
-            var tasks = await _aiTaskRepository.FindAsync(
-                query.OrderByDescending(t => t.CreatedAt).Take(limit).ToList().AsQueryable());
+            var tasks = await _aiTaskRepository.GetAsync(
+                projectId.HasValue ? t => t.ProjectId == projectId.Value : null,
+                orderBy: q => q.OrderByDescending(t => t.CreatedAt),
+                take: limit);
 
             var results = tasks.Select(task => new AITaskResult
             {
                 TaskId = task.Id,
-                Status = task.Status,
-                Output = task.Output,
+                Success = task.Status == AITaskStatus.Completed,
+                ResultData = task.OutputData,
                 ErrorMessage = task.ErrorMessage,
-                ExecutionTime = task.ExecutionTime ?? TimeSpan.Zero,
+                ExecutionTimeMs = task.ProcessingTimeMs ?? 0,
                 Cost = task.Cost ?? 0,
                 QualityScore = task.QualityScore ?? 0,
-                ProviderId = task.ProviderId
+                Provider = AIProvider.OpenAI
             }).ToList();
 
             _logger.LogInformation("Retrieved {Count} task history records", results.Count);
@@ -443,12 +413,11 @@ public class AIOrchestrationService : IAIOrchestrationService
             var result = new AITaskResult
             {
                 TaskId = task.Id,
-                Status = AITaskStatus.Completed,
-                Output = $"Mock AI task result for {task.TaskType}",
-                ExecutionTime = executionTime,
+                Success = true,
+                ResultData = $"Mock AI task result for {task.TaskType}",
+                ExecutionTimeMs = (long)executionTime.TotalMilliseconds,
                 Cost = 0.10m,
-                QualityScore = 0.95m,
-                ProviderId = provider.Id
+                Provider = AIProvider.OpenAI
             };
 
             await LogAuditAsync("AI_TASK_EXECUTED", $"AI task executed with provider {provider.Name}", task.Id);
@@ -460,12 +429,10 @@ public class AIOrchestrationService : IAIOrchestrationService
             return new AITaskResult
             {
                 TaskId = task.Id,
-                Status = AITaskStatus.Cancelled,
+                Success = false,
                 ErrorMessage = "Task was cancelled",
-                ExecutionTime = TimeSpan.Zero,
-                Cost = 0,
-                QualityScore = 0,
-                ProviderId = provider.Id
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
             };
         }
         catch (Exception ex)
@@ -474,12 +441,10 @@ public class AIOrchestrationService : IAIOrchestrationService
             return new AITaskResult
             {
                 TaskId = task.Id,
-                Status = AITaskStatus.Failed,
+                Success = false,
                 ErrorMessage = ex.Message,
-                ExecutionTime = TimeSpan.Zero,
-                Cost = 0,
-                QualityScore = 0,
-                ProviderId = provider.Id
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
             };
         }
     }
@@ -489,20 +454,67 @@ public class AIOrchestrationService : IAIOrchestrationService
         if (requirements.MaxCost.HasValue && provider.AverageCost > requirements.MaxCost.Value)
             return false;
 
-        if (requirements.MaxResponseTime.HasValue && provider.AverageResponseTime > requirements.MaxResponseTime.Value)
-            return false;
-
-        if (requirements.MinQualityScore.HasValue && (provider.SuccessRate ?? 0) < requirements.MinQualityScore.Value)
-            return false;
-
-        if (requirements.RequiredCapabilities?.Any() == true)
-        {
-            var providerCapabilities = provider.Capabilities ?? new List<string>();
-            if (!requirements.RequiredCapabilities.All(cap => providerCapabilities.Contains(cap)))
-                return false;
-        }
 
         return true;
+    }
+
+    public async Task<AITaskResult> RetryTaskAsync(Guid taskId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var task = await _aiTaskRepository.GetByIdAsync(taskId);
+            if (task == null)
+            {
+                _logger.LogWarning("AI task not found for retry: {TaskId}", taskId);
+                return new AITaskResult
+                {
+                    TaskId = taskId,
+                    Success = false,
+                    ErrorMessage = "Task not found",
+                    ExecutionTimeMs = 0,
+                    Provider = AIProvider.OpenAI
+                };
+            }
+
+            if (task.Status != AITaskStatus.Failed)
+            {
+                _logger.LogWarning("Cannot retry task that is not in failed status: {Status}", task.Status);
+                return new AITaskResult
+                {
+                    TaskId = taskId,
+                    Success = false,
+                    ErrorMessage = "Task is not in failed status",
+                    ExecutionTimeMs = 0,
+                    Provider = AIProvider.OpenAI
+                };
+            }
+
+            task.Status = AITaskStatus.Pending;
+            task.ErrorMessage = null;
+            task.UpdatedAt = DateTime.UtcNow;
+
+            await _aiTaskRepository.UpdateAsync(task);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("AI_TASK_RETRY", $"AI task retry initiated: {taskId}", taskId);
+
+            var result = await ExecuteTaskAsync(task, cancellationToken);
+
+            _logger.LogInformation("AI task retried: {TaskId} with status {Status}", taskId, result.Success);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrying task: {TaskId}", taskId);
+            return new AITaskResult
+            {
+                TaskId = taskId,
+                Success = false,
+                ErrorMessage = ex.Message,
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
+            };
+        }
     }
 
     private async Task LogAuditAsync(string action, string description, Guid? entityId = null)
@@ -514,12 +526,12 @@ public class AIOrchestrationService : IAIOrchestrationService
                 Id = Guid.NewGuid(),
                 Action = action,
                 EntityName = "AITask",
-                EntityId = entityId,
+                EntityId = entityId ?? Guid.Empty,
                 Description = description,
                 UserId = _tenantProvider.GetCurrentUserId(),
                 TenantId = _tenantProvider.GetTenantId(),
                 Timestamp = DateTime.UtcNow,
-                IpAddress = "127.0.0.1"
+                IPAddress = "127.0.0.1"
             };
 
             await _auditLogRepository.AddAsync(auditLog);
@@ -528,5 +540,83 @@ public class AIOrchestrationService : IAIOrchestrationService
         {
             _logger.LogError(ex, "Error logging audit: {Action}", action);
         }
+    }
+
+    public async Task<AITaskResult> CreateAITaskAsync(CreateAITaskRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task creation not yet implemented");
+    }
+
+    public async Task<AITaskResult> ExecuteAITaskAsync(Guid taskId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task execution not yet implemented");
+    }
+
+    public async Task<AITaskStatus> GetAITaskStatusAsync(Guid taskId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task status retrieval not yet implemented");
+    }
+
+    public async Task<bool> CancelAITaskAsync(Guid taskId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task cancellation not yet implemented");
+    }
+
+    public async Task<AITaskResult> GetAITaskResultsAsync(Guid taskId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task results retrieval not yet implemented");
+    }
+
+    public async Task<IEnumerable<AITask>> GetProjectAITasksAsync(Guid projectId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Project AI tasks retrieval not yet implemented");
+    }
+
+    public async Task<object> GetAITaskAnalyticsAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("AI task analytics not yet implemented");
+    }
+
+    public async Task<IEnumerable<AIProviderConfiguration>> GetAvailableProvidersAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Available providers retrieval not yet implemented");
+    }
+
+    public async Task<AIProviderHealthStatus> CheckProviderHealthAsync(Guid providerId)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Provider health check not yet implemented");
+    }
+
+    public async Task<AIProviderConfiguration> ConfigureProviderAsync(ConfigureAIProviderRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Provider configuration not yet implemented");
+    }
+
+    public async Task<object> ExecuteBatchTasksAsync(ExecuteBatchAITasksRequest request)
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Batch tasks execution not yet implemented");
+    }
+
+    public async Task<object> GetQueueStatusAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Queue status retrieval not yet implemented");
+    }
+
+    public async Task<object> GetCostAnalysisAsync()
+    {
+        await Task.CompletedTask;
+        throw new NotImplementedException("Cost analysis not yet implemented");
     }
 }

@@ -56,9 +56,9 @@ public class NotificationService : INotificationService
                 Message = request.Message,
                 Type = request.Type,
                 Priority = request.Priority,
-                UserId = request.UserId,
+                RecipientUserId = request.RecipientUserIds.First(),
                 CreatedAt = DateTime.UtcNow,
-                IsRead = false,
+                Status = NotificationStatus.Pending,
                 TenantId = tenantId,
                 Data = request.Data != null ? JsonSerializer.Serialize(request.Data) : null
             };
@@ -71,18 +71,17 @@ public class NotificationService : INotificationService
             await LogAuditAsync("NOTIFICATION_SENT", $"Notification sent: {notification.Title}", notification.Id);
 
             var notificationDto = _mapper.Map<NotificationDto>(notification);
-            _logger.LogInformation("Notification sent: {NotificationId} to user {UserId}", notification.Id, request.UserId);
+            _logger.LogInformation("Notification sent: {NotificationId} to users {UserIds}", notification.Id, string.Join(",", request.RecipientUserIds ?? new List<Guid>()));
 
             return new NotificationResponse
             {
                 Success = true,
-                Message = "Notification sent successfully",
-                Notification = notificationDto
+                Message = "Notification sent successfully"
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending notification to user: {UserId}", request.UserId);
+            _logger.LogError(ex, "Error sending notification to users: {UserIds}", string.Join(",", request.RecipientUserIds ?? new List<Guid>()));
             return new NotificationResponse
             {
                 Success = false,
@@ -91,13 +90,13 @@ public class NotificationService : INotificationService
         }
     }
 
-    public async Task<NotificationResponse> SendEmailNotificationAsync(SendEmailNotificationRequest request)
+    public Task<NotificationResponse> SendEmailNotificationAsync(SendEmailNotificationRequest request)
     {
         try
         {
             _logger.LogInformation("Sending email notification to: {To}, Subject: {Subject}", request.ToEmail, request.Subject);
 
-            return new NotificationResponse
+            return Task.FromResult(new NotificationResponse
             {
                 Success = true,
                 Message = "Email sent successfully",
@@ -105,18 +104,18 @@ public class NotificationService : INotificationService
                 NotificationSent = true,
                 SentAt = DateTime.UtcNow,
                 DeliveryStatus = "Sent"
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email notification to: {To}", request.ToEmail);
-            return new NotificationResponse
+            return Task.FromResult(new NotificationResponse
             {
                 Success = false,
                 Message = "Failed to send email",
                 NotificationSent = false,
                 DeliveryStatus = "Failed"
-            };
+            });
         }
     }
 
@@ -326,20 +325,11 @@ public class NotificationService : INotificationService
             var successCount = 0;
             var failureCount = 0;
 
-            foreach (var userId in request.UserIds)
+            foreach (var notification in request.Notifications)
             {
                 try
                 {
-                    var individualRequest = new SendNotificationRequest
-                    {
-                        UserId = userId,
-                        Title = request.Title,
-                        Message = request.Message,
-                        Type = request.Type,
-                        Priority = request.Priority,
-                        Data = request.Data,
-                        Channels = request.Channels
-                    };
+                    var individualRequest = notification;
 
                     var result = await SendNotificationAsync(individualRequest);
                     if (result.Success)
@@ -349,7 +339,7 @@ public class NotificationService : INotificationService
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error sending bulk notification to user: {UserId}", userId);
+                    _logger.LogError(ex, "Error sending bulk notification to users: {UserIds}", string.Join(",", notification.RecipientUserIds));
                     failureCount++;
                 }
             }
@@ -394,12 +384,12 @@ public class NotificationService : INotificationService
 
             var request = new SendNotificationRequest
             {
-                UserId = userId,
+                RecipientUserIds = new List<Guid> { userId },
                 Title = title,
                 Message = message,
-                Type = NotificationType.Info,
-                Priority = NotificationPriority.Medium,
-                Data = data,
+                Type = NotificationType.InApp,
+                Priority = NotificationPriority.Normal,
+                Data = data?.ToString(),
                 Channels = new List<NotificationChannel> { NotificationChannel.InApp, NotificationChannel.RealTime }
             };
 
@@ -523,18 +513,18 @@ public class NotificationService : INotificationService
                 switch (channel)
                 {
                     case NotificationChannel.Email:
-                        await SendEmailNotificationAsync(notification.UserId, notification.Title, notification.Message);
+                        await SendEmailNotificationAsync(notification.RecipientUserId, notification.Title, notification.Message);
                         break;
                     case NotificationChannel.SMS:
-                        await SendSmsNotificationAsync(notification.UserId, notification.Message);
+                        await SendSmsNotificationAsync(notification.RecipientUserId, notification.Message);
                         break;
                     case NotificationChannel.Push:
-                        await SendPushNotificationAsync(notification.UserId, notification.Title, notification.Message);
+                        await SendPushNotificationAsync(notification.RecipientUserId, notification.Title, notification.Message);
                         break;
                     case NotificationChannel.RealTime:
                         if (_hubContext != null)
                         {
-                            await _hubContext.Clients.User(notification.UserId.ToString())
+                            await _hubContext.Clients.User(notification.RecipientUserId.ToString())
                                 .SendAsync("ReceiveNotification", notification);
                         }
                         break;
@@ -544,7 +534,7 @@ public class NotificationService : INotificationService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending notification via {Channel} to user {UserId}", channel, notification.UserId);
+                _logger.LogError(ex, "Error sending notification via {Channel} to user {UserId}", channel, notification.RecipientUserId);
             }
         }
     }
@@ -558,12 +548,12 @@ public class NotificationService : INotificationService
                 Id = Guid.NewGuid(),
                 Action = action,
                 EntityName = "Notification",
-                EntityId = entityId,
+                EntityId = entityId ?? Guid.Empty,
                 Description = description,
                 UserId = _tenantProvider.GetCurrentUserId(),
                 TenantId = _tenantProvider.GetTenantId(),
                 Timestamp = DateTime.UtcNow,
-                IpAddress = "127.0.0.1"
+                IPAddress = "127.0.0.1"
             };
 
             await _auditLogRepository.AddAsync(auditLog);

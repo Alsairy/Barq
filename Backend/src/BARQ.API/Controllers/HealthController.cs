@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using BARQ.Shared.DTOs;
+using System.Diagnostics;
 
 namespace BARQ.API.Controllers;
 

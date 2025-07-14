@@ -64,6 +64,24 @@ public class Project : TenantEntity
     public decimal? Budget { get; set; }
 
     /// <summary>
+    /// </summary>
+    public decimal? ActualCost { get; set; }
+
+    /// <summary>
+    /// Project progress percentage (0-100)
+    /// </summary>
+    public decimal? ProgressPercentage { get; set; }
+
+    /// <summary>
+    /// Project end date (alias for TargetEndDate for compatibility)
+    /// </summary>
+    public DateTime? EndDate 
+    { 
+        get => TargetEndDate; 
+        set => TargetEndDate = value; 
+    }
+
+    /// <summary>
     /// Technology stack configuration as JSON
     /// </summary>
     public string? TechnologyStack { get; set; }
@@ -107,6 +125,24 @@ public class Project : TenantEntity
     /// </summary>
     public Guid ProjectOwnerId { get; set; }
     public virtual User ProjectOwner { get; set; } = null!;
+
+    /// <summary>
+    /// Project manager ID (alias for ProjectOwnerId for compatibility)
+    /// </summary>
+    public Guid ProjectManagerId 
+    { 
+        get => ProjectOwnerId; 
+        set => ProjectOwnerId = value; 
+    }
+
+    /// <summary>
+    /// Organization ID (from TenantEntity.TenantId for compatibility)
+    /// </summary>
+    public Guid OrganizationId 
+    { 
+        get => TenantId; 
+        set => TenantId = value; 
+    }
 
     /// <summary>
     /// Organization this project belongs to

@@ -90,6 +90,30 @@ public class AIProviderConfiguration : TenantEntity
     public long? AverageResponseTimeMs { get; set; }
 
     /// <summary>
+    /// Average response time (alias for AverageResponseTimeMs for compatibility)
+    /// </summary>
+    public long? AverageResponseTime 
+    { 
+        get => AverageResponseTimeMs; 
+        set => AverageResponseTimeMs = value; 
+    }
+
+    /// <summary>
+    /// Total cost for this provider
+    /// </summary>
+    public decimal? TotalCost { get; set; }
+
+    /// <summary>
+    /// Average cost per request
+    /// </summary>
+    public decimal? AverageCost { get; set; }
+
+    /// <summary>
+    /// Provider capabilities as JSON array
+    /// </summary>
+    public string? Capabilities { get; set; }
+
+    /// <summary>
     /// Success rate percentage
     /// </summary>
     public decimal? SuccessRate { get; set; }
