@@ -189,6 +189,30 @@ builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(
     client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Security-Monitor/1.0");
 });
 
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IIntegrationGatewayService, BARQ.Application.Services.Integration.IntegrationGatewayService>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IMessageOrchestrationService, BARQ.Application.Services.Integration.MessageOrchestrationService>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IIntegrationMonitoringService, BARQ.Application.Services.Integration.IntegrationMonitoringService>();
+
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.RestProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.SoapProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.GraphQLProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.RestProtocolAdapter>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.SoapProtocolAdapter>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.GraphQLProtocolAdapter>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
