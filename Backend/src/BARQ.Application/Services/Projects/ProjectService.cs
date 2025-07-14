@@ -7,7 +7,6 @@ using BARQ.Core.Models.Responses;
 using BARQ.Core.Entities;
 using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
-using BARQ.Core.Services;
 
 namespace BARQ.Application.Services.Projects;
 
