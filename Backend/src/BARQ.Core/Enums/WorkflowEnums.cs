@@ -87,6 +87,11 @@ public enum WorkflowStatus
     WaitingForApproval = 2,
 
     /// <summary>
+    /// Workflow is pending approval (alias for WaitingForApproval)
+    /// </summary>
+    PendingApproval = 2,
+
+    /// <summary>
     /// Workflow is approved and completed
     /// </summary>
     Approved = 3,
@@ -114,6 +119,21 @@ public enum WorkflowStatus
     /// <summary>
     /// Workflow is escalated
     /// </summary>
-    Escalated = 8
+    Escalated = 8,
+
+    /// <summary>
+    /// Workflow status is unknown
+    /// </summary>
+    Unknown = 9,
+
+    /// <summary>
+    /// Workflow is created but not started
+    /// </summary>
+    Created = 10,
+
+    /// <summary>
+    /// Workflow is completed
+    /// </summary>
+    Completed = 11
 }
 

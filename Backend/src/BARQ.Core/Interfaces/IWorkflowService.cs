@@ -1,5 +1,6 @@
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
+using BARQ.Core.Models.Requests;
 
 namespace BARQ.Core.Interfaces;
 
@@ -122,6 +123,16 @@ public interface IWorkflowService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Notification result</returns>
     Task<bool> SendWorkflowNotificationAsync(Guid instanceId, WorkflowNotificationType notificationType, CancellationToken cancellationToken = default);
+
+    Task<WorkflowInstance> CreateWorkflowAsync(CreateWorkflowRequest request);
+    Task<WorkflowExecutionResult> ApproveWorkflowAsync(ApproveWorkflowRequest request);
+    Task<WorkflowExecutionResult> RejectWorkflowAsync(RejectWorkflowRequest request);
+    Task<IEnumerable<WorkflowInstance>> GetProjectWorkflowsAsync(Guid projectId);
+    Task<object> GetWorkflowAnalyticsAsync();
+    Task<IEnumerable<WorkflowTemplate>> GetWorkflowTemplatesAsync();
+    Task<WorkflowTemplate> CreateWorkflowTemplateAsync(CreateWorkflowTemplateRequest request);
+    Task<object> CheckSlaBreachesAsync();
+    Task<object> GetWorkflowPerformanceAsync();
 }
 
 /// <summary>
@@ -181,6 +192,15 @@ public class WorkflowInstanceStatus
     public Guid InstanceId { get; set; }
 
     /// <summary>
+    /// Workflow instance ID (alias for InstanceId)
+    /// </summary>
+    public Guid WorkflowInstanceId 
+    { 
+        get => InstanceId; 
+        set => InstanceId = value; 
+    }
+
+    /// <summary>
     /// Current status
     /// </summary>
     public WorkflowStatus Status { get; set; }
@@ -194,6 +214,15 @@ public class WorkflowInstanceStatus
     /// Current step name
     /// </summary>
     public string? CurrentStepName { get; set; }
+
+    /// <summary>
+    /// Current step (alias for CurrentStepName)
+    /// </summary>
+    public string? CurrentStep 
+    { 
+        get => CurrentStepName; 
+        set => CurrentStepName = value; 
+    }
 
     /// <summary>
     /// Current assignee
@@ -221,6 +250,15 @@ public class WorkflowInstanceStatus
     public decimal ProgressPercentage { get; set; }
 
     /// <summary>
+    /// Progress (alias for ProgressPercentage)
+    /// </summary>
+    public decimal Progress 
+    { 
+        get => ProgressPercentage; 
+        set => ProgressPercentage = value; 
+    }
+
+    /// <summary>
     /// Total steps
     /// </summary>
     public int TotalSteps { get; set; }
@@ -229,6 +267,29 @@ public class WorkflowInstanceStatus
     /// Completed steps
     /// </summary>
     public int CompletedSteps { get; set; }
+
+    /// <summary>
+    /// Created at timestamp
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public DateTime? StartedAt { get; set; }
+
+    /// <summary>
+    /// Completed at timestamp
+    /// </summary>
+    public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public DateTime LastUpdated { get; set; }
+
+    /// <summary>
+    /// Error message if any
+    /// </summary>
+    public string? ErrorMessage { get; set; }
 }
 
 /// <summary>
@@ -242,6 +303,11 @@ public class WorkflowHistoryEntry
     public Guid Id { get; set; }
 
     /// <summary>
+    /// Workflow instance ID
+    /// </summary>
+    public Guid WorkflowInstanceId { get; set; }
+
+    /// <summary>
     /// Timestamp
     /// </summary>
     public DateTime Timestamp { get; set; }
@@ -250,6 +316,11 @@ public class WorkflowHistoryEntry
     /// Action performed
     /// </summary>
     public string Action { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Description of the action
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>
     /// User who performed the action
@@ -290,6 +361,11 @@ public class WorkflowHistoryEntry
     /// Additional data
     /// </summary>
     public string? AdditionalData { get; set; }
+
+    /// <summary>
+    /// Additional details
+    /// </summary>
+    public string? Details { get; set; }
 }
 
 /// <summary>

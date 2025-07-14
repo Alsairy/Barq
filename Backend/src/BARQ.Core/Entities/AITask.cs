@@ -34,7 +34,7 @@ public class AITask : TenantEntity
     /// <summary>
     /// AI task priority
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Input data for the AI task as JSON
@@ -162,5 +162,13 @@ public class AITask : TenantEntity
     /// </summary>
     public Guid? AssigneeId { get; set; }
     public virtual User? Assignee { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public Guid? UserId 
+    { 
+        get => AssigneeId; 
+        set => AssigneeId = value; 
+    }
 }
 

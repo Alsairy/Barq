@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using BARQ.Core.Services;
 
 namespace BARQ.Infrastructure.MultiTenancy;
 
@@ -42,5 +43,42 @@ public class TenantProvider : ITenantProvider
     public void SetTenantId(Guid tenantId)
     {
         _tenantId = tenantId;
+    }
+
+    public void SetTenantContext(Guid tenantId, string tenantName)
+    {
+        _tenantId = tenantId;
+    }
+
+    public void ClearTenantContext()
+    {
+        _tenantId = Guid.Empty;
+    }
+
+    public Guid GetCurrentUserId()
+    {
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext?.User?.FindFirst("UserId")?.Value != null)
+        {
+            if (Guid.TryParse(httpContext.User.FindFirst("UserId")?.Value, out var userId))
+            {
+                return userId;
+            }
+        }
+        return Guid.Empty;
+    }
+
+    public string GetTenantName()
+    {
+        return "Default Tenant";
+    }
+
+    public void SetTenantName(string tenantName)
+    {
+    }
+
+    public bool IsMultiTenant()
+    {
+        return true; // This application supports multi-tenancy
     }
 }

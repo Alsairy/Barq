@@ -1,3 +1,5 @@
+using BARQ.Core.Enums;
+
 namespace BARQ.Core.Models.Requests;
 
 public class SendEmailNotificationRequest
@@ -57,4 +59,28 @@ public class UpdateNotificationPreferencesRequest
     public bool PushNotifications { get; set; }
     public bool WorkflowNotifications { get; set; }
     public Dictionary<string, bool> NotificationTypes { get; set; } = new();
+}
+
+public class SendNotificationRequest
+{
+    public List<Guid> RecipientUserIds { get; set; } = new();
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public NotificationType Type { get; set; }
+    public NotificationPriority Priority { get; set; } = NotificationPriority.Normal;
+    public List<NotificationChannel> Channels { get; set; } = new();
+    public string? Data { get; set; }
+    public DateTime? ScheduledAt { get; set; }
+    public bool RequireAcknowledgment { get; set; }
+    public Guid? ProjectId { get; set; }
+    public Guid? WorkflowInstanceId { get; set; }
+    public Guid? AITaskId { get; set; }
+}
+
+public class SendBulkNotificationRequest
+{
+    public List<SendNotificationRequest> Notifications { get; set; } = new();
+    public bool ProcessInBatches { get; set; } = true;
+    public int BatchSize { get; set; } = 100;
+    public TimeSpan? DelayBetweenBatches { get; set; }
 }

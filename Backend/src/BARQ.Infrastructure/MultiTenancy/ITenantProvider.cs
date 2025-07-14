@@ -1,7 +1,1 @@
-namespace BARQ.Infrastructure.MultiTenancy;
-
-public interface ITenantProvider
-{
-    Guid GetTenantId();
-    void SetTenantId(Guid tenantId);
-}
+// This interface has been moved to BARQ.Core.Services.ITenantProvider

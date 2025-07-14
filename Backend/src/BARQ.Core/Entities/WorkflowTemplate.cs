@@ -48,6 +48,10 @@ public class WorkflowTemplate : TenantEntity
     public string? SLAConfiguration { get; set; }
 
     /// <summary>
+    /// </summary>
+    public int? SlaHours { get; set; }
+
+    /// <summary>
     /// Escalation rules as JSON
     /// </summary>
     public string? EscalationRules { get; set; }

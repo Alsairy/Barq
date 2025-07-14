@@ -93,4 +93,9 @@ public class GenericRepository<T> : IRepository<T> where T : class
     {
         return await _dbSet.AnyAsync(predicate, cancellationToken);
     }
+
+    public virtual IQueryable<T> GetQueryable()
+    {
+        return _dbSet.AsQueryable();
+    }
 }

@@ -37,6 +37,15 @@ public class WorkflowInstance : TenantEntity
     public string? WorkflowData { get; set; }
 
     /// <summary>
+    /// Workflow data (alias for WorkflowData for compatibility)
+    /// </summary>
+    public string? Data 
+    { 
+        get => WorkflowData; 
+        set => WorkflowData = value; 
+    }
+
+    /// <summary>
     /// Approval history as JSON array
     /// </summary>
     public string? ApprovalHistory { get; set; }
@@ -59,13 +68,18 @@ public class WorkflowInstance : TenantEntity
     /// <summary>
     /// Priority level
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Workflow template used
     /// </summary>
     public Guid WorkflowTemplateId { get; set; }
     public virtual WorkflowTemplate WorkflowTemplate { get; set; } = null!;
+
+    /// <summary>
+    /// Workflow type (from template for compatibility)
+    /// </summary>
+    public string? WorkflowType => WorkflowTemplate?.Name;
 
     /// <summary>
     /// Project this workflow belongs to
@@ -96,6 +110,14 @@ public class WorkflowInstance : TenantEntity
     /// </summary>
     public Guid InitiatorId { get; set; }
     public virtual User Initiator { get; set; } = null!;
+
+    /// <summary>
+    /// </summary>
+    public virtual User? CreatedBy => Initiator;
+
+    /// <summary>
+    /// </summary>
+    public virtual User? StartedBy => Initiator;
 
     /// <summary>
     /// AI tasks related to this workflow

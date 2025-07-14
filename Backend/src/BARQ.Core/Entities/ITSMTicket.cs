@@ -29,7 +29,7 @@ public class ITSMTicket : TenantEntity
     /// <summary>
     /// Ticket priority
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Ticket status

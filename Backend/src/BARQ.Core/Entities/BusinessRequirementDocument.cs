@@ -19,7 +19,7 @@ public class BusinessRequirementDocument : TenantEntity
     
     public ReviewStatus Status { get; set; } = ReviewStatus.Pending;
     
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
     
     public DateTime? ApprovedAt { get; set; }
     

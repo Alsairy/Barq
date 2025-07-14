@@ -1,5 +1,6 @@
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
+using BARQ.Core.Models.Requests;
 
 namespace BARQ.Core.Interfaces;
 
@@ -78,6 +79,20 @@ public interface IAIOrchestrationService
     /// <param name="metrics">Performance metrics</param>
     /// <returns>Update result</returns>
     Task UpdateProviderMetricsAsync(Guid providerId, AIProviderMetrics metrics);
+
+    Task<AITaskResult> CreateAITaskAsync(CreateAITaskRequest request);
+    Task<AITaskResult> ExecuteAITaskAsync(Guid taskId);
+    Task<AITaskStatus> GetAITaskStatusAsync(Guid taskId);
+    Task<bool> CancelAITaskAsync(Guid taskId);
+    Task<AITaskResult> GetAITaskResultsAsync(Guid taskId);
+    Task<IEnumerable<AITask>> GetProjectAITasksAsync(Guid projectId);
+    Task<object> GetAITaskAnalyticsAsync();
+    Task<IEnumerable<AIProviderConfiguration>> GetAvailableProvidersAsync();
+    Task<AIProviderHealthStatus> CheckProviderHealthAsync(Guid providerId);
+    Task<AIProviderConfiguration> ConfigureProviderAsync(ConfigureAIProviderRequest request);
+    Task<object> ExecuteBatchTasksAsync(ExecuteBatchAITasksRequest request);
+    Task<object> GetQueueStatusAsync();
+    Task<object> GetCostAnalysisAsync();
 }
 
 /// <summary>

@@ -63,9 +63,9 @@ public enum ProjectStatus
 }
 
 /// <summary>
-/// Priority enumeration
+/// Project priority enumeration
 /// </summary>
-public enum Priority
+public enum ProjectPriority
 {
     /// <summary>
     /// Low priority
@@ -86,5 +86,94 @@ public enum Priority
     /// Critical priority
     /// </summary>
     Critical = 3
+}
+
+/// <summary>
+/// Project role enumeration
+/// </summary>
+public enum ProjectRole
+{
+    /// <summary>
+    /// Project manager
+    /// </summary>
+    ProjectManager = 0,
+
+    /// <summary>
+    /// </summary>
+    Developer = 1,
+
+    /// <summary>
+    /// </summary>
+    Designer = 2,
+
+    /// <summary>
+    /// </summary>
+    QualityAssurance = 3,
+
+    /// <summary>
+    /// </summary>
+    BusinessAnalyst = 4,
+
+    /// <summary>
+    /// </summary>
+    DevOpsEngineer = 5,
+
+    /// <summary>
+    /// </summary>
+    Stakeholder = 6
+}
+
+/// <summary>
+/// Risk level enumeration
+/// </summary>
+public enum RiskLevel
+{
+    /// <summary>
+    /// </summary>
+    Low = 0,
+
+    /// <summary>
+    /// Medium risk
+    /// </summary>
+    Medium = 1,
+
+    /// <summary>
+    /// </summary>
+    High = 2,
+
+    /// <summary>
+    /// Critical risk
+    /// </summary>
+    Critical = 3
+}
+
+/// <summary>
+/// Risk status enumeration
+/// </summary>
+public enum RiskStatus
+{
+    /// <summary>
+    /// </summary>
+    Identified = 0,
+
+    /// <summary>
+    /// </summary>
+    Analyzing = 1,
+
+    /// <summary>
+    /// </summary>
+    Mitigating = 2,
+
+    /// <summary>
+    /// </summary>
+    Resolved = 3,
+
+    /// <summary>
+    /// </summary>
+    Accepted = 4,
+
+    /// <summary>
+    /// </summary>
+    Escalated = 5
 }
 
