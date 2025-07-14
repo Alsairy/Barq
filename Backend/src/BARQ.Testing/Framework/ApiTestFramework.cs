@@ -14,7 +14,7 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _connectionString = "Server=(localdb)\\mssqllocaldb;Database=BarqTestDb;Trusted_Connection=true;MultipleActiveResultSets=true";
+    private readonly string _connectionString = "Server=localhost,1433;Database=BarqTestDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;";
     
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

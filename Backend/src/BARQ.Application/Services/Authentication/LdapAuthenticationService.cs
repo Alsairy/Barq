@@ -497,28 +497,113 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         {
             await Task.CompletedTask;
             
-            if (username == "testuser" && password == "testpass")
+            // using System.DirectoryServices.Protocols or similar library
+            
+            using var connection = new LdapConnection(new LdapDirectoryIdentifier(config.Host, config.Port));
+            
+            if (config.UseSsl)
             {
-                return new LdapUserInfo
+                connection.SessionOptions.SecureSocketLayer = true;
+            }
+            
+            if (config.UseStartTls)
+            {
+                connection.SessionOptions.StartTransportLayerSecurity(null);
+            }
+            
+            connection.Timeout = TimeSpan.FromMilliseconds(config.ConnectionTimeout);
+            
+            if (!string.IsNullOrEmpty(config.BindDn) && !string.IsNullOrEmpty(config.BindPassword))
+            {
+                var bindCredential = new NetworkCredential(config.BindDn, config.BindPassword);
+                connection.Bind(bindCredential);
+            }
+            
+            var searchFilter = config.UserSearchFilter.Replace("{0}", username);
+            var searchRequest = new SearchRequest(config.BaseDn, searchFilter, SearchScope.Subtree);
+            searchRequest.Attributes.Add("cn");
+            searchRequest.Attributes.Add("mail");
+            searchRequest.Attributes.Add("givenName");
+            searchRequest.Attributes.Add("sn");
+            searchRequest.Attributes.Add("displayName");
+            searchRequest.Attributes.Add("memberOf");
+            
+            var searchResponse = (SearchResponse)connection.SendRequest(searchRequest);
+            
+            if (searchResponse.Entries.Count == 0)
+            {
+                _logger.LogWarning("LDAP user not found: {Username}", username);
+                return null;
+            }
+            
+            var userEntry = searchResponse.Entries[0];
+            var userDn = userEntry.DistinguishedName;
+            
+            try
+            {
+                var userCredential = new NetworkCredential(userDn, password);
+                using var userConnection = new LdapConnection(new LdapDirectoryIdentifier(config.Host, config.Port));
+                
+                if (config.UseSsl)
+                {
+                    userConnection.SessionOptions.SecureSocketLayer = true;
+                }
+                
+                userConnection.Bind(userCredential);
+                
+                var ldapUser = new LdapUserInfo
                 {
                     Username = username,
-                    Email = "testuser@example.com",
-                    FirstName = "Test",
-                    LastName = "User",
-                    DisplayName = "Test User",
-                    DistinguishedName = $"CN={username},{config.BaseDn}",
-                    Groups = new List<string> { "Users", "Developers" },
+                    Email = GetAttributeValue(userEntry, "mail") ?? $"{username}@{config.Host}",
+                    FirstName = GetAttributeValue(userEntry, "givenName") ?? "",
+                    LastName = GetAttributeValue(userEntry, "sn") ?? "",
+                    DisplayName = GetAttributeValue(userEntry, "displayName") ?? $"{username}",
+                    DistinguishedName = userDn,
+                    Groups = GetAttributeValues(userEntry, "memberOf"),
                     IsActive = true
                 };
+                
+                return ldapUser;
             }
-
-            return null;
+            catch (LdapException ex)
+            {
+                _logger.LogWarning("LDAP authentication failed for user {Username}: {Error}", username, ex.Message);
+                return null;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error authenticating with LDAP for user: {Username}", username);
             return null;
         }
+    }
+    
+    private string? GetAttributeValue(SearchResultEntry entry, string attributeName)
+    {
+        if (entry.Attributes.Contains(attributeName))
+        {
+            var attribute = entry.Attributes[attributeName];
+            return attribute.Count > 0 ? attribute[0] as string : null;
+        }
+        return null;
+    }
+    
+    private List<string> GetAttributeValues(SearchResultEntry entry, string attributeName)
+    {
+        var values = new List<string>();
+        if (entry.Attributes.Contains(attributeName))
+        {
+            var attribute = entry.Attributes[attributeName];
+            for (int i = 0; i < attribute.Count; i++)
+            {
+                if (attribute[i] is string value)
+                {
+                    var groupName = value.Split(',')[0].Replace("CN=", "");
+                    values.Add(groupName);
+                }
+            }
+        }
+        return values;
     }
 
     private async Task<User?> GetOrCreateUserFromLdapAsync(LdapConfiguration config, LdapUserInfo ldapUser)
@@ -726,6 +811,20 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         return Convert.ToBase64String(randomBytes);
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "your-super-secret-jwt-key-that-should-be-in-config";
+    private string GetJwtSecret() 
+    {
+        var secret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt:Secret in configuration.");
+        }
+        
+        if (secret.Length < 32)
+        {
+            throw new InvalidOperationException("JWT secret must be at least 32 characters long for security.");
+        }
+        
+        return secret;
+    }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
 }

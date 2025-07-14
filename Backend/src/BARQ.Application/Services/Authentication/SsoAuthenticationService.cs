@@ -660,19 +660,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
     {
         try
         {
-            var decodedResponse = Encoding.UTF8.GetString(Convert.FromBase64String(samlResponse));
-            
-            var claims = new List<Claim>();
-            
-            if (decodedResponse.Contains("test@example.com"))
-            {
-                claims.Add(new Claim(ClaimTypes.Email, "test@example.com"));
-                claims.Add(new Claim(ClaimTypes.Name, "Test User"));
-                claims.Add(new Claim(ClaimTypes.GivenName, "Test"));
-                claims.Add(new Claim(ClaimTypes.Surname, "User"));
-            }
-
-            return claims;
+            throw new NotImplementedException("SAML response parsing is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper SAML assertion validation with signature verification is required.");
         }
         catch (Exception ex)
         {
@@ -718,13 +706,13 @@ public class SsoAuthenticationService : ISsoAuthenticationService
     private async Task<OAuthTokenResponse?> ExchangeOAuthCodeForTokenAsync(string code)
     {
         await Task.CompletedTask;
-        return new OAuthTokenResponse { AccessToken = "mock_access_token", TokenType = "Bearer" };
+        throw new NotImplementedException("OAuth token exchange is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper OAuth code-to-token exchange with actual provider endpoints is required.");
     }
 
     private async Task<OAuthUserInfo?> GetOAuthUserInfoAsync(string accessToken)
     {
         await Task.CompletedTask;
-        return new OAuthUserInfo { Email = "test@example.com", Name = "Test User", GivenName = "Test", FamilyName = "User" };
+        throw new NotImplementedException("OAuth user info retrieval is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper OAuth user info endpoint integration is required.");
     }
 
     private async Task<User?> GetOrCreateUserFromOAuthUserInfoAsync(OAuthUserInfo userInfo)
@@ -770,16 +758,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
         try
         {
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.Email, "test@example.com"),
-                new(ClaimTypes.Name, "Test User"),
-                new(ClaimTypes.GivenName, "Test"),
-                new(ClaimTypes.Surname, "User"),
-                new("nonce", expectedNonce ?? "")
-            };
-
-            return claims;
+            throw new NotImplementedException("OpenID Connect ID token validation is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper JWT signature validation and claims parsing is required.");
         }
         catch (Exception ex)
         {
@@ -880,7 +859,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
             response.Errors.Add("SSO URL is required for SAML configuration");
 
         if (string.IsNullOrEmpty(ssoConfig.Certificate))
-            response.Warnings.Add("Certificate is recommended for SAML configuration");
+            response.Errors.Add("Certificate is required for SAML configuration - unsigned assertions are not allowed");
 
         if (response.ConfigurationDetails != null)
         {
@@ -975,7 +954,21 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         return Convert.ToBase64String(randomBytes);
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "your-super-secret-jwt-key-that-should-be-in-config";
+    private string GetJwtSecret() 
+    {
+        var secret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt:Secret in configuration.");
+        }
+        
+        if (secret.Length < 32)
+        {
+            throw new InvalidOperationException("JWT secret must be at least 32 characters long for security.");
+        }
+        
+        return secret;
+    }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
 
     private class OAuthTokenResponse
