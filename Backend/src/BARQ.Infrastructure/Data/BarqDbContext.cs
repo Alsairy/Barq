@@ -8,12 +8,12 @@ namespace BARQ.Infrastructure.Data;
 
 public class BarqDbContext : DbContext
 {
-    private readonly Guid _tenantId;
+    private readonly ITenantProvider _tenantProvider;
 
     public BarqDbContext(DbContextOptions<BarqDbContext> options, ITenantProvider tenantProvider) 
         : base(options)
     {
-        _tenantId = tenantProvider.GetTenantId();
+        _tenantProvider = tenantProvider;
     }
 
     public DbSet<Organization> Organizations { get; set; }
@@ -54,7 +54,7 @@ public class BarqDbContext : DbContext
 
     public void SetGlobalQuery<T>(ModelBuilder builder) where T : TenantEntity
     {
-        builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantId);
+        builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantProvider.GetTenantId());
     }
 
     public override int SaveChanges()
@@ -79,7 +79,7 @@ public class BarqDbContext : DbContext
                 case EntityState.Added:
                     entry.Entity.CreatedAt = DateTime.UtcNow;
                     if (entry.Entity is TenantEntity tenantEntity)
-                        tenantEntity.TenantId = _tenantId;
+                        tenantEntity.TenantId = _tenantProvider.GetTenantId();
                     break;
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
