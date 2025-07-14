@@ -1,4 +1,5 @@
 using BARQ.Core.Enums;
+using BARQ.Core.Interfaces;
 
 namespace BARQ.Core.Models.Requests;
 
@@ -26,13 +27,4 @@ public class UpdateAITaskRequest : AITaskRequest
     public AITaskStatus? Status { get; set; }
     public string? OutputData { get; set; }
     public string? ErrorMessage { get; set; }
-}
-
-public class AITaskRequirements
-{
-    public int MaxTokens { get; set; } = 1000;
-    public double Temperature { get; set; } = 0.7;
-    public string Model { get; set; } = string.Empty;
-    public List<string> RequiredCapabilities { get; set; } = new();
-    public Dictionary<string, object> AdditionalSettings { get; set; } = new();
 }
