@@ -2,9 +2,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Xml;
 using BARQ.Core.Services;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
@@ -18,13 +21,13 @@ public class SsoAuthenticationService : ISsoAuthenticationService
     private readonly IRepository<SsoConfiguration> _ssoConfigRepository;
     private readonly IRepository<User> _userRepository;
     private readonly IRepository<Organization> _organizationRepository;
+    private readonly HttpClient _httpClient;
     private readonly IAuthenticationService _authenticationService;
     private readonly IUserRoleService _userRoleService;
     private readonly ITenantProvider _tenantProvider;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SsoAuthenticationService> _logger;
-    private readonly HttpClient _httpClient;
 
     public SsoAuthenticationService(
         IRepository<SsoConfiguration> ssoConfigRepository,
@@ -660,11 +663,136 @@ public class SsoAuthenticationService : ISsoAuthenticationService
     {
         try
         {
-            throw new NotImplementedException("SAML response parsing is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper SAML assertion validation with signature verification is required.");
+            var decodedResponse = Encoding.UTF8.GetString(Convert.FromBase64String(samlResponse));
+            var xmlDoc = new XmlDocument();
+            xmlDoc.PreserveWhitespace = true;
+            xmlDoc.LoadXml(decodedResponse);
+
+            var tenantId = _tenantProvider.GetTenantId();
+            var ssoConfigs = _ssoConfigRepository.FindAsync(s => s.TenantId == tenantId && s.Provider.ToUpper() == "SAML").Result;
+            var ssoConfig = ssoConfigs.FirstOrDefault();
+
+            if (ssoConfig == null)
+            {
+                _logger.LogError("No SAML SSO configuration found for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(ssoConfig.Certificate))
+            {
+                _logger.LogError("SAML certificate is required but not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var signatureNodes = xmlDoc.GetElementsByTagName("Signature", "http://www.w3.org/2000/09/xmldsig#");
+            if (signatureNodes.Count == 0)
+            {
+                _logger.LogError("SAML response does not contain a signature - unsigned assertions are not allowed");
+                return null;
+            }
+
+            var signedXml = new SignedXml(xmlDoc);
+            var signatureElement = signatureNodes[0] as XmlElement;
+            if (signatureElement == null)
+            {
+                _logger.LogError("SAML signature node is not a valid XML element for tenant {TenantId}", tenantId);
+                return null;
+            }
+            signedXml.LoadXml(signatureElement);
+
+            var cert = new X509Certificate2(Convert.FromBase64String(ssoConfig.Certificate));
+            if (!signedXml.CheckSignature(cert, true))
+            {
+                _logger.LogError("SAML assertion signature validation failed for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var claims = ExtractClaimsFromSamlAssertion(xmlDoc, ssoConfig);
+            _logger.LogInformation("Successfully validated SAML assertion and extracted {ClaimCount} claims for tenant {TenantId}", 
+                claims?.Count ?? 0, tenantId);
+            
+            return claims;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error parsing SAML response");
+            _logger.LogError(ex, "Error parsing and validating SAML response");
+            return null;
+        }
+    }
+
+    private List<Claim>? ExtractClaimsFromSamlAssertion(XmlDocument xmlDoc, SsoConfiguration ssoConfig)
+    {
+        try
+        {
+            var claims = new List<Claim>();
+            var namespaceManager = new XmlNamespaceManager(xmlDoc.NameTable);
+            namespaceManager.AddNamespace("saml", "urn:oasis:names:tc:SAML:2.0:assertion");
+            namespaceManager.AddNamespace("samlp", "urn:oasis:names:tc:SAML:2.0:protocol");
+
+            var attributeStatements = xmlDoc.SelectNodes("//saml:AttributeStatement", namespaceManager);
+            if (attributeStatements == null || attributeStatements.Count == 0)
+            {
+                _logger.LogWarning("No AttributeStatement found in SAML assertion");
+                return claims;
+            }
+
+            var attributeMappings = string.IsNullOrEmpty(ssoConfig.AttributeMappings) 
+                ? new Dictionary<string, string>()
+                : JsonSerializer.Deserialize<Dictionary<string, string>>(ssoConfig.AttributeMappings) ?? new Dictionary<string, string>();
+
+            var defaultMappings = new Dictionary<string, string>
+            {
+                { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", ClaimTypes.Email },
+                { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname", ClaimTypes.GivenName },
+                { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname", ClaimTypes.Surname },
+                { "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", ClaimTypes.Name },
+                { "email", ClaimTypes.Email },
+                { "firstName", ClaimTypes.GivenName },
+                { "lastName", ClaimTypes.Surname },
+                { "displayName", ClaimTypes.Name }
+            };
+
+            foreach (XmlNode attributeStatement in attributeStatements)
+            {
+                var attributes = attributeStatement.SelectNodes("saml:Attribute", namespaceManager);
+                if (attributes == null) continue;
+
+                foreach (XmlNode attribute in attributes)
+                {
+                    var attributeName = attribute.Attributes?["Name"]?.Value;
+                    if (string.IsNullOrEmpty(attributeName)) continue;
+
+                    var attributeValues = attribute.SelectNodes("saml:AttributeValue", namespaceManager);
+                    if (attributeValues == null || attributeValues.Count == 0) continue;
+
+                    var claimType = attributeMappings.ContainsKey(attributeName) 
+                        ? attributeMappings[attributeName]
+                        : defaultMappings.ContainsKey(attributeName) 
+                            ? defaultMappings[attributeName] 
+                            : attributeName;
+
+                    foreach (XmlNode attributeValue in attributeValues)
+                    {
+                        var value = attributeValue.InnerText;
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            claims.Add(new Claim(claimType, value));
+                        }
+                    }
+                }
+            }
+
+            var subjectNode = xmlDoc.SelectSingleNode("//saml:Subject/saml:NameID", namespaceManager);
+            if (subjectNode != null && !string.IsNullOrEmpty(subjectNode.InnerText))
+            {
+                claims.Add(new Claim(ClaimTypes.NameIdentifier, subjectNode.InnerText));
+            }
+
+            return claims;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting claims from SAML assertion");
             return null;
         }
     }
@@ -705,14 +833,127 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
     private async Task<OAuthTokenResponse?> ExchangeOAuthCodeForTokenAsync(string code)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("OAuth token exchange is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper OAuth code-to-token exchange with actual provider endpoints is required.");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var ssoConfigs = await _ssoConfigRepository.FindAsync(s => s.TenantId == tenantId && s.Provider.ToUpper() == "OAUTH");
+            var ssoConfig = ssoConfigs.FirstOrDefault();
+
+            if (ssoConfig == null)
+            {
+                _logger.LogError("No OAuth SSO configuration found for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(ssoConfig.ClientId) || string.IsNullOrEmpty(ssoConfig.ClientSecret))
+            {
+                _logger.LogError("OAuth client credentials are not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var tokenEndpoint = GetTokenEndpointFromConfiguration(ssoConfig);
+            if (string.IsNullOrEmpty(tokenEndpoint))
+            {
+                _logger.LogError("OAuth token endpoint is not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var tokenRequest = new Dictionary<string, string>
+            {
+                {"grant_type", "authorization_code"},
+                {"code", code},
+                {"client_id", ssoConfig.ClientId},
+                {"client_secret", ssoConfig.ClientSecret},
+                {"redirect_uri", ssoConfig.CallbackUrl ?? ""}
+            };
+
+            var requestContent = new FormUrlEncodedContent(tokenRequest);
+            var response = await _httpClient.PostAsync(tokenEndpoint, requestContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("OAuth token exchange failed for tenant {TenantId}: {StatusCode} - {Error}", 
+                    tenantId, response.StatusCode, errorContent);
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonSerializer.Deserialize<OAuthTokenResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
+            {
+                _logger.LogError("Invalid OAuth token response received for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            _logger.LogInformation("Successfully exchanged OAuth code for access token for tenant {TenantId}", tenantId);
+            return tokenResponse;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exchanging OAuth code for token");
+            return null;
+        }
     }
 
     private async Task<OAuthUserInfo?> GetOAuthUserInfoAsync(string accessToken)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("OAuth user info retrieval is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper OAuth user info endpoint integration is required.");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var ssoConfigs = await _ssoConfigRepository.FindAsync(s => s.TenantId == tenantId && s.Provider.ToUpper() == "OAUTH");
+            var ssoConfig = ssoConfigs.FirstOrDefault();
+
+            if (ssoConfig == null)
+            {
+                _logger.LogError("No OAuth SSO configuration found for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var userInfoEndpoint = GetUserInfoEndpointFromConfiguration(ssoConfig);
+            if (string.IsNullOrEmpty(userInfoEndpoint))
+            {
+                _logger.LogError("OAuth user info endpoint is not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Get, userInfoEndpoint);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("OAuth user info request failed for tenant {TenantId}: {StatusCode} - {Error}", 
+                    tenantId, response.StatusCode, errorContent);
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var userInfo = JsonSerializer.Deserialize<OAuthUserInfo>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (userInfo == null || string.IsNullOrEmpty(userInfo.Email))
+            {
+                _logger.LogError("Invalid OAuth user info response received for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            _logger.LogInformation("Successfully retrieved OAuth user info for tenant {TenantId}", tenantId);
+            return userInfo;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving OAuth user info");
+            return null;
+        }
     }
 
     private async Task<User?> GetOrCreateUserFromOAuthUserInfoAsync(OAuthUserInfo userInfo)
@@ -747,8 +988,71 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
     private async Task<OpenIdConnectTokenResponse?> ExchangeOpenIdConnectCodeForTokenAsync(string code)
     {
-        await Task.CompletedTask;
-        return new OpenIdConnectTokenResponse { AccessToken = "mock_access_token", IdToken = "mock_id_token", TokenType = "Bearer" };
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var ssoConfigs = await _ssoConfigRepository.FindAsync(s => s.TenantId == tenantId && s.Provider.ToUpper() == "OPENIDCONNECT");
+            var ssoConfig = ssoConfigs.FirstOrDefault();
+
+            if (ssoConfig == null)
+            {
+                _logger.LogError("No OpenID Connect SSO configuration found for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(ssoConfig.ClientId) || string.IsNullOrEmpty(ssoConfig.ClientSecret))
+            {
+                _logger.LogError("OpenID Connect client credentials are not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var tokenEndpoint = GetOpenIdConnectTokenEndpointFromConfiguration(ssoConfig);
+            if (string.IsNullOrEmpty(tokenEndpoint))
+            {
+                _logger.LogError("OpenID Connect token endpoint is not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var tokenRequest = new Dictionary<string, string>
+            {
+                {"grant_type", "authorization_code"},
+                {"code", code},
+                {"client_id", ssoConfig.ClientId},
+                {"client_secret", ssoConfig.ClientSecret},
+                {"redirect_uri", ssoConfig.CallbackUrl ?? ""}
+            };
+
+            var requestContent = new FormUrlEncodedContent(tokenRequest);
+            var response = await _httpClient.PostAsync(tokenEndpoint, requestContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("OpenID Connect token exchange failed for tenant {TenantId}: {StatusCode} - {Error}", 
+                    tenantId, response.StatusCode, errorContent);
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonSerializer.Deserialize<OpenIdConnectTokenResponse>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken) || string.IsNullOrEmpty(tokenResponse.IdToken))
+            {
+                _logger.LogError("Invalid OpenID Connect token response received for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            _logger.LogInformation("Successfully exchanged OpenID Connect code for tokens for tenant {TenantId}", tenantId);
+            return tokenResponse;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exchanging OpenID Connect code for tokens");
+            return null;
+        }
     }
 
     private List<Claim>? ValidateAndParseIdToken(string? idToken, string? expectedNonce)
@@ -758,11 +1062,76 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
         try
         {
-            throw new NotImplementedException("OpenID Connect ID token validation is not implemented. This is a critical security vulnerability that must be fixed before production deployment. Proper JWT signature validation and claims parsing is required.");
+            var tenantId = _tenantProvider.GetTenantId();
+            var ssoConfigs = _ssoConfigRepository.FindAsync(s => s.TenantId == tenantId && s.Provider.ToUpper() == "OPENIDCONNECT").Result;
+            var ssoConfig = ssoConfigs.FirstOrDefault();
+
+            if (ssoConfig == null)
+            {
+                _logger.LogError("No OpenID Connect SSO configuration found for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(ssoConfig.Certificate))
+            {
+                _logger.LogError("OpenID Connect certificate is required but not configured for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var cert = new X509Certificate2(Convert.FromBase64String(ssoConfig.Certificate));
+            var key = new X509SecurityKey(cert);
+
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = key,
+                ValidateIssuer = true,
+                ValidIssuer = ssoConfig.Authority ?? ssoConfig.EntityId,
+                ValidateAudience = true,
+                ValidAudience = ssoConfig.ClientId,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(5),
+                RequireExpirationTime = true,
+                RequireSignedTokens = true
+            };
+
+            var principal = tokenHandler.ValidateToken(idToken, validationParameters, out var validatedToken);
+
+            if (!string.IsNullOrEmpty(expectedNonce))
+            {
+                var nonceClaim = principal.FindFirst("nonce")?.Value;
+                if (nonceClaim != expectedNonce)
+                {
+                    _logger.LogError("OpenID Connect ID token nonce validation failed for tenant {TenantId}", tenantId);
+                    return null;
+                }
+            }
+
+            var jwtToken = validatedToken as JwtSecurityToken;
+            if (jwtToken == null)
+            {
+                _logger.LogError("Invalid JWT token format for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            if (jwtToken.ValidTo < DateTime.UtcNow)
+            {
+                _logger.LogError("OpenID Connect ID token has expired for tenant {TenantId}", tenantId);
+                return null;
+            }
+
+            _logger.LogInformation("Successfully validated OpenID Connect ID token for tenant {TenantId}", tenantId);
+            return principal.Claims.ToList();
+        }
+        catch (SecurityTokenException ex)
+        {
+            _logger.LogError(ex, "OpenID Connect ID token security validation failed");
+            return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating and parsing ID token");
+            _logger.LogError(ex, "Error validating and parsing OpenID Connect ID token");
             return null;
         }
     }
@@ -861,9 +1230,28 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         if (string.IsNullOrEmpty(ssoConfig.Certificate))
             response.Errors.Add("Certificate is required for SAML configuration - unsigned assertions are not allowed");
 
+        if (!string.IsNullOrEmpty(ssoConfig.Certificate))
+        {
+            try
+            {
+                var cert = new X509Certificate2(Convert.FromBase64String(ssoConfig.Certificate));
+                if (cert.NotAfter < DateTime.UtcNow)
+                {
+                    response.Errors.Add("SAML certificate has expired");
+                }
+                else if (cert.NotBefore > DateTime.UtcNow)
+                {
+                    response.Errors.Add("SAML certificate is not yet valid");
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Errors.Add($"Invalid SAML certificate format: {ex.Message}");
+            }
+        }
+
         if (response.ConfigurationDetails != null)
         {
-
             response.ConfigurationDetails["EntityId"] = ssoConfig.EntityId ?? "";
             response.ConfigurationDetails["SsoUrl"] = ssoConfig.SsoUrl ?? "";
             response.ConfigurationDetails["HasCertificate"] = !string.IsNullOrEmpty(ssoConfig.Certificate);
@@ -970,6 +1358,90 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         return secret;
     }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+    private string? GetTokenEndpointFromConfiguration(SsoConfiguration ssoConfig)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(ssoConfig.ConfigurationJson))
+            {
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(ssoConfig.ConfigurationJson);
+                if (config != null && config.ContainsKey("token_endpoint"))
+                {
+                    return config["token_endpoint"]?.ToString();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(ssoConfig.SsoUrl))
+            {
+                var baseUrl = ssoConfig.SsoUrl.TrimEnd('/');
+                return $"{baseUrl}/token";
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting token endpoint from OAuth configuration");
+            return null;
+        }
+    }
+
+    private string? GetUserInfoEndpointFromConfiguration(SsoConfiguration ssoConfig)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(ssoConfig.ConfigurationJson))
+            {
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(ssoConfig.ConfigurationJson);
+                if (config != null && config.ContainsKey("userinfo_endpoint"))
+                {
+                    return config["userinfo_endpoint"]?.ToString();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(ssoConfig.SsoUrl))
+            {
+                var baseUrl = ssoConfig.SsoUrl.TrimEnd('/');
+                return $"{baseUrl}/userinfo";
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting user info endpoint from OAuth configuration");
+            return null;
+        }
+    }
+
+    private string? GetOpenIdConnectTokenEndpointFromConfiguration(SsoConfiguration ssoConfig)
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(ssoConfig.ConfigurationJson))
+            {
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(ssoConfig.ConfigurationJson);
+                if (config != null && config.ContainsKey("token_endpoint"))
+                {
+                    return config["token_endpoint"]?.ToString();
+                }
+            }
+
+            if (!string.IsNullOrEmpty(ssoConfig.Authority))
+            {
+                var baseUrl = ssoConfig.Authority.TrimEnd('/');
+                return $"{baseUrl}/token";
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting token endpoint from OpenID Connect configuration");
+            return null;
+        }
+    }
 
     private class OAuthTokenResponse
     {

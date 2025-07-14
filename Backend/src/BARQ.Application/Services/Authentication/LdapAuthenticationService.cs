@@ -25,6 +25,7 @@ public class LdapAuthenticationService : ILdapAuthenticationService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LdapAuthenticationService> _logger;
+    private readonly IEncryptionService _encryptionService;
 
     public LdapAuthenticationService(
         IRepository<LdapConfiguration> ldapConfigRepository,
@@ -34,7 +35,8 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         ITenantProvider tenantProvider,
         IUnitOfWork unitOfWork,
         IConfiguration configuration,
-        ILogger<LdapAuthenticationService> logger)
+        ILogger<LdapAuthenticationService> logger,
+        IEncryptionService encryptionService)
     {
         _ldapConfigRepository = ldapConfigRepository;
         _userRepository = userRepository;
@@ -44,6 +46,7 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         _unitOfWork = unitOfWork;
         _configuration = configuration;
         _logger = logger;
+        _encryptionService = encryptionService;
     }
 
     public async Task<AuthenticationResponse> AuthenticateAsync(LdapAuthenticationRequest request, CancellationToken cancellationToken = default)
@@ -258,7 +261,7 @@ public class LdapAuthenticationService : ILdapAuthenticationService
             ldapConfig.UseStartTls = request.UseStartTls;
             ldapConfig.BaseDn = request.BaseDn;
             ldapConfig.BindDn = request.BindDn ?? string.Empty;
-            ldapConfig.BindPassword = request.BindPassword ?? string.Empty; // Should be encrypted
+            ldapConfig.BindPassword = await _encryptionService.EncryptAsync(request.BindPassword ?? string.Empty);
             ldapConfig.UserSearchFilter = request.UserSearchFilter;
             ldapConfig.GroupSearchFilter = request.GroupSearchFilter;
             ldapConfig.UserDnPattern = request.UserDnPattern ?? string.Empty;
@@ -515,7 +518,8 @@ public class LdapAuthenticationService : ILdapAuthenticationService
             
             if (!string.IsNullOrEmpty(config.BindDn) && !string.IsNullOrEmpty(config.BindPassword))
             {
-                var bindCredential = new NetworkCredential(config.BindDn, config.BindPassword);
+                var decryptedPassword = await _encryptionService.DecryptAsync(config.BindPassword);
+                var bindCredential = new NetworkCredential(config.BindDn, decryptedPassword);
                 connection.Bind(bindCredential);
             }
             
@@ -644,42 +648,82 @@ public class LdapAuthenticationService : ILdapAuthenticationService
     {
         try
         {
-            await Task.CompletedTask;
-            
             var users = new List<LdapUserInfo>();
             
-            if (searchQuery.Contains("test") || searchQuery == "*")
+            using var connection = new LdapConnection(new LdapDirectoryIdentifier(config.Host, config.Port));
+            
+            if (config.UseSsl)
             {
-                users.Add(new LdapUserInfo
-                {
-                    Username = "testuser1",
-                    Email = "testuser1@example.com",
-                    FirstName = "Test",
-                    LastName = "User1",
-                    DisplayName = "Test User 1",
-                    DistinguishedName = $"CN=testuser1,{config.BaseDn}",
-                    Groups = new List<string> { "Users" },
-                    IsActive = true
-                });
+                connection.SessionOptions.SecureSocketLayer = true;
+            }
+            else if (config.UseStartTls)
+            {
+                connection.SessionOptions.StartTransportLayerSecurity(null);
+            }
+            
+            connection.Timeout = TimeSpan.FromMilliseconds(config.ConnectionTimeout);
+            
+            if (!string.IsNullOrEmpty(config.BindDn) && !string.IsNullOrEmpty(config.BindPassword))
+            {
+                var decryptedPassword = await _encryptionService.DecryptAsync(config.BindPassword);
+                var bindCredential = new NetworkCredential(config.BindDn, decryptedPassword);
+                connection.Bind(bindCredential);
+            }
+            
+            var searchFilter = config.UserSearchFilter.Replace("{0}", searchQuery);
+            
+            var requestedAttributes = new List<string>
+            {
+                config.EmailAttribute,
+                config.FirstNameAttribute,
+                config.LastNameAttribute,
+                config.DisplayNameAttribute,
+                config.GroupMembershipAttribute,
+                "userAccountControl"
+            };
+            
+            if (attributes != null && attributes.Any())
+            {
+                requestedAttributes.AddRange(attributes);
+            }
+            
+            var searchRequest = new SearchRequest(
+                config.BaseDn,
+                searchFilter,
+                SearchScope.Subtree,
+                requestedAttributes.Distinct().ToArray()
+            );
+            searchRequest.SizeLimit = maxResults;
+            searchRequest.TimeLimit = TimeSpan.FromMilliseconds(config.SearchTimeout);
 
-                users.Add(new LdapUserInfo
+            var searchResponse = (SearchResponse)connection.SendRequest(searchRequest);
+
+            foreach (SearchResultEntry entry in searchResponse.Entries)
+            {
+                var user = new LdapUserInfo
                 {
-                    Username = "testuser2",
-                    Email = "testuser2@example.com",
-                    FirstName = "Test",
-                    LastName = "User2",
-                    DisplayName = "Test User 2",
-                    DistinguishedName = $"CN=testuser2,{config.BaseDn}",
-                    Groups = new List<string> { "Users", "Admins" },
-                    IsActive = true
-                });
+                    DistinguishedName = entry.DistinguishedName,
+                    Username = ExtractUsernameFromDn(entry.DistinguishedName),
+                    Email = GetAttributeValue(entry, config.EmailAttribute) ?? string.Empty,
+                    FirstName = GetAttributeValue(entry, config.FirstNameAttribute) ?? string.Empty,
+                    LastName = GetAttributeValue(entry, config.LastNameAttribute) ?? string.Empty,
+                    DisplayName = GetAttributeValue(entry, config.DisplayNameAttribute) ?? string.Empty,
+                    Groups = GetGroupMemberships(entry, config.GroupMembershipAttribute),
+                    IsActive = IsUserActive(entry)
+                };
+
+                if (!string.IsNullOrEmpty(user.Email))
+                {
+                    users.Add(user);
+                }
             }
 
-            return users.Take(maxResults).ToList();
+            _logger.LogInformation("Successfully searched LDAP users, found {UserCount} users for query '{SearchQuery}'", users.Count, searchQuery);
+            return users;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error searching LDAP users");
+            _logger.LogError(ex, "Error searching LDAP users for query '{SearchQuery}'", searchQuery);
             return new List<LdapUserInfo>();
         }
     }
@@ -747,19 +791,105 @@ public class LdapAuthenticationService : ILdapAuthenticationService
     {
         try
         {
-            await Task.CompletedTask;
+            using var connection = new LdapConnection(new LdapDirectoryIdentifier(config.Host, config.Port));
             
+            if (config.UseSsl)
+            {
+                connection.SessionOptions.SecureSocketLayer = true;
+            }
+            else if (config.UseStartTls)
+            {
+                connection.SessionOptions.StartTransportLayerSecurity(null);
+            }
+            
+            connection.Timeout = TimeSpan.FromMilliseconds(Math.Max(config.ConnectionTimeout, 5000));
+            
+            if (!string.IsNullOrEmpty(config.BindDn) && !string.IsNullOrEmpty(config.BindPassword))
+            {
+                var decryptedPassword = await _encryptionService.DecryptAsync(config.BindPassword);
+                var bindCredential = new NetworkCredential(config.BindDn, decryptedPassword);
+                connection.Bind(bindCredential);
+            }
+            else
+            {
+                connection.Bind();
+            }
+
+            var testSearchRequest = new SearchRequest(
+                config.BaseDn,
+                "(objectClass=*)",
+                SearchScope.Base
+            );
+            testSearchRequest.SizeLimit = 1;
+            testSearchRequest.TimeLimit = TimeSpan.FromMilliseconds(Math.Max(config.SearchTimeout, 5000));
+
+            var testSearchResponse = (SearchResponse)connection.SendRequest(testSearchRequest);
+            
+            var supportedAuthMethods = new List<string>();
+            var serverInfo = $"LDAP Server at {config.Host}:{config.Port}";
+            
+            try
+            {
+                var rootDseRequest = new SearchRequest(
+                    "",
+                    "(objectClass=*)",
+                    SearchScope.Base,
+                    "supportedSASLMechanisms",
+                    "namingContexts",
+                    "serverName"
+                );
+                rootDseRequest.SizeLimit = 1;
+                rootDseRequest.TimeLimit = TimeSpan.FromMilliseconds(5000);
+
+                var rootDseResponse = (SearchResponse)connection.SendRequest(rootDseRequest);
+                if (rootDseResponse.Entries.Count > 0)
+                {
+                    var entry = rootDseResponse.Entries[0];
+                    
+                    if (entry.Attributes.Contains("supportedSASLMechanisms"))
+                    {
+                        var saslMechanisms = entry.Attributes["supportedSASLMechanisms"];
+                        for (int i = 0; i < saslMechanisms.Count; i++)
+                        {
+                            supportedAuthMethods.Add(saslMechanisms[i].ToString() ?? "");
+                        }
+                    }
+                    
+                    if (entry.Attributes.Contains("serverName"))
+                    {
+                        var serverName = entry.Attributes["serverName"];
+                        if (serverName.Count > 0)
+                        {
+                            serverInfo = serverName[0].ToString() ?? serverInfo;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                supportedAuthMethods.Add("Simple");
+            }
+
+            if (supportedAuthMethods.Count == 0)
+            {
+                supportedAuthMethods.Add("Simple");
+            }
+
             return (
                 Success: true,
                 Message: "Connection successful",
-                ServerInfo: $"Mock LDAP Server at {config.Host}:{config.Port}",
-                SupportedAuthMethods: new List<string> { "Simple", "SASL" },
+                ServerInfo: serverInfo,
+                SupportedAuthMethods: supportedAuthMethods,
                 TestDetails: new Dictionary<string, object>
                 {
                     ["Host"] = config.Host,
                     ["Port"] = config.Port,
                     ["SSL"] = config.UseSsl,
-                    ["StartTLS"] = config.UseStartTls
+                    ["StartTLS"] = config.UseStartTls,
+                    ["BaseDN"] = config.BaseDn,
+                    ["BindDN"] = config.BindDn ?? "Anonymous",
+                    ["ConnectionTimeout"] = config.ConnectionTimeout,
+                    ["SearchTimeout"] = config.SearchTimeout
                 },
                 ErrorMessage: null
             );
@@ -771,7 +901,12 @@ public class LdapAuthenticationService : ILdapAuthenticationService
                 Message: "Connection failed",
                 ServerInfo: null,
                 SupportedAuthMethods: new List<string>(),
-                TestDetails: new Dictionary<string, object>(),
+                TestDetails: new Dictionary<string, object>
+                {
+                    ["Host"] = config.Host,
+                    ["Port"] = config.Port,
+                    ["Error"] = ex.Message
+                },
                 ErrorMessage: ex.Message
             );
         }
@@ -827,4 +962,72 @@ public class LdapAuthenticationService : ILdapAuthenticationService
         return secret;
     }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+    private string ExtractUsernameFromDn(string distinguishedName)
+    {
+        try
+        {
+            var cnStart = distinguishedName.IndexOf("CN=", StringComparison.OrdinalIgnoreCase);
+            if (cnStart == -1) return string.Empty;
+
+            var cnValue = distinguishedName.Substring(cnStart + 3);
+            var commaIndex = cnValue.IndexOf(',');
+            
+            return commaIndex > 0 ? cnValue.Substring(0, commaIndex) : cnValue;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+
+    private List<string> GetGroupMemberships(SearchResultEntry entry, string? groupAttribute)
+    {
+        var groups = new List<string>();
+        
+        if (string.IsNullOrEmpty(groupAttribute) || !entry.Attributes.Contains(groupAttribute))
+            return groups;
+
+        var attribute = entry.Attributes[groupAttribute];
+        for (int i = 0; i < attribute.Count; i++)
+        {
+            var groupDn = attribute[i].ToString();
+            if (!string.IsNullOrEmpty(groupDn))
+            {
+                var groupName = ExtractUsernameFromDn(groupDn);
+                if (!string.IsNullOrEmpty(groupName))
+                {
+                    groups.Add(groupName);
+                }
+            }
+        }
+
+        return groups;
+    }
+
+    private bool IsUserActive(SearchResultEntry entry)
+    {
+        try
+        {
+            if (!entry.Attributes.Contains("userAccountControl"))
+                return true;
+
+            var uacAttribute = entry.Attributes["userAccountControl"];
+            if (uacAttribute.Count == 0)
+                return true;
+
+            if (int.TryParse(uacAttribute[0].ToString(), out var userAccountControl))
+            {
+                const int ACCOUNTDISABLE = 0x0002;
+                return (userAccountControl & ACCOUNTDISABLE) == 0;
+            }
+
+            return true;
+        }
+        catch
+        {
+            return true;
+        }
+    }
 }

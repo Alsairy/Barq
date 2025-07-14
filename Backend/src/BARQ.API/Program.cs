@@ -131,12 +131,17 @@ builder.Services.AddValidatorsFromAssembly(typeof(BARQ.Application.Validators.Re
 
 builder.Services.AddScoped<IUserRegistrationService, UserRegistrationService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<ISsoAuthenticationService, SsoAuthenticationService>();
-builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IMultiFactorAuthService, MultiFactorAuthService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
+
+builder.Services.AddHttpClient<ISsoAuthenticationService, SsoAuthenticationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-SSO-Client/1.0");
+});
+builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
 
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IUserInvitationService, UserInvitationService>();
