@@ -17,3 +17,24 @@ public enum NotificationStatus
     Failed = 4,
     Read = 5
 }
+
+public enum NotificationPriority
+{
+    Low = 1,
+    Normal = 2,
+    High = 3,
+    Critical = 4,
+    Urgent = 5
+}
+
+public enum NotificationChannel
+{
+    Email = 1,
+    SMS = 2,
+    Push = 3,
+    InApp = 4,
+    Slack = 5,
+    Teams = 6,
+    Webhook = 7,
+    Dashboard = 8
+}
