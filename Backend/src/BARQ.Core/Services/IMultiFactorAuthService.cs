@@ -13,4 +13,6 @@ public interface IMultiFactorAuthService
     Task<MfaDisableResponse> DisableMfaAsync(Guid userId, string currentPassword);
     Task<MfaRecoveryResponse> InitiateMfaRecoveryAsync(MfaRecoveryRequest request);
     Task<bool> IsMfaEnabledAsync(Guid userId);
+    Task<MfaSetupResponse> SetupHardwareTokenAsync(Guid userId, string tokenType);
+    Task<MfaSetupResponse> SetupBiometricAuthAsync(Guid userId, string biometricType);
 }

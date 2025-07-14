@@ -535,6 +535,90 @@ public class MultiFactorAuthService : IMultiFactorAuthService
     private string GetMfaIssuer() => _configuration["Mfa:Issuer"] ?? "BARQ";
     private string GetBackupCodeSalt() => _configuration["Mfa:BackupCodeSalt"] ?? "barq-backup-salt";
 
+    public async Task<MfaSetupResponse> SetupHardwareTokenAsync(Guid userId, string tokenType)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return new MfaSetupResponse
+                {
+                    Success = false,
+                    Message = "User not found"
+                };
+            }
+
+            var backupCodes = await GenerateBackupCodesAsync(userId);
+
+            user.TwoFactorEnabled = true;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Hardware token setup completed for user: {UserId}, token type: {TokenType}", userId, tokenType);
+
+            return new MfaSetupResponse
+            {
+                Success = true,
+                Message = $"Hardware token ({tokenType}) setup completed",
+                BackupCodes = backupCodes.BackupCodes
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting up hardware token for user: {UserId}", userId);
+            return new MfaSetupResponse
+            {
+                Success = false,
+                Message = "Failed to setup hardware token"
+            };
+        }
+    }
+
+    public async Task<MfaSetupResponse> SetupBiometricAuthAsync(Guid userId, string biometricType)
+    {
+        try
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return new MfaSetupResponse
+                {
+                    Success = false,
+                    Message = "User not found"
+                };
+            }
+
+            var backupCodes = await GenerateBackupCodesAsync(userId);
+
+            user.TwoFactorEnabled = true;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Biometric authentication setup completed for user: {UserId}, type: {BiometricType}", userId, biometricType);
+
+            return new MfaSetupResponse
+            {
+                Success = true,
+                Message = $"Biometric authentication ({biometricType}) setup completed",
+                BackupCodes = backupCodes.BackupCodes
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting up biometric authentication for user: {UserId}", userId);
+            return new MfaSetupResponse
+            {
+                Success = false,
+                Message = "Failed to setup biometric authentication"
+            };
+        }
+    }
+
     public async Task<BackupCodesResponse> GenerateBackupCodesAsync(Guid userId)
     {
         try

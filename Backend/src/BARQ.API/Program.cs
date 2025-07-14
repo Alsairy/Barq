@@ -136,6 +136,13 @@ builder.Services.AddScoped<IMultiFactorAuthService, MultiFactorAuthService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IUserRoleService, UserRoleService>();
 
+builder.Services.AddHttpClient<ISsoAuthenticationService, SsoAuthenticationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-SSO-Client/1.0");
+});
+builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
+
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IUserInvitationService, UserInvitationService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
@@ -165,6 +172,8 @@ builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<RedisHealthCheck>();
 builder.Services.AddScoped<SecurityHealthCheck>();
 builder.Services.AddScoped<AIProvidersHealthCheck>();
+builder.Services.AddScoped<IntegrationGatewayHealthCheck>();
+builder.Services.AddScoped<SsoAuthenticationHealthCheck>();
 
 builder.Services.AddScoped<IApiAnalyticsService, ApiAnalyticsService>();
 
@@ -188,6 +197,30 @@ builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(
     client.Timeout = TimeSpan.FromSeconds(30);
     client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Security-Monitor/1.0");
 });
+
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IIntegrationGatewayService, BARQ.Application.Services.Integration.IntegrationGatewayService>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IMessageOrchestrationService, BARQ.Application.Services.Integration.MessageOrchestrationService>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IIntegrationMonitoringService, BARQ.Application.Services.Integration.IntegrationMonitoringService>();
+
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.RestProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.SoapProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+builder.Services.AddHttpClient<BARQ.Infrastructure.Integration.Adapters.GraphQLProtocolAdapter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Integration-Gateway/1.0");
+});
+
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.RestProtocolAdapter>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.SoapProtocolAdapter>();
+builder.Services.AddScoped<BARQ.Core.Services.Integration.IProtocolAdapter, BARQ.Infrastructure.Integration.Adapters.GraphQLProtocolAdapter>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -246,7 +279,9 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database_detailed", tags: new[] { "ready", "startup" })
     .AddCheck<RedisHealthCheck>("redis_detailed", tags: new[] { "ready" })
     .AddCheck<SecurityHealthCheck>("security_monitoring", tags: new[] { "ready" })
-    .AddCheck<AIProvidersHealthCheck>("ai_providers", tags: new[] { "ready" });
+    .AddCheck<AIProvidersHealthCheck>("ai_providers", tags: new[] { "ready" })
+    .AddCheck<IntegrationGatewayHealthCheck>("integration_gateway", tags: new[] { "ready" })
+    .AddCheck<SsoAuthenticationHealthCheck>("sso_authentication", tags: new[] { "ready" });
 
 builder.Services.AddCors(options =>
 {
@@ -356,3 +391,5 @@ app.MapHealthChecks("/health/startup", new Microsoft.AspNetCore.Diagnostics.Heal
 });
 
 app.Run();
+
+public partial class Program { }

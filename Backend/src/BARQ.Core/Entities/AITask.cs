@@ -78,6 +78,11 @@ public class AITask : TenantEntity
     public DateTime? StartedAt { get; set; }
 
     /// <summary>
+    /// Task scheduled at
+    /// </summary>
+    public DateTime? ScheduledAt { get; set; }
+
+    /// <summary>
     /// Task completed at
     /// </summary>
     public DateTime? CompletedAt { get; set; }
@@ -96,6 +101,10 @@ public class AITask : TenantEntity
     /// Maximum retry attempts
     /// </summary>
     public int MaxRetries { get; set; } = 3;
+
+    /// <summary>
+    /// </summary>
+    public string? Parameters { get; set; }
 
     /// <summary>
     /// Task configuration as JSON

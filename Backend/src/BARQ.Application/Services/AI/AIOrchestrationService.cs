@@ -6,6 +6,7 @@ using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Services;
+using System.Text.Json;
 
 namespace BARQ.Application.Services.AI;
 
@@ -544,79 +545,451 @@ public class AIOrchestrationService : IAIOrchestrationService
 
     public async Task<AITaskResult> CreateAITaskAsync(CreateAITaskRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task creation not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var aiTask = new AITask
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Title,
+                Description = request.Description,
+                TaskType = request.TaskType,
+                Priority = request.Priority,
+                InputData = request.InputData,
+                Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null,
+                ProjectId = request.ProjectId,
+                UserId = request.AssignedToUserId,
+                TenantId = tenantId,
+                Status = AITaskStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                ScheduledAt = request.ScheduledAt
+            };
+
+            await _aiTaskRepository.AddAsync(aiTask);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("AI_TASK_CREATED", $"AI task created: {aiTask.Name}", aiTask.Id);
+
+            _logger.LogInformation("AI task created: {TaskId} for tenant {TenantId}", aiTask.Id, tenantId);
+
+            return new AITaskResult
+            {
+                TaskId = aiTask.Id,
+                Success = true,
+                ResultData = "Task created successfully",
+                ExecutionTimeMs = 0,
+                Cost = 0,
+                Provider = AIProvider.OpenAI
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating AI task");
+            return new AITaskResult
+            {
+                TaskId = Guid.Empty,
+                Success = false,
+                ErrorMessage = ex.Message,
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
+            };
+        }
     }
 
     public async Task<AITaskResult> ExecuteAITaskAsync(Guid taskId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task execution not yet implemented");
+        try
+        {
+            var task = await _aiTaskRepository.GetByIdAsync(taskId);
+            if (task == null)
+            {
+                _logger.LogWarning("AI task not found: {TaskId}", taskId);
+                return new AITaskResult
+                {
+                    TaskId = taskId,
+                    Success = false,
+                    ErrorMessage = "Task not found",
+                    ExecutionTimeMs = 0,
+                    Provider = AIProvider.OpenAI
+                };
+            }
+
+            return await ExecuteTaskAsync(task);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing AI task: {TaskId}", taskId);
+            return new AITaskResult
+            {
+                TaskId = taskId,
+                Success = false,
+                ErrorMessage = ex.Message,
+                ExecutionTimeMs = 0,
+                Provider = AIProvider.OpenAI
+            };
+        }
     }
 
     public async Task<AITaskStatus> GetAITaskStatusAsync(Guid taskId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task status retrieval not yet implemented");
+        return await GetTaskStatusAsync(taskId);
     }
 
     public async Task<bool> CancelAITaskAsync(Guid taskId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task cancellation not yet implemented");
+        return await CancelTaskAsync(taskId);
     }
 
     public async Task<AITaskResult> GetAITaskResultsAsync(Guid taskId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task results retrieval not yet implemented");
+        return await GetTaskResultAsync(taskId) ?? new AITaskResult
+        {
+            TaskId = taskId,
+            Success = false,
+            ErrorMessage = "Task not found",
+            ExecutionTimeMs = 0,
+            Provider = AIProvider.OpenAI
+        };
     }
 
     public async Task<IEnumerable<AITask>> GetProjectAITasksAsync(Guid projectId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Project AI tasks retrieval not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var tasks = await _aiTaskRepository.FindAsync(t => 
+                t.ProjectId == projectId && 
+                t.TenantId == tenantId);
+
+            _logger.LogInformation("Retrieved {Count} AI tasks for project {ProjectId}", tasks.Count(), projectId);
+            return tasks;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting project AI tasks: {ProjectId}", projectId);
+            return new List<AITask>();
+        }
     }
 
     public async Task<object> GetAITaskAnalyticsAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("AI task analytics not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var tasks = await _aiTaskRepository.FindAsync(t => t.TenantId == tenantId);
+            
+            var analytics = new
+            {
+                TotalTasks = tasks.Count(),
+                CompletedTasks = tasks.Count(t => t.Status == AITaskStatus.Completed),
+                FailedTasks = tasks.Count(t => t.Status == AITaskStatus.Failed),
+                PendingTasks = tasks.Count(t => t.Status == AITaskStatus.Pending),
+                RunningTasks = tasks.Count(t => t.Status == AITaskStatus.Running),
+                AverageExecutionTime = tasks.Where(t => t.ProcessingTimeMs.HasValue)
+                    .Select(t => t.ProcessingTimeMs!.Value)
+                    .DefaultIfEmpty(0)
+                    .Average(),
+                TotalCost = tasks.Where(t => t.Cost.HasValue)
+                    .Sum(t => t.Cost!.Value),
+                SuccessRate = tasks.Any() ? 
+                    (decimal)tasks.Count(t => t.Status == AITaskStatus.Completed) / tasks.Count() * 100 : 0,
+                TasksByType = tasks.GroupBy(t => t.TaskType)
+                    .Select(g => new { TaskType = g.Key.ToString(), Count = g.Count() })
+                    .ToList(),
+                TasksByStatus = tasks.GroupBy(t => t.Status)
+                    .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
+                    .ToList(),
+                RecentTasks = tasks.OrderByDescending(t => t.CreatedAt)
+                    .Take(10)
+                    .Select(t => new { 
+                        t.Id, 
+                        t.Name, 
+                        Status = t.Status.ToString(), 
+                        t.CreatedAt,
+                        t.Cost 
+                    })
+                    .ToList()
+            };
+
+            _logger.LogInformation("Generated AI task analytics for tenant {TenantId}", tenantId);
+            return analytics;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting AI task analytics");
+            return new { Error = ex.Message };
+        }
     }
 
     public async Task<IEnumerable<AIProviderConfiguration>> GetAvailableProvidersAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Available providers retrieval not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var providers = await _providerRepository.FindAsync(p => 
+                p.TenantId == tenantId && 
+                p.IsActive);
+
+            var sortedProviders = providers
+                .OrderByDescending(p => p.IsHealthy)
+                .ThenByDescending(p => p.SuccessRate ?? 0)
+                .ThenBy(p => p.CostPerToken ?? decimal.MaxValue);
+
+            _logger.LogInformation("Retrieved {Count} available AI providers for tenant {TenantId}", 
+                providers.Count(), tenantId);
+            
+            return sortedProviders;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting available providers");
+            return new List<AIProviderConfiguration>();
+        }
     }
 
     public async Task<AIProviderHealthStatus> CheckProviderHealthAsync(Guid providerId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Provider health check not yet implemented");
+        return await GetProviderHealthAsync(providerId);
     }
 
     public async Task<AIProviderConfiguration> ConfigureProviderAsync(ConfigureAIProviderRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Provider configuration not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var provider = await _providerRepository.GetByIdAsync(request.ProviderId);
+            if (provider == null)
+            {
+                provider = new AIProviderConfiguration
+                {
+                    Id = request.ProviderId,
+                    TenantId = tenantId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _providerRepository.AddAsync(provider);
+            }
+
+            provider.Name = request.Name;
+            provider.Provider = Enum.TryParse<AIProvider>(request.Type, out var providerType) ? providerType : AIProvider.OpenAI;
+            provider.IsActive = request.IsEnabled;
+            provider.Capabilities = string.Join(",", request.Capabilities);
+            provider.UpdatedAt = DateTime.UtcNow;
+
+            if (provider.Id != Guid.Empty && provider.Id != request.ProviderId)
+            {
+                await _providerRepository.UpdateAsync(provider);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("AI_PROVIDER_CONFIGURED", $"AI provider configured: {provider.Name}", provider.Id);
+
+            _logger.LogInformation("AI provider configured: {ProviderId} for tenant {TenantId}", provider.Id, tenantId);
+            return provider;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error configuring AI provider: {ProviderId}", request.ProviderId);
+            throw;
+        }
     }
 
     public async Task<object> ExecuteBatchTasksAsync(ExecuteBatchAITasksRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Batch tasks execution not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var batchId = Guid.NewGuid();
+            var results = new List<AITaskResult>();
+
+            _logger.LogInformation("Starting batch execution of {Count} AI tasks for tenant {TenantId}", 
+                request.Tasks.Count, tenantId);
+
+            foreach (var taskRequest in request.Tasks)
+            {
+                try
+                {
+                    var taskResult = await CreateAITaskAsync(taskRequest);
+                    if (taskResult.Success)
+                    {
+                        var executionResult = await ExecuteAITaskAsync(taskResult.TaskId);
+                        results.Add(executionResult);
+                    }
+                    else
+                    {
+                        results.Add(taskResult);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing task in batch: {TaskTitle}", taskRequest.Title);
+                    results.Add(new AITaskResult
+                    {
+                        TaskId = Guid.NewGuid(),
+                        Success = false,
+                        ErrorMessage = ex.Message,
+                        ExecutionTimeMs = 0,
+                        Provider = AIProvider.OpenAI
+                    });
+                }
+            }
+
+            var batchResult = new
+            {
+                BatchId = batchId,
+                BatchName = request.BatchName,
+                TotalTasks = request.Tasks.Count,
+                SuccessfulTasks = results.Count(r => r.Success),
+                FailedTasks = results.Count(r => !r.Success),
+                TotalCost = results.Where(r => r.Cost.HasValue).Sum(r => r.Cost!.Value),
+                TotalExecutionTime = results.Sum(r => r.ExecutionTimeMs),
+                Results = results,
+                CompletedAt = DateTime.UtcNow
+            };
+
+            await LogAuditAsync("AI_BATCH_EXECUTED", $"AI batch executed: {request.BatchName} ({results.Count(r => r.Success)}/{request.Tasks.Count} successful)", batchId);
+
+            _logger.LogInformation("Batch execution completed: {BatchId} - {Successful}/{Total} tasks successful", 
+                batchId, results.Count(r => r.Success), request.Tasks.Count);
+
+            return batchResult;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing batch AI tasks");
+            return new { Error = ex.Message, BatchName = request.BatchName };
+        }
     }
 
     public async Task<object> GetQueueStatusAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Queue status retrieval not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var tasks = await _aiTaskRepository.FindAsync(t => t.TenantId == tenantId);
+            
+            var queueStatus = new
+            {
+                TenantId = tenantId,
+                QueuedTasks = tasks.Count(t => t.Status == AITaskStatus.Pending),
+                RunningTasks = tasks.Count(t => t.Status == AITaskStatus.Running),
+                CompletedTasks = tasks.Count(t => t.Status == AITaskStatus.Completed),
+                FailedTasks = tasks.Count(t => t.Status == AITaskStatus.Failed),
+                CancelledTasks = tasks.Count(t => t.Status == AITaskStatus.Cancelled),
+                TotalTasks = tasks.Count(),
+                AverageWaitTime = tasks.Where(t => t.StartedAt.HasValue && t.CreatedAt != default)
+                    .Select(t => (t.StartedAt!.Value - t.CreatedAt).TotalMinutes)
+                    .DefaultIfEmpty(0)
+                    .Average(),
+                TasksByPriority = tasks.GroupBy(t => t.Priority)
+                    .Select(g => new { Priority = g.Key.ToString(), Count = g.Count() })
+                    .ToList(),
+                TasksByType = tasks.GroupBy(t => t.TaskType)
+                    .Select(g => new { TaskType = g.Key.ToString(), Count = g.Count() })
+                    .ToList(),
+                RecentActivity = tasks.OrderByDescending(t => t.UpdatedAt)
+                    .Take(5)
+                    .Select(t => new { 
+                        t.Id, 
+                        t.Name, 
+                        Status = t.Status.ToString(), 
+                        t.UpdatedAt 
+                    })
+                    .ToList(),
+                CheckedAt = DateTime.UtcNow
+            };
+
+            _logger.LogInformation("Queue status retrieved for tenant {TenantId}: {Queued} queued, {Running} running", 
+                tenantId, queueStatus.QueuedTasks, queueStatus.RunningTasks);
+
+            return queueStatus;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting queue status");
+            return new { Error = ex.Message };
+        }
     }
 
     public async Task<object> GetCostAnalysisAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Cost analysis not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var tasks = await _aiTaskRepository.FindAsync(t => t.TenantId == tenantId);
+            var providers = await _providerRepository.FindAsync(p => p.TenantId == tenantId);
+            
+            var costAnalysis = new
+            {
+                TenantId = tenantId,
+                TotalCost = tasks.Where(t => t.Cost.HasValue).Sum(t => t.Cost!.Value),
+                AverageCostPerTask = tasks.Where(t => t.Cost.HasValue).Select(t => t.Cost!.Value).DefaultIfEmpty(0).Average(),
+                CostByTaskType = tasks.Where(t => t.Cost.HasValue)
+                    .GroupBy(t => t.TaskType)
+                    .Select(g => new { 
+                        TaskType = g.Key.ToString(), 
+                        TotalCost = g.Sum(t => t.Cost!.Value),
+                        TaskCount = g.Count(),
+                        AverageCost = g.Average(t => t.Cost!.Value)
+                    })
+                    .OrderByDescending(x => x.TotalCost)
+                    .ToList(),
+                CostByProvider = providers.Where(p => p.TotalCost.HasValue)
+                    .Select(p => new {
+                        ProviderId = p.Id,
+                        ProviderName = p.Name,
+                        TotalCost = p.TotalCost!.Value,
+                        AverageCost = p.AverageCost ?? 0,
+                        CostPerToken = p.CostPerToken ?? 0
+                    })
+                    .OrderByDescending(x => x.TotalCost)
+                    .ToList(),
+                MonthlyCostTrend = tasks.Where(t => t.Cost.HasValue && t.CreatedAt >= DateTime.UtcNow.AddMonths(-6))
+                    .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month })
+                    .Select(g => new {
+                        Month = $"{g.Key.Year}-{g.Key.Month:D2}",
+                        TotalCost = g.Sum(t => t.Cost!.Value),
+                        TaskCount = g.Count()
+                    })
+                    .OrderBy(x => x.Month)
+                    .ToList(),
+                CostOptimizationRecommendations = new List<object>
+                {
+                    new { 
+                        Recommendation = "Consider using lower-cost providers for simple tasks",
+                        PotentialSavings = tasks.Where(t => t.Cost > 0.50m).Sum(t => t.Cost * 0.3m) ?? 0
+                    },
+                    new {
+                        Recommendation = "Implement task batching to reduce per-request overhead",
+                        PotentialSavings = tasks.Count() * 0.01m
+                    }
+                },
+                BudgetAlerts = providers.Where(p => p.TotalCost > 100).Select(p => new {
+                    ProviderId = p.Id,
+                    ProviderName = p.Name,
+                    CurrentCost = p.TotalCost,
+                    Alert = "High usage detected"
+                }).ToList(),
+                GeneratedAt = DateTime.UtcNow
+            };
+
+            _logger.LogInformation("Cost analysis generated for tenant {TenantId}: Total cost ${TotalCost:F2}", 
+                tenantId, costAnalysis.TotalCost);
+
+            return costAnalysis;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting cost analysis");
+            return new { Error = ex.Message };
+        }
     }
 }
