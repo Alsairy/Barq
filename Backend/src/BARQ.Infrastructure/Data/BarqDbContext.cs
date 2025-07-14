@@ -25,6 +25,9 @@ public class BarqDbContext : DbContext
     public DbSet<UserStory> UserStories { get; set; }
     public DbSet<WorkflowTemplate> WorkflowTemplates { get; set; }
     public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
+    public DbSet<WorkflowStep> WorkflowSteps { get; set; }
+    public DbSet<WorkflowStepExecution> WorkflowStepExecutions { get; set; }
+    public DbSet<WorkflowDataContext> WorkflowDataContexts { get; set; }
     public DbSet<AITask> AITasks { get; set; }
     public DbSet<AIProviderConfiguration> AIProviderConfigurations { get; set; }
     public DbSet<SsoConfiguration> SsoConfigurations { get; set; }

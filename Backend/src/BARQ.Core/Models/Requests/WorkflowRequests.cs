@@ -53,11 +53,15 @@ public class CreateWorkflowRequest
     public Guid? ProjectId { get; set; }
     public DateTime? DueDate { get; set; }
     public List<Guid> ApproverUserIds { get; set; } = new();
+    public Guid InitiatorId { get; set; }
+    public Guid? AssigneeId { get; set; }
 }
 
 public class ApproveWorkflowRequest
 {
     public Guid WorkflowId { get; set; }
+    public Guid WorkflowInstanceId { get; set; }
+    public Guid ApproverId { get; set; }
     public string? Comments { get; set; }
     public Dictionary<string, object>? AdditionalData { get; set; }
 }
@@ -65,6 +69,8 @@ public class ApproveWorkflowRequest
 public class RejectWorkflowRequest
 {
     public Guid WorkflowId { get; set; }
+    public Guid WorkflowInstanceId { get; set; }
+    public Guid ReviewerId { get; set; }
     public string Reason { get; set; } = string.Empty;
     public string? Comments { get; set; }
 }
@@ -74,6 +80,7 @@ public class CreateWorkflowTemplateRequest
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
+    public WorkflowType WorkflowType { get; set; }
     public List<WorkflowStepTemplateRequest> Steps { get; set; } = new();
     public Dictionary<string, object> DefaultData { get; set; } = new();
     public int SlaHours { get; set; } = 24;
@@ -82,6 +89,7 @@ public class CreateWorkflowTemplateRequest
 public class WorkflowStepTemplateRequest
 {
     public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public int Order { get; set; }
     public Dictionary<string, object> Configuration { get; set; } = new();

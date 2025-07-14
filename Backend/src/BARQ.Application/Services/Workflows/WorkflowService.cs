@@ -5,7 +5,9 @@ using BARQ.Core.Entities;
 using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Requests;
+using BARQ.Core.Models.Responses;
 using BARQ.Core.Services;
+using System.Text.Json;
 
 namespace BARQ.Application.Services.Workflows;
 
@@ -13,31 +15,37 @@ public class WorkflowService : IWorkflowService
 {
     private readonly IRepository<WorkflowInstance> _workflowInstanceRepository;
     private readonly IRepository<WorkflowTemplate> _workflowTemplateRepository;
+    private readonly IRepository<WorkflowStep> _workflowStepRepository;
     private readonly IRepository<User> _userRepository;
     private readonly IRepository<AuditLog> _auditLogRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<WorkflowService> _logger;
     private readonly ITenantProvider _tenantProvider;
+    private readonly IWorkflowEngine _workflowEngine;
 
     public WorkflowService(
         IRepository<WorkflowInstance> workflowInstanceRepository,
         IRepository<WorkflowTemplate> workflowTemplateRepository,
+        IRepository<WorkflowStep> workflowStepRepository,
         IRepository<User> userRepository,
         IRepository<AuditLog> auditLogRepository,
         IUnitOfWork unitOfWork,
         IMapper mapper,
         ILogger<WorkflowService> logger,
-        ITenantProvider tenantProvider)
+        ITenantProvider tenantProvider,
+        IWorkflowEngine workflowEngine)
     {
         _workflowInstanceRepository = workflowInstanceRepository;
         _workflowTemplateRepository = workflowTemplateRepository;
+        _workflowStepRepository = workflowStepRepository;
         _userRepository = userRepository;
         _auditLogRepository = auditLogRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
         _tenantProvider = tenantProvider;
+        _workflowEngine = workflowEngine;
     }
 
     public async Task<WorkflowInstance> CreateWorkflowInstanceAsync(Guid templateId, Guid initiatorId, object? workflowData = null, CancellationToken cancellationToken = default)
@@ -92,7 +100,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -101,7 +109,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = $"Cannot start workflow in status: {workflowInstance.Status}"
                 };
             }
@@ -119,8 +127,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Workflow started successfully"
             };
         }
@@ -129,7 +137,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error starting workflow: {WorkflowId}", workflowInstanceId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -144,7 +152,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -153,7 +161,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = $"Cannot approve workflow step in status: {workflowInstance.Status}"
                 };
             }
@@ -170,8 +178,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Workflow step approved successfully"
             };
         }
@@ -180,7 +188,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error approving workflow step: {WorkflowId}, Step: {StepId}", workflowInstanceId, stepId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -195,7 +203,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -212,8 +220,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Workflow step rejected"
             };
         }
@@ -222,7 +230,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error rejecting workflow step: {WorkflowId}, Step: {StepId}", workflowInstanceId, stepId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -237,7 +245,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -246,7 +254,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = $"Cannot cancel workflow in status: {workflowInstance.Status}"
                 };
             }
@@ -264,8 +272,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Workflow cancelled successfully"
             };
         }
@@ -274,7 +282,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error cancelling workflow: {WorkflowId}", workflowInstanceId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -502,7 +510,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -519,8 +527,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Changes requested successfully"
             };
         }
@@ -529,7 +537,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error requesting changes for workflow: {WorkflowId}", workflowInstanceId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -544,7 +552,7 @@ public class WorkflowService : IWorkflowService
             {
                 return new WorkflowExecutionResult
                 {
-                    Success = false,
+                    IsSuccess = false,
                     ErrorDetails = "Workflow instance not found"
                 };
             }
@@ -561,8 +569,8 @@ public class WorkflowService : IWorkflowService
 
             return new WorkflowExecutionResult
             {
-                Success = true,
-                NewStatus = workflowInstance.Status,
+                IsSuccess = true,
+                Status = WorkflowStepStatus.Completed,
                 Message = "Workflow escalated successfully"
             };
         }
@@ -571,7 +579,7 @@ public class WorkflowService : IWorkflowService
             _logger.LogError(ex, "Error escalating workflow: {WorkflowId}", workflowInstanceId);
             return new WorkflowExecutionResult
             {
-                Success = false,
+                IsSuccess = false,
                 ErrorDetails = ex.Message
             };
         }
@@ -716,55 +724,367 @@ public class WorkflowService : IWorkflowService
 
     public async Task<WorkflowInstance> CreateWorkflowAsync(CreateWorkflowRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow creation not yet implemented");
+        try
+        {
+            var template = await _workflowTemplateRepository.GetByIdAsync(request.TemplateId);
+            if (template == null)
+            {
+                throw new ArgumentException("Workflow template not found");
+            }
+
+            var workflowInstance = new WorkflowInstance
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name,
+                Description = request.Description,
+                WorkflowTemplateId = request.TemplateId,
+                Status = WorkflowStatus.Created,
+                Priority = request.Priority,
+                WorkflowData = JsonSerializer.Serialize(request.Data ?? new Dictionary<string, object>()),
+                DueDate = request.DueDate,
+                InitiatorId = request.InitiatorId,
+                CurrentAssigneeId = request.AssigneeId,
+                TenantId = _tenantProvider.GetTenantId(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                CurrentStepIndex = 0
+            };
+
+            await _workflowInstanceRepository.AddAsync(workflowInstance);
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("WORKFLOW_CREATED", "Workflow instance created", workflowInstance.Id);
+
+            _logger.LogInformation("Workflow instance created: {WorkflowId}", workflowInstance.Id);
+
+            return workflowInstance;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating workflow instance");
+            throw;
+        }
     }
 
     public async Task<WorkflowExecutionResult> ApproveWorkflowAsync(ApproveWorkflowRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow approval not yet implemented");
+        try
+        {
+            var result = await ApproveStepAsync(request.WorkflowInstanceId, request.ApproverId, request.Comments);
+            
+            if (result.IsSuccess && result.Status == WorkflowStepStatus.Running)
+            {
+                return await _workflowEngine.ExecuteWorkflowAsync(request.WorkflowInstanceId);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving workflow: {WorkflowId}", request.WorkflowInstanceId);
+            return new WorkflowExecutionResult
+            {
+                IsSuccess = false,
+                ErrorDetails = ex.Message
+            };
+        }
     }
 
     public async Task<WorkflowExecutionResult> RejectWorkflowAsync(RejectWorkflowRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow rejection not yet implemented");
+        try
+        {
+            return await RejectStepAsync(request.WorkflowInstanceId, request.ReviewerId, request.Reason);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting workflow: {WorkflowId}", request.WorkflowInstanceId);
+            return new WorkflowExecutionResult
+            {
+                IsSuccess = false,
+                ErrorDetails = ex.Message
+            };
+        }
     }
 
     public async Task<IEnumerable<WorkflowInstance>> GetProjectWorkflowsAsync(Guid projectId)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Project workflows retrieval not yet implemented");
+        try
+        {
+            var workflows = await _workflowInstanceRepository.FindAsync(w => 
+                w.ProjectId == projectId && w.TenantId == _tenantProvider.GetTenantId());
+            
+            return workflows.OrderByDescending(w => w.CreatedAt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving project workflows: {ProjectId}", projectId);
+            return Enumerable.Empty<WorkflowInstance>();
+        }
     }
 
     public async Task<object> GetWorkflowAnalyticsAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow analytics not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var workflows = await _workflowInstanceRepository.FindAsync(w => w.TenantId == tenantId);
+            var workflowsList = workflows.ToList();
+
+            var analytics = new
+            {
+                TotalWorkflows = workflowsList.Count,
+                CompletedWorkflows = workflowsList.Count(w => w.Status == WorkflowStatus.Completed),
+                InProgressWorkflows = workflowsList.Count(w => w.Status == WorkflowStatus.InProgress),
+                PendingApprovalWorkflows = workflowsList.Count(w => w.Status == WorkflowStatus.WaitingForApproval),
+                RejectedWorkflows = workflowsList.Count(w => w.Status == WorkflowStatus.Rejected),
+                CancelledWorkflows = workflowsList.Count(w => w.Status == WorkflowStatus.Cancelled),
+                AverageCompletionTime = CalculateAverageCompletionTime(workflowsList),
+                WorkflowsByType = workflowsList.GroupBy(w => w.WorkflowTemplate?.WorkflowType)
+                    .Select(g => new { Type = g.Key, Count = g.Count() }),
+                WorkflowsByPriority = workflowsList.GroupBy(w => w.Priority)
+                    .Select(g => new { Priority = g.Key, Count = g.Count() }),
+                RecentWorkflows = workflowsList.OrderByDescending(w => w.CreatedAt)
+                    .Take(10)
+                    .Select(w => new { w.Id, w.Name, w.Status, w.CreatedAt })
+            };
+
+            return analytics;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving workflow analytics");
+            return new { Error = "Failed to retrieve analytics" };
+        }
     }
 
     public async Task<IEnumerable<WorkflowTemplate>> GetWorkflowTemplatesAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow templates retrieval not yet implemented");
+        try
+        {
+            var templates = await _workflowTemplateRepository.FindAsync(t => 
+                t.TenantId == _tenantProvider.GetTenantId() && t.IsActive);
+            
+            return templates.OrderBy(t => t.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving workflow templates");
+            return Enumerable.Empty<WorkflowTemplate>();
+        }
     }
 
     public async Task<WorkflowTemplate> CreateWorkflowTemplateAsync(CreateWorkflowTemplateRequest request)
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow template creation not yet implemented");
+        try
+        {
+            var template = new WorkflowTemplate
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name,
+                Description = request.Description,
+                WorkflowType = request.WorkflowType,
+                Version = "1.0",
+                WorkflowDefinition = JsonSerializer.Serialize(request.Steps),
+                ApprovalSteps = JsonSerializer.Serialize(request.Steps.Where(s => s.RequiresApproval)),
+                SlaHours = request.SlaHours,
+                IsActive = true,
+                IsDefault = false,
+                TenantId = _tenantProvider.GetTenantId(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _workflowTemplateRepository.AddAsync(template);
+
+            for (int i = 0; i < request.Steps.Count; i++)
+            {
+                var stepRequest = request.Steps[i];
+                var step = new WorkflowStep
+                {
+                    Id = Guid.NewGuid(),
+                    Name = stepRequest.Name,
+                    Description = stepRequest.Description,
+                    StepType = Enum.Parse<WorkflowStepType>(stepRequest.Type),
+                    Order = i,
+                    Configuration = JsonSerializer.Serialize(stepRequest.Configuration),
+                    RequiresApproval = stepRequest.RequiresApproval,
+                    IsActive = true,
+                    WorkflowTemplateId = template.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                await _workflowStepRepository.AddAsync(step);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            await LogAuditAsync("WORKFLOW_TEMPLATE_CREATED", "Workflow template created", template.Id);
+
+            _logger.LogInformation("Workflow template created: {TemplateId}", template.Id);
+
+            return template;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating workflow template");
+            throw;
+        }
     }
 
     public async Task<object> CheckSlaBreachesAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("SLA breaches check not yet implemented");
+        try
+        {
+            var breachedCount = await ProcessSLABreachesAsync();
+            
+            var tenantId = _tenantProvider.GetTenantId();
+            var activeWorkflows = await _workflowInstanceRepository.FindAsync(w => 
+                w.TenantId == tenantId && 
+                (w.Status == WorkflowStatus.InProgress || w.Status == WorkflowStatus.WaitingForApproval));
+
+            var slaStatus = new List<object>();
+            
+            foreach (var workflow in activeWorkflows)
+            {
+                var isBreached = await CheckSlaBreachAsync(workflow.Id);
+                var timeRemaining = CalculateTimeRemaining(workflow);
+                
+                slaStatus.Add(new
+                {
+                    WorkflowId = workflow.Id,
+                    WorkflowName = workflow.Name,
+                    Status = workflow.Status,
+                    DueDate = workflow.DueDate,
+                    IsBreached = isBreached,
+                    TimeRemaining = timeRemaining,
+                    Priority = workflow.Priority
+                });
+            }
+
+            return new
+            {
+                TotalBreachedWorkflows = breachedCount,
+                SlaStatus = slaStatus.OrderBy(s => ((dynamic)s).TimeRemaining)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking SLA breaches");
+            return new { Error = "Failed to check SLA breaches" };
+        }
     }
 
     public async Task<object> GetWorkflowPerformanceAsync()
     {
-        await Task.CompletedTask;
-        throw new NotImplementedException("Workflow performance retrieval not yet implemented");
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            var workflows = await _workflowInstanceRepository.FindAsync(w => w.TenantId == tenantId);
+            var workflowsList = workflows.ToList();
+
+            var completedWorkflows = workflowsList.Where(w => w.Status == WorkflowStatus.Completed).ToList();
+            
+            var performance = new
+            {
+                TotalWorkflows = workflowsList.Count,
+                CompletedWorkflows = completedWorkflows.Count,
+                CompletionRate = workflowsList.Count > 0 ? (decimal)completedWorkflows.Count / workflowsList.Count * 100 : 0,
+                AverageCompletionTime = CalculateAverageCompletionTime(completedWorkflows),
+                FastestCompletion = CalculateFastestCompletion(completedWorkflows),
+                SlowestCompletion = CalculateSlowestCompletion(completedWorkflows),
+                WorkflowsCompletedOnTime = CalculateOnTimeCompletions(completedWorkflows),
+                PerformanceByType = workflowsList.GroupBy(w => w.WorkflowTemplate?.WorkflowType)
+                    .Select(g => new
+                    {
+                        Type = g.Key,
+                        Total = g.Count(),
+                        Completed = g.Count(w => w.Status == WorkflowStatus.Completed),
+                        AverageTime = CalculateAverageCompletionTime(g.Where(w => w.Status == WorkflowStatus.Completed).ToList())
+                    }),
+                MonthlyTrends = CalculateMonthlyTrends(workflowsList)
+            };
+
+            return performance;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving workflow performance");
+            return new { Error = "Failed to retrieve performance metrics" };
+        }
     }
+
+    #region Private Helper Methods
+
+    private TimeSpan? CalculateAverageCompletionTime(List<WorkflowInstance> workflows)
+    {
+        var completedWorkflows = workflows.Where(w => 
+            w.StartedAt.HasValue && w.CompletedAt.HasValue).ToList();
+        
+        if (!completedWorkflows.Any())
+            return null;
+
+        var totalTicks = completedWorkflows.Sum(w => 
+            (w.CompletedAt!.Value - w.StartedAt!.Value).Ticks);
+        
+        return new TimeSpan(totalTicks / completedWorkflows.Count);
+    }
+
+    private TimeSpan? CalculateFastestCompletion(List<WorkflowInstance> workflows)
+    {
+        var completedWorkflows = workflows.Where(w => 
+            w.StartedAt.HasValue && w.CompletedAt.HasValue).ToList();
+        
+        if (!completedWorkflows.Any())
+            return null;
+
+        return completedWorkflows.Min(w => w.CompletedAt!.Value - w.StartedAt!.Value);
+    }
+
+    private TimeSpan? CalculateSlowestCompletion(List<WorkflowInstance> workflows)
+    {
+        var completedWorkflows = workflows.Where(w => 
+            w.StartedAt.HasValue && w.CompletedAt.HasValue).ToList();
+        
+        if (!completedWorkflows.Any())
+            return null;
+
+        return completedWorkflows.Max(w => w.CompletedAt!.Value - w.StartedAt!.Value);
+    }
+
+    private int CalculateOnTimeCompletions(List<WorkflowInstance> workflows)
+    {
+        return workflows.Count(w => 
+            w.CompletedAt.HasValue && 
+            w.DueDate.HasValue && 
+            w.CompletedAt.Value <= w.DueDate.Value);
+    }
+
+    private object CalculateMonthlyTrends(List<WorkflowInstance> workflows)
+    {
+        var last12Months = Enumerable.Range(0, 12)
+            .Select(i => DateTime.UtcNow.AddMonths(-i))
+            .Select(date => new
+            {
+                Month = date.ToString("yyyy-MM"),
+                Created = workflows.Count(w => w.CreatedAt.Year == date.Year && w.CreatedAt.Month == date.Month),
+                Completed = workflows.Count(w => w.CompletedAt?.Year == date.Year && w.CompletedAt?.Month == date.Month)
+            })
+            .OrderBy(x => x.Month)
+            .ToList();
+
+        return last12Months;
+    }
+
+    private TimeSpan? CalculateTimeRemaining(WorkflowInstance workflow)
+    {
+        if (!workflow.DueDate.HasValue)
+            return null;
+
+        var remaining = workflow.DueDate.Value - DateTime.UtcNow;
+        return remaining.TotalMilliseconds > 0 ? remaining : TimeSpan.Zero;
+    }
+
+    #endregion
 }
