@@ -41,7 +41,7 @@ public class Project : TenantEntity
     /// <summary>
     /// Project priority
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Project start date

@@ -57,7 +57,7 @@ public class UserStory : TenantEntity
     /// <summary>
     /// User story priority
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Story points estimation

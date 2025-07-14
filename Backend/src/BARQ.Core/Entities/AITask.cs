@@ -34,7 +34,7 @@ public class AITask : TenantEntity
     /// <summary>
     /// AI task priority
     /// </summary>
-    public Priority Priority { get; set; } = Priority.Medium;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
 
     /// <summary>
     /// Input data for the AI task as JSON

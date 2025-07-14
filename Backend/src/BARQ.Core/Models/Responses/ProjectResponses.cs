@@ -71,7 +71,7 @@ public class ProjectAnalyticsDto
     public int OverdueTasks { get; set; }
     public decimal CompletionPercentage { get; set; }
     public TimeSpan AverageTaskDuration { get; set; }
-    public decimal TeamProductivity { get; set; }
+    public decimal TeamProductivityScore { get; set; }
     public decimal BudgetUtilization { get; set; }
     public List<TeamMemberProductivityDto> TeamProductivity { get; set; } = new();
     public List<TaskCompletionTrendDto> CompletionTrends { get; set; } = new();
