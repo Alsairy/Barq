@@ -40,7 +40,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasMany(u => u.ProjectMemberships)
             .WithOne(pm => pm.User)
             .HasForeignKey(pm => pm.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(u => u.AuditLogs)
             .WithOne(al => al.User)

@@ -27,17 +27,17 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
         builder.HasOne(w => w.Sprint)
             .WithMany()
             .HasForeignKey(w => w.SprintId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.UserStory)
             .WithMany()
             .HasForeignKey(w => w.UserStoryId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.CurrentAssignee)
             .WithMany(u => u.AssignedWorkflows)
             .HasForeignKey(w => w.CurrentAssigneeId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.Initiator)
             .WithMany()
