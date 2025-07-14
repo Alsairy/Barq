@@ -61,4 +61,9 @@ public interface ISsoAuthenticationService
     /// <param name="request">Update SSO configuration request</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task<SsoConfigurationResponse> UpdateSsoConfigurationAsync(UpdateSsoConfigurationRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task<bool> CheckHealthAsync(CancellationToken cancellationToken = default);
 }

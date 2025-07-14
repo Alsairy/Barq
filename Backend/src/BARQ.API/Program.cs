@@ -167,6 +167,8 @@ builder.Services.AddScoped<DatabaseHealthCheck>();
 builder.Services.AddScoped<RedisHealthCheck>();
 builder.Services.AddScoped<SecurityHealthCheck>();
 builder.Services.AddScoped<AIProvidersHealthCheck>();
+builder.Services.AddScoped<IntegrationGatewayHealthCheck>();
+builder.Services.AddScoped<SsoAuthenticationHealthCheck>();
 
 builder.Services.AddScoped<IApiAnalyticsService, ApiAnalyticsService>();
 
@@ -272,7 +274,9 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database_detailed", tags: new[] { "ready", "startup" })
     .AddCheck<RedisHealthCheck>("redis_detailed", tags: new[] { "ready" })
     .AddCheck<SecurityHealthCheck>("security_monitoring", tags: new[] { "ready" })
-    .AddCheck<AIProvidersHealthCheck>("ai_providers", tags: new[] { "ready" });
+    .AddCheck<AIProvidersHealthCheck>("ai_providers", tags: new[] { "ready" })
+    .AddCheck<IntegrationGatewayHealthCheck>("integration_gateway", tags: new[] { "ready" })
+    .AddCheck<SsoAuthenticationHealthCheck>("sso_authentication", tags: new[] { "ready" });
 
 builder.Services.AddCors(options =>
 {

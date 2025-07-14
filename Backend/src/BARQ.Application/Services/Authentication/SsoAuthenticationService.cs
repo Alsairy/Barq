@@ -998,4 +998,41 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         public string IdToken { get; set; } = string.Empty;
         public string TokenType { get; set; } = string.Empty;
     }
+
+    public async Task<bool> CheckHealthAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            
+            var ssoConfigs = await _ssoConfigRepository.GetAllAsync();
+            var ssoConfig = ssoConfigs.FirstOrDefault(s => s.TenantId == tenantId);
+            
+            if (ssoConfig == null)
+            {
+                _logger.LogInformation("SSO health check: No SSO configuration found for tenant {TenantId}", tenantId);
+                return true; // No SSO configured is considered healthy
+            }
+
+            // Validate SSO configuration
+            var validationResponse = await ValidateSsoConfigurationAsync(tenantId, ssoConfig.Provider, cancellationToken);
+            
+            if (validationResponse.IsValid)
+            {
+                _logger.LogInformation("SSO health check: SSO configuration is valid for tenant {TenantId}", tenantId);
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("SSO health check: SSO configuration validation failed for tenant {TenantId}: {Message}", 
+                    tenantId, validationResponse.Message);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SSO health check failed");
+            return false;
+        }
+    }
 }

@@ -11,6 +11,7 @@ public interface IIntegrationGatewayService
     Task<IEnumerable<IntegrationEndpoint>> GetRegisteredEndpointsAsync();
     Task<IntegrationHealthStatus> CheckEndpointHealthAsync(string endpointId);
     Task<IEnumerable<IntegrationLog>> GetIntegrationLogsAsync(DateTime? fromDate = null, DateTime? toDate = null);
+    Task<bool> CheckHealthAsync();
 }
 
 public interface IProtocolAdapter

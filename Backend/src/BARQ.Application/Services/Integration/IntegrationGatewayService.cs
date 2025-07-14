@@ -341,6 +341,50 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         }
     }
 
+    public async Task<bool> CheckHealthAsync()
+    {
+        try
+        {
+            var healthyEndpoints = 0;
+            var totalEndpoints = _endpoints.Count;
+
+            if (totalEndpoints == 0)
+            {
+                _logger.LogInformation("Integration Gateway health check: No endpoints registered");
+                return true;
+            }
+
+            foreach (var endpoint in _endpoints.Values)
+            {
+                try
+                {
+                    var healthStatus = await CheckEndpointHealthAsync(endpoint.Id);
+                    if (healthStatus.IsHealthy)
+                    {
+                        healthyEndpoints++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Health check failed for endpoint {EndpointId}", endpoint.Id);
+                }
+            }
+
+            var healthPercentage = (double)healthyEndpoints / totalEndpoints;
+            var isHealthy = healthPercentage >= 0.5; // At least 50% of endpoints should be healthy
+
+            _logger.LogInformation("Integration Gateway health check: {HealthyEndpoints}/{TotalEndpoints} endpoints healthy ({HealthPercentage:P})",
+                healthyEndpoints, totalEndpoints, healthPercentage);
+
+            return isHealthy;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Integration Gateway health check failed");
+            return false;
+        }
+    }
+
     private async Task LogIntegrationRequestAsync(IntegrationRequest request, IntegrationResponse response)
     {
         try
