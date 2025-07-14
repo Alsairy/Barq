@@ -382,3 +382,5 @@ app.MapHealthChecks("/health/startup", new Microsoft.AspNetCore.Diagnostics.Heal
 });
 
 app.Run();
+
+public partial class Program { }
