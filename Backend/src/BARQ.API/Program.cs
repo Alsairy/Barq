@@ -10,19 +10,28 @@ using AutoMapper;
 using BARQ.Infrastructure.Data;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.Repositories;
+using BARQ.Core.Repositories;
 using BARQ.Core.Services;
 using BARQ.Application.Services.Users;
 using BARQ.Application.Services.Authentication;
 using BARQ.Application.Services.Organizations;
 using BARQ.Application.Services.BusinessLogic;
+using BARQ.Application.Services.Security;
+using BARQ.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "BARQ")
+    .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
     .WriteTo.Console()
     .WriteTo.File("logs/barq-.txt", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/security/security-.txt", 
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {CorrelationId} {SourceContext} {Message:lj}{NewLine}{Exception}")
     .CreateLogger();
 
 builder.Host.UseSerilog();
@@ -39,6 +48,10 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.AuditLog>, GenericRepository<BARQ.Core.Entities.AuditLog>>();
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.User>, GenericRepository<BARQ.Core.Entities.User>>();
+builder.Services.AddScoped<BARQ.Core.Repositories.IRepository<BARQ.Core.Entities.Organization>, GenericRepository<BARQ.Core.Entities.Organization>>();
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(BARQ.Application.Commands.Users.RegisterUserCommand).Assembly));
 
@@ -62,6 +75,29 @@ builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();
 builder.Services.AddScoped<IValidationPipelineService, ValidationPipelineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
+builder.Services.AddScoped<ISecurityMonitoringService, SecurityMonitoringService>();
+builder.Services.AddScoped<IThreatDetectionService, ThreatDetectionService>();
+builder.Services.AddScoped<ISiemIntegrationService, SiemIntegrationService>();
+builder.Services.AddScoped<TdeConfiguration>();
+
+builder.Services.AddScoped<IComplianceService, ComplianceService>();
+builder.Services.AddScoped<IGdprComplianceService, GdprComplianceService>();
+builder.Services.AddScoped<IHipaaComplianceService, HipaaComplianceService>();
+builder.Services.AddScoped<ISoxComplianceService, SoxComplianceService>();
+
+builder.Services.AddSingleton<WafConfiguration>();
+builder.Services.AddSingleton<SecurityHeadersConfiguration>();
+builder.Services.AddSingleton<RateLimitConfiguration>();
+builder.Services.AddSingleton<InputValidationConfiguration>();
+
+builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "BARQ-Security-Monitor/1.0");
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -73,8 +109,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only"))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
+            ClockSkew = TimeSpan.FromMinutes(5),
+            RequireExpirationTime = true,
+            ValidateActor = false,
+            ValidateTokenReplay = false
         };
+        
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.SaveToken = false;
+        options.IncludeErrorDetails = builder.Environment.IsDevelopment();
     });
 
 builder.Services.AddAuthorization();
@@ -86,15 +130,34 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("SecurePolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials()
+                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        }
+        else
+        {
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://barq.app" })
+                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID", "X-Correlation-ID")
+                  .AllowCredentials()
+                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+        }
     });
 });
 
 var app = builder.Build();
+
+// Configure security middleware pipeline in proper order
+app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -102,9 +165,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors("SecurePolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();

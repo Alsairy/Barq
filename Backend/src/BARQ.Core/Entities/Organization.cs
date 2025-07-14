@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using BARQ.Core.Enums;
+using BARQ.Core.Attributes;
 
 namespace BARQ.Core.Entities;
 
@@ -13,6 +14,7 @@ public class Organization : BaseEntity
     /// </summary>
     [Required]
     [MaxLength(200)]
+    [SearchableEncrypted]
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
