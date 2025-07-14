@@ -42,3 +42,48 @@ public enum WorkflowApprovalAction
     RequestChanges,
     Escalate
 }
+
+public class CreateWorkflowRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public Guid TemplateId { get; set; }
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
+    public Dictionary<string, object> Data { get; set; } = new();
+    public Guid? ProjectId { get; set; }
+    public DateTime? DueDate { get; set; }
+    public List<Guid> ApproverUserIds { get; set; } = new();
+}
+
+public class ApproveWorkflowRequest
+{
+    public Guid WorkflowId { get; set; }
+    public string? Comments { get; set; }
+    public Dictionary<string, object>? AdditionalData { get; set; }
+}
+
+public class RejectWorkflowRequest
+{
+    public Guid WorkflowId { get; set; }
+    public string Reason { get; set; } = string.Empty;
+    public string? Comments { get; set; }
+}
+
+public class CreateWorkflowTemplateRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public List<WorkflowStepTemplateRequest> Steps { get; set; } = new();
+    public Dictionary<string, object> DefaultData { get; set; } = new();
+    public int SlaHours { get; set; } = 24;
+}
+
+public class WorkflowStepTemplateRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public int Order { get; set; }
+    public Dictionary<string, object> Configuration { get; set; } = new();
+    public bool RequiresApproval { get; set; }
+}

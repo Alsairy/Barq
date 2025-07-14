@@ -8,4 +8,5 @@ public interface ITenantProvider
     void SetTenantName(string tenantName);
     bool IsMultiTenant();
     void ClearTenantContext();
+    Guid GetCurrentUserId();
 }

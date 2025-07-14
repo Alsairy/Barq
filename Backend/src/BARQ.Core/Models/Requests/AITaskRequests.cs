@@ -28,3 +28,21 @@ public class UpdateAITaskRequest : AITaskRequest
     public string? OutputData { get; set; }
     public string? ErrorMessage { get; set; }
 }
+
+public class ConfigureAIProviderRequest
+{
+    public Guid ProviderId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public Dictionary<string, object> Configuration { get; set; } = new();
+    public bool IsEnabled { get; set; } = true;
+    public List<string> Capabilities { get; set; } = new();
+}
+
+public class ExecuteBatchAITasksRequest
+{
+    public List<CreateAITaskRequest> Tasks { get; set; } = new();
+    public string BatchName { get; set; } = string.Empty;
+    public ProjectPriority Priority { get; set; } = ProjectPriority.Medium;
+    public DateTime? ScheduledAt { get; set; }
+}
