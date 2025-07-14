@@ -1,5 +1,4 @@
 using BARQ.Core.Enums;
-using static BARQ.Core.Enums.NotificationEnums;
 
 namespace BARQ.Core.Models.Requests;
 
