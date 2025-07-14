@@ -62,6 +62,12 @@ public class Organization : BaseEntity
     public int MaxProjects { get; set; } = 3;
 
     /// <summary>
+    /// Organization domain name
+    /// </summary>
+    [MaxLength(200)]
+    public string? Domain { get; set; }
+
+    /// <summary>
     /// Organization settings as JSON
     /// </summary>
     public string? Settings { get; set; }

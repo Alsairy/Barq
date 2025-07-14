@@ -27,6 +27,8 @@ public class BarqDbContext : DbContext
     public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
     public DbSet<AITask> AITasks { get; set; }
     public DbSet<AIProviderConfiguration> AIProviderConfigurations { get; set; }
+    public DbSet<SsoConfiguration> SsoConfigurations { get; set; }
+    public DbSet<LdapConfiguration> LdapConfigurations { get; set; }
     public DbSet<CostTracking> CostTrackings { get; set; }
     public DbSet<ITSMTicket> ITSMTickets { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }

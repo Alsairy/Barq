@@ -131,6 +131,8 @@ builder.Services.AddValidatorsFromAssembly(typeof(BARQ.Application.Validators.Re
 
 builder.Services.AddScoped<IUserRegistrationService, UserRegistrationService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<ISsoAuthenticationService, SsoAuthenticationService>();
+builder.Services.AddScoped<ILdapAuthenticationService, LdapAuthenticationService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IMultiFactorAuthService, MultiFactorAuthService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();

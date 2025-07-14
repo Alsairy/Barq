@@ -6,6 +6,7 @@ using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Services;
+using System.Text.Json;
 
 namespace BARQ.Application.Services.AI;
 
@@ -556,7 +557,7 @@ public class AIOrchestrationService : IAIOrchestrationService
                 TaskType = request.TaskType,
                 Priority = request.Priority,
                 InputData = request.InputData,
-                Parameters = request.Parameters,
+                Parameters = request.Parameters != null ? JsonSerializer.Serialize(request.Parameters) : null,
                 ProjectId = request.ProjectId,
                 UserId = request.AssignedToUserId,
                 TenantId = tenantId,
@@ -689,11 +690,11 @@ public class AIOrchestrationService : IAIOrchestrationService
                 PendingTasks = tasks.Count(t => t.Status == AITaskStatus.Pending),
                 RunningTasks = tasks.Count(t => t.Status == AITaskStatus.Running),
                 AverageExecutionTime = tasks.Where(t => t.ProcessingTimeMs.HasValue)
-                    .Select(t => t.ProcessingTimeMs.Value)
+                    .Select(t => t.ProcessingTimeMs!.Value)
                     .DefaultIfEmpty(0)
                     .Average(),
                 TotalCost = tasks.Where(t => t.Cost.HasValue)
-                    .Sum(t => t.Cost.Value),
+                    .Sum(t => t.Cost!.Value),
                 SuccessRate = tasks.Any() ? 
                     (decimal)tasks.Count(t => t.Status == AITaskStatus.Completed) / tasks.Count() * 100 : 0,
                 TasksByType = tasks.GroupBy(t => t.TaskType)
@@ -846,7 +847,7 @@ public class AIOrchestrationService : IAIOrchestrationService
                 TotalTasks = request.Tasks.Count,
                 SuccessfulTasks = results.Count(r => r.Success),
                 FailedTasks = results.Count(r => !r.Success),
-                TotalCost = results.Where(r => r.Cost.HasValue).Sum(r => r.Cost.Value),
+                TotalCost = results.Where(r => r.Cost.HasValue).Sum(r => r.Cost!.Value),
                 TotalExecutionTime = results.Sum(r => r.ExecutionTimeMs),
                 Results = results,
                 CompletedAt = DateTime.UtcNow
@@ -929,15 +930,15 @@ public class AIOrchestrationService : IAIOrchestrationService
             var costAnalysis = new
             {
                 TenantId = tenantId,
-                TotalCost = tasks.Where(t => t.Cost.HasValue).Sum(t => t.Cost.Value),
-                AverageCostPerTask = tasks.Where(t => t.Cost.HasValue).Select(t => t.Cost.Value).DefaultIfEmpty(0).Average(),
+                TotalCost = tasks.Where(t => t.Cost.HasValue).Sum(t => t.Cost!.Value),
+                AverageCostPerTask = tasks.Where(t => t.Cost.HasValue).Select(t => t.Cost!.Value).DefaultIfEmpty(0).Average(),
                 CostByTaskType = tasks.Where(t => t.Cost.HasValue)
                     .GroupBy(t => t.TaskType)
                     .Select(g => new { 
                         TaskType = g.Key.ToString(), 
-                        TotalCost = g.Sum(t => t.Cost.Value),
+                        TotalCost = g.Sum(t => t.Cost!.Value),
                         TaskCount = g.Count(),
-                        AverageCost = g.Average(t => t.Cost.Value)
+                        AverageCost = g.Average(t => t.Cost!.Value)
                     })
                     .OrderByDescending(x => x.TotalCost)
                     .ToList(),
@@ -945,7 +946,7 @@ public class AIOrchestrationService : IAIOrchestrationService
                     .Select(p => new {
                         ProviderId = p.Id,
                         ProviderName = p.Name,
-                        TotalCost = p.TotalCost.Value,
+                        TotalCost = p.TotalCost!.Value,
                         AverageCost = p.AverageCost ?? 0,
                         CostPerToken = p.CostPerToken ?? 0
                     })
@@ -955,7 +956,7 @@ public class AIOrchestrationService : IAIOrchestrationService
                     .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month })
                     .Select(g => new {
                         Month = $"{g.Key.Year}-{g.Key.Month:D2}",
-                        TotalCost = g.Sum(t => t.Cost.Value),
+                        TotalCost = g.Sum(t => t.Cost!.Value),
                         TaskCount = g.Count()
                     })
                     .OrderBy(x => x.Month)
