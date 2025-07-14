@@ -27,6 +27,9 @@ using BARQ.Infrastructure.Security;
 using BARQ.Infrastructure.HealthChecks;
 using BARQ.Infrastructure.Middleware;
 using BARQ.Infrastructure.Analytics;
+using BARQ.Infrastructure.Caching;
+using BARQ.Infrastructure.Performance;
+using BARQ.Infrastructure.BackgroundJobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -164,6 +167,15 @@ builder.Services.AddScoped<AIProvidersHealthCheck>();
 
 builder.Services.AddScoped<IApiAnalyticsService, ApiAnalyticsService>();
 
+builder.Services.Configure<CachingOptions>(builder.Configuration.GetSection("Caching"));
+builder.Services.AddScoped<ICachingService, CachingService>();
+
+builder.Services.Configure<DatabasePerformanceOptions>(builder.Configuration.GetSection("DatabasePerformance"));
+builder.Services.AddScoped<IDatabasePerformanceService, DatabasePerformanceService>();
+
+builder.Services.Configure<BackgroundJobOptions>(builder.Configuration.GetSection("BackgroundJobs"));
+builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+
 builder.Services.AddSingleton<WafConfiguration>();
 builder.Services.AddSingleton<SecurityHeadersConfiguration>();
 builder.Services.AddSingleton<RateLimitConfiguration>();
@@ -203,6 +215,20 @@ builder.Services.AddAuthorization();
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
+});
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/xml",
+        "text/xml",
+        "text/json"
+    });
 });
 
 builder.Services.AddHealthChecks()
@@ -277,6 +303,7 @@ else
     });
 }
 
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseCors("SecurePolicy");
 
