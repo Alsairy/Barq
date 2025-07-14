@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using BARQ.Core.Services;
 
 namespace BARQ.Infrastructure.MultiTenancy;
 
