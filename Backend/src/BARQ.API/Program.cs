@@ -17,6 +17,9 @@ using BARQ.Application.Services.Authentication;
 using BARQ.Application.Services.Organizations;
 using BARQ.Application.Services.BusinessLogic;
 using BARQ.Application.Services.Security;
+using BARQ.Application.Services.Projects;
+using BARQ.Application.Services.AI;
+using BARQ.Application.Services.Workflows;
 using BARQ.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +77,10 @@ builder.Services.AddScoped<ITenantContextService, TenantContextService>();
 builder.Services.AddScoped<IBusinessRuleEngine, BusinessRuleEngine>();
 builder.Services.AddScoped<IValidationPipelineService, ValidationPipelineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IAIOrchestrationService, AIOrchestrationService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
