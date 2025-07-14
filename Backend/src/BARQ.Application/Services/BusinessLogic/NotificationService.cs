@@ -7,7 +7,7 @@ using BARQ.Core.Models.Responses;
 using BARQ.Core.Entities;
 using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
-using BARQ.Infrastructure.MultiTenancy;
+using BARQ.Core.Services;
 using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 

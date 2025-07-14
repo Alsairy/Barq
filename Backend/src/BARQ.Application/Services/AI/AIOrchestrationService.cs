@@ -4,7 +4,7 @@ using BARQ.Core.Interfaces;
 using BARQ.Core.Entities;
 using BARQ.Core.Repositories;
 using BARQ.Core.Enums;
-using BARQ.Infrastructure.MultiTenancy;
+using BARQ.Core.Services;
 
 namespace BARQ.Application.Services.AI;
 
