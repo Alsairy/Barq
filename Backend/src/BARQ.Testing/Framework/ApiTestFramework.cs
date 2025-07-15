@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
+using BARQ.Core.Services;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -20,16 +21,20 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.ConfigureServices(services =>
         {
-            var descriptors = services.Where(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>) || 
-                                                 d.ServiceType == typeof(DbContextOptions) ||
-                                                 d.ServiceType.IsGenericType && 
-                                                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>))
-                                    .ToList();
+            var dbContextDescriptors = services.Where(d => 
+                d.ServiceType == typeof(DbContextOptions<BarqDbContext>) || 
+                d.ServiceType == typeof(DbContextOptions) ||
+                d.ServiceType == typeof(BarqDbContext) ||
+                (d.ServiceType.IsGenericType && 
+                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)))
+                .ToList();
             
-            foreach (var descriptor in descriptors)
+            foreach (var descriptor in dbContextDescriptors)
             {
                 services.Remove(descriptor);
             }
+
+            services.AddScoped<ITenantProvider, TestTenantProvider>();
 
             services.AddDbContext<BarqDbContext>(options =>
                 options.UseInMemoryDatabase("TestDatabase"));
@@ -191,6 +196,14 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Projects.AddRange(acmeProject, betaProject);
 
         await _context.SaveChangesAsync();
+    }
+}
+
+public class TestTenantProvider : ITenantProvider
+{
+    public Guid GetTenantId()
+    {
+        return Guid.Parse("11111111-1111-1111-1111-111111111111"); // Default test tenant
     }
 }
 
