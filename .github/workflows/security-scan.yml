@@ -44,7 +44,7 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
-        args: --severity-threshold=high
+        args: --severity-threshold=high --file=Backend/BARQ.sln
 
     - name: Run CodeQL Init
       uses: github/codeql-action/init@v3
@@ -52,7 +52,9 @@ jobs:
         languages: 'csharp,javascript'
         
     - name: Build for CodeQL
-      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
+      run: |
+        cd Backend
+        dotnet build BARQ.sln --no-restore --configuration Release
         
     - name: Run CodeQL Analysis
       uses: github/codeql-action/analyze@v3
@@ -63,10 +65,10 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build Backend Docker image
-      run: docker build -t barq-backend:test ./Backend
+      run: docker build -t barq-backend:test -f Backend/Dockerfile ./Backend
 
     - name: Build Frontend Docker image
-      run: docker build -t barq-frontend:test ./Frontend/barq-frontend
+      run: docker build -t barq-frontend:test -f Frontend/barq-frontend/Dockerfile ./Frontend/barq-frontend
 
     - name: Run Trivy vulnerability scanner on Backend
       uses: aquasecurity/trivy-action@master
