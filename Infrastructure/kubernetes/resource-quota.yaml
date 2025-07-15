@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: barq-system-quota
+  namespace: barq-system
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    persistentvolumeclaims: "10"
+    pods: "50"
+    services: "20"
+    secrets: "20"
+    configmaps: "20"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: barq-tenant-default-quota
+  namespace: barq-tenant-default
+spec:
+  hard:
+    requests.cpu: "5"
+    requests.memory: 10Gi
+    limits.cpu: "10"
+    limits.memory: 20Gi
+    persistentvolumeclaims: "5"
+    pods: "25"
+    services: "10"
+    secrets: "10"
+    configmaps: "10"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: barq-tenant-enterprise-quota
+  namespace: barq-tenant-enterprise
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    persistentvolumeclaims: "20"
+    pods: "100"
+    services: "40"
+    secrets: "40"
+    configmaps: "40"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: barq-system-limits
+  namespace: barq-system
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container
+  - max:
+      storage: "100Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: barq-tenant-limits
+  namespace: barq-tenant-default
+spec:
+  limits:
+  - default:
+      cpu: "250m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "50m"
+      memory: "128Mi"
+    type: Container
+  - max:
+      cpu: "1"
+      memory: "2Gi"
+    min:
+      cpu: "25m"
+      memory: "32Mi"
+    type: Container
+  - max:
+      storage: "50Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: barq-tenant-enterprise-limits
+  namespace: barq-tenant-enterprise
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: "2Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container
+  - max:
+      cpu: "4"
+      memory: "8Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container
+  - max:
+      storage: "200Gi"
+    min:
+      storage: "1Gi"
+    type: PersistentVolumeClaim

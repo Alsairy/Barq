@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: barq-database-pvc
+  namespace: barq-system
+  labels:
+    app: barq-database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: barq-redis-pvc
+  namespace: barq-system
+  labels:
+    app: barq-redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: barq-database-pv
+  labels:
+    app: barq-database
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: gp3
+  hostPath:
+    path: /data/barq/database
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: barq-redis-pv
+  labels:
+    app: barq-redis
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: gp3
+  hostPath:
+    path: /data/barq/redis

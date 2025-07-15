@@ -1,0 +1,45 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: barq-backend-pdb
+  namespace: barq-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: barq-backend
+      version: v1
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: barq-frontend-pdb
+  namespace: barq-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: barq-frontend
+      version: v1
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: barq-database-pdb
+  namespace: barq-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: barq-database
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: barq-redis-pdb
+  namespace: barq-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: barq-redis

@@ -1,0 +1,173 @@
+name: Security Scanning
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Restore .NET dependencies
+      run: dotnet restore Backend/BARQ.sln
+
+    - name: Install Frontend dependencies
+      run: npm ci
+      working-directory: Frontend/barq-frontend
+
+    - name: Run .NET Security Audit
+      run: dotnet list Backend/BARQ.sln package --vulnerable --include-transitive
+
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+      working-directory: Frontend/barq-frontend
+
+    - name: Run Snyk Security Scan
+      uses: snyk/actions/dotnet@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+
+  container-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Backend Docker image
+      run: docker build -t barq-backend:test ./Backend
+
+    - name: Build Frontend Docker image
+      run: docker build -t barq-frontend:test ./Frontend/barq-frontend
+
+    - name: Run Trivy vulnerability scanner on Backend
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'barq-backend:test'
+        format: 'sarif'
+        output: 'trivy-backend-results.sarif'
+
+    - name: Run Trivy vulnerability scanner on Frontend
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'barq-frontend:test'
+        format: 'sarif'
+        output: 'trivy-frontend-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-backend-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-frontend-results.sarif'
+
+  infrastructure-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: Infrastructure/
+        framework: kubernetes
+        output_format: sarif
+        output_file_path: checkov-results.sarif
+
+    - name: Upload Checkov scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: checkov-results.sarif
+
+    - name: Run Terrascan
+      uses: tenable/terrascan-action@main
+      with:
+        iac_type: 'k8s'
+        iac_dir: 'Infrastructure/kubernetes'
+        policy_type: 'k8s'
+        only_warn: true
+        sarif_upload: true
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Run GitLeaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Run TruffleHog
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  compliance-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: GDPR Compliance Check
+      run: |
+        echo "Checking GDPR compliance..."
+        grep -r "personal.*data\|PII\|GDPR" --include="*.cs" --include="*.ts" --include="*.tsx" . || true
+        
+    - name: HIPAA Compliance Check
+      run: |
+        echo "Checking HIPAA compliance..."
+        grep -r "health.*information\|PHI\|HIPAA" --include="*.cs" --include="*.ts" --include="*.tsx" . || true
+
+    - name: SOX Compliance Check
+      run: |
+        echo "Checking SOX compliance..."
+        grep -r "financial.*data\|audit.*trail\|SOX" --include="*.cs" --include="*.ts" --include="*.tsx" . || true
+
+  security-report:
+    needs: [dependency-scan, container-scan, infrastructure-scan, secrets-scan, compliance-check]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Generate Security Report
+      run: |
+        echo "# Security Scan Report" > security-report.md
+        echo "Date: $(date)" >> security-report.md
+        echo "Commit: ${{ github.sha }}" >> security-report.md
+        echo "" >> security-report.md
+        echo "## Scan Results" >> security-report.md
+        echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> security-report.md
+        echo "- Container Scan: ${{ needs.container-scan.result }}" >> security-report.md
+        echo "- Infrastructure Scan: ${{ needs.infrastructure-scan.result }}" >> security-report.md
+        echo "- Secrets Scan: ${{ needs.secrets-scan.result }}" >> security-report.md
+        echo "- Compliance Check: ${{ needs.compliance-check.result }}" >> security-report.md
+
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: security-report.md

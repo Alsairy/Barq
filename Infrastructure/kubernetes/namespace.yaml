@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: barq-system
+  labels:
+    name: barq-system
+    app.kubernetes.io/name: barq
+    app.kubernetes.io/component: system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: barq-tenant-default
+  labels:
+    name: barq-tenant-default
+    app.kubernetes.io/name: barq
+    app.kubernetes.io/component: tenant
+    barq.io/tenant: default
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: barq-tenant-enterprise
+  labels:
+    name: barq-tenant-enterprise
+    app.kubernetes.io/name: barq
+    app.kubernetes.io/component: tenant
+    barq.io/tenant: enterprise
