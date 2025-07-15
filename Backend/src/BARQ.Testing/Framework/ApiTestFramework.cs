@@ -201,9 +201,45 @@ public class TestDataSeeder : ITestDataSeeder
 
 public class TestTenantProvider : ITenantProvider
 {
+    private Guid _tenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private string _tenantName = "Test Tenant";
+    private Guid _currentUserId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
     public Guid GetTenantId()
     {
-        return Guid.Parse("11111111-1111-1111-1111-111111111111"); // Default test tenant
+        return _tenantId;
+    }
+
+    public void SetTenantId(Guid tenantId)
+    {
+        _tenantId = tenantId;
+    }
+
+    public string GetTenantName()
+    {
+        return _tenantName;
+    }
+
+    public void SetTenantName(string tenantName)
+    {
+        _tenantName = tenantName;
+    }
+
+    public bool IsMultiTenant()
+    {
+        return true;
+    }
+
+    public void ClearTenantContext()
+    {
+        _tenantId = Guid.Empty;
+        _tenantName = string.Empty;
+        _currentUserId = Guid.Empty;
+    }
+
+    public Guid GetCurrentUserId()
+    {
+        return _currentUserId;
     }
 }
 
