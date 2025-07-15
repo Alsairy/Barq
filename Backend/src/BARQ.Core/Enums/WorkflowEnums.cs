@@ -1,6 +1,105 @@
 namespace BARQ.Core.Enums;
 
 /// <summary>
+/// Workflow step type enumeration
+/// </summary>
+public enum WorkflowStepType
+{
+    /// <summary>
+    /// </summary>
+    Task = 0,
+
+    /// <summary>
+    /// </summary>
+    Approval = 1,
+
+    /// <summary>
+    /// </summary>
+    Condition = 2,
+
+    /// <summary>
+    /// </summary>
+    Parallel = 3,
+
+    /// <summary>
+    /// </summary>
+    Sequential = 4,
+
+    /// <summary>
+    /// </summary>
+    Loop = 5,
+
+    /// <summary>
+    /// </summary>
+    AITask = 6,
+
+    /// <summary>
+    /// </summary>
+    Integration = 7,
+
+    /// <summary>
+    /// </summary>
+    DataTransformation = 8,
+
+    /// <summary>
+    /// </summary>
+    Notification = 9,
+
+    /// <summary>
+    /// </summary>
+    Delay = 10,
+
+    /// <summary>
+    /// Custom step type
+    /// </summary>
+    Custom = 99
+}
+
+/// <summary>
+/// Workflow step status enumeration
+/// </summary>
+public enum WorkflowStepStatus
+{
+    /// <summary>
+    /// </summary>
+    Pending = 0,
+
+    /// <summary>
+    /// </summary>
+    Running = 1,
+
+    /// <summary>
+    /// </summary>
+    Completed = 2,
+
+    /// <summary>
+    /// </summary>
+    Failed = 3,
+
+    /// <summary>
+    /// </summary>
+    Skipped = 4,
+
+    /// <summary>
+    /// Step is waiting for approval
+    /// </summary>
+    WaitingForApproval = 5,
+
+    /// <summary>
+    /// Step was cancelled
+    /// </summary>
+    Cancelled = 6,
+
+    /// <summary>
+    /// </summary>
+    TimedOut = 7,
+
+    /// <summary>
+    /// </summary>
+    Retrying = 8
+}
+
+/// <summary>
 /// Workflow type enumeration
 /// </summary>
 public enum WorkflowType

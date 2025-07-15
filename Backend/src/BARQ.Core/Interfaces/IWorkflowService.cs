@@ -1,6 +1,7 @@
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Requests;
+using BARQ.Core.Models.Responses;
 
 namespace BARQ.Core.Interfaces;
 
@@ -135,51 +136,6 @@ public interface IWorkflowService
     Task<object> GetWorkflowPerformanceAsync();
 }
 
-/// <summary>
-/// Workflow execution result
-/// </summary>
-public class WorkflowExecutionResult
-{
-    /// <summary>
-    /// Execution success status
-    /// </summary>
-    public bool Success { get; set; }
-
-    /// <summary>
-    /// Result message
-    /// </summary>
-    public string? Message { get; set; }
-
-    /// <summary>
-    /// New workflow status
-    /// </summary>
-    public WorkflowStatus NewStatus { get; set; }
-
-    /// <summary>
-    /// Next step index
-    /// </summary>
-    public int? NextStepIndex { get; set; }
-
-    /// <summary>
-    /// Next assignee
-    /// </summary>
-    public Guid? NextAssigneeId { get; set; }
-
-    /// <summary>
-    /// Workflow is completed
-    /// </summary>
-    public bool IsCompleted { get; set; }
-
-    /// <summary>
-    /// Error details if failed
-    /// </summary>
-    public string? ErrorDetails { get; set; }
-
-    /// <summary>
-    /// Additional data
-    /// </summary>
-    public Dictionary<string, object>? AdditionalData { get; set; }
-}
 
 /// <summary>
 /// Workflow instance status

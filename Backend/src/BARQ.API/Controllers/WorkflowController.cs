@@ -72,7 +72,7 @@ public class WorkflowController : ControllerBase
             };
             return Ok(new ApiResponse<WorkflowExecutionResponse>
             {
-                Success = result.Success,
+                Success = result.IsSuccess,
                 Data = response,
                 Message = result.Message
             });
@@ -105,7 +105,7 @@ public class WorkflowController : ControllerBase
             };
             return Ok(new ApiResponse<WorkflowApprovalResponse>
             {
-                Success = result.Success,
+                Success = result.IsSuccess,
                 Data = response,
                 Message = result.Message
             });
@@ -139,7 +139,7 @@ public class WorkflowController : ControllerBase
             };
             return Ok(new ApiResponse<WorkflowRejectionResponse>
             {
-                Success = result.Success,
+                Success = result.IsSuccess,
                 Data = response,
                 Message = result.Message
             });
@@ -175,7 +175,7 @@ public class WorkflowController : ControllerBase
             };
             return Ok(new ApiResponse<WorkflowCancellationResponse>
             {
-                Success = result.Success,
+                Success = result.IsSuccess,
                 Data = response,
                 Message = result.Message
             });
