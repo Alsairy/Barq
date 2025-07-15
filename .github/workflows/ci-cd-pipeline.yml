@@ -110,10 +110,16 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
 
+    - name: Setup .NET for CodeQL
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore .NET dependencies for CodeQL
+      run: dotnet restore Backend/BARQ.sln
+
     - name: Run CodeQL Init
       uses: github/codeql-action/init@v3
-      with:
-        languages: 'csharp,javascript'
         
     - name: Build for CodeQL
       run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
@@ -299,9 +305,9 @@ jobs:
         kubectl delete deployment barq-frontend-v1 -n barq-system --ignore-not-found=true
 
   notify:
-    needs: [deploy-staging, deploy-production]
+    needs: [test, security-scan, build-and-push]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
 
     steps:
     - name: Notify Slack
