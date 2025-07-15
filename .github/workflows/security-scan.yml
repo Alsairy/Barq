@@ -50,6 +50,10 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: 'csharp,javascript'
+        
+    - name: Build for CodeQL
+      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
+        
     - name: Run CodeQL Analysis
       uses: github/codeql-action/analyze@v3
 
