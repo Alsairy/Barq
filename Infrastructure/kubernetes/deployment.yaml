@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: barq-backend
-        image: barq/backend:latest
+        image: ${BACKEND_IMAGE:-barq/backend:latest}
         ports:
         - containerPort: 8080
           name: http
@@ -93,7 +93,7 @@ spec:
     spec:
       containers:
       - name: barq-frontend
-        image: barq/frontend:latest
+        image: ${FRONTEND_IMAGE:-barq/frontend:latest}
         ports:
         - containerPort: 80
           name: http

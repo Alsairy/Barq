@@ -13,15 +13,6 @@ data:
         }
       },
       "AllowedHosts": "*",
-      "ConnectionStrings": {
-        "DefaultConnection": "Server=barq-database;Database=BarqDB;User Id=barq_user;Password=barq_password;TrustServerCertificate=true;"
-      },
-      "JwtSettings": {
-        "SecretKey": "your-secret-key-here",
-        "Issuer": "barq-api",
-        "Audience": "barq-client",
-        "ExpirationMinutes": 60
-      },
       "Redis": {
         "ConnectionString": "barq-redis:6379"
       },
