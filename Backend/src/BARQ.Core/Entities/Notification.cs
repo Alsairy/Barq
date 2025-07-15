@@ -90,5 +90,7 @@ public class Notification : TenantEntity
     /// <summary>
     /// </summary>
     public Guid? AITaskId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual AITask? AITask { get; set; }
 }
