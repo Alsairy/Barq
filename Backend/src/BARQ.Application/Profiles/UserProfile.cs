@@ -10,7 +10,7 @@ public class UserProfile : Profile
     public UserProfile()
     {
         CreateMap<User, UserProfileDto>()
-            .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Organization.Name));
+            .ForMember(dest => dest.TenantName, opt => opt.Ignore());
 
         CreateMap<UserRegistrationRequest, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())

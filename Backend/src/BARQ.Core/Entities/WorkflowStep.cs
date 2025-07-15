@@ -5,7 +5,7 @@ namespace BARQ.Core.Entities;
 
 /// <summary>
 /// </summary>
-public class WorkflowStep : BaseEntity
+public class WorkflowStep : TenantEntity
 {
     /// <summary>
     /// Step name

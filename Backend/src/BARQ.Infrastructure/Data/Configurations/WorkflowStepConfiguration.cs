@@ -62,6 +62,9 @@ public class WorkflowStepConfiguration : IEntityTypeConfiguration<WorkflowStep>
 
         builder.Property(ws => ws.TimeoutMinutes);
 
+        builder.Property(ws => ws.TenantId)
+            .IsRequired();
+
         builder.Property(ws => ws.CreatedAt)
             .IsRequired();
 
@@ -81,6 +84,7 @@ public class WorkflowStepConfiguration : IEntityTypeConfiguration<WorkflowStep>
         builder.HasIndex(ws => ws.ParentStepId);
         builder.HasIndex(ws => new { ws.WorkflowTemplateId, ws.Order });
         builder.HasIndex(ws => ws.StepType);
+        builder.HasIndex(ws => ws.TenantId);
         builder.HasIndex(ws => ws.IsActive);
     }
 }

@@ -22,10 +22,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.HasOne(u => u.Organization)
-            .WithMany()
-            .HasForeignKey(u => u.TenantId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(u => u.AssignedWorkflows)
             .WithOne(w => w.CurrentAssignee)
@@ -49,5 +45,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.Email)
             .IsUnique();
+
+        builder.Ignore("Organization");
+        
+        builder.Property(u => u.TenantId)
+            .IsRequired();
+
+        builder.HasIndex(u => u.TenantId);
     }
 }

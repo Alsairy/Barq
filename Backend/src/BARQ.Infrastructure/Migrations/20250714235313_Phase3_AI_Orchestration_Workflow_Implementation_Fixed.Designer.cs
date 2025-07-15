@@ -4,6 +4,7 @@ using BARQ.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    partial class BarqDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250714235313_Phase3_AI_Orchestration_Workflow_Implementation_Fixed")]
+    partial class Phase3_AI_Orchestration_Workflow_Implementation_Fixed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -515,9 +518,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ProjectId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -551,17 +551,9 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("AuthorId");
 
-                    b.HasIndex("Priority");
-
                     b.HasIndex("ProjectId");
 
-                    b.HasIndex("ProjectId1");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("BusinessRequirementDocuments", (string)null);
+                    b.ToTable("BusinessRequirementDocuments");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.CostTracking", b =>
@@ -1364,18 +1356,9 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.HasIndex("Priority");
-
-                    b.HasIndex("ProjectKey")
-                        .IsUnique();
-
                     b.HasIndex("ProjectOwnerId");
 
-                    b.HasIndex("Status");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("Projects", (string)null);
+                    b.ToTable("Projects");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.ProjectMember", b =>
@@ -1438,15 +1421,11 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("ProjectId");
-
-                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProjectMembers", (string)null);
+                    b.ToTable("ProjectMembers");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.Role", b =>
@@ -1986,15 +1965,11 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("RoleId");
-
-                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles", (string)null);
+                    b.ToTable("UserRoles");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.UserStory", b =>
@@ -2408,9 +2383,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<int>("StepType")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int?>("TimeoutMinutes")
                         .HasColumnType("int");
 
@@ -2433,8 +2405,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasIndex("ParentStepId");
 
                     b.HasIndex("StepType");
-
-                    b.HasIndex("TenantId");
 
                     b.HasIndex("WorkflowTemplateId");
 
@@ -2602,7 +2572,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<string>("NotificationSettings")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("OrganizationId")
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -2639,15 +2609,7 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsDefault");
-
                     b.HasIndex("OrganizationId");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("WorkflowType");
 
                     b.ToTable("WorkflowTemplates");
                 });
@@ -2722,24 +2684,19 @@ namespace BARQ.Infrastructure.Migrations
                 {
                     b.HasOne("BARQ.Core.Entities.User", "Approver")
                         .WithMany()
-                        .HasForeignKey("ApproverId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ApproverId");
 
                     b.HasOne("BARQ.Core.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BARQ.Core.Entities.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BARQ.Core.Entities.Project", null)
+                    b.HasOne("BARQ.Core.Entities.Project", "Project")
                         .WithMany("BusinessRequirements")
-                        .HasForeignKey("ProjectId1");
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Approver");
 
@@ -2864,7 +2821,7 @@ namespace BARQ.Infrastructure.Migrations
 
             modelBuilder.Entity("BARQ.Core.Entities.Project", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", null)
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
                         .WithMany("Projects")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2873,13 +2830,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.User", "ProjectOwner")
                         .WithMany()
                         .HasForeignKey("ProjectOwnerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Organization");
@@ -2952,6 +2903,14 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Organization", null)
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId");
+
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.UserRole", b =>
@@ -2965,7 +2924,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Role");
@@ -3025,7 +2984,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.User", "CurrentAssignee")
                         .WithMany("AssignedWorkflows")
                         .HasForeignKey("CurrentAssigneeId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.User", "Initiator")
                         .WithMany()
@@ -3036,12 +2995,12 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.Sprint", "Sprint")
                         .WithMany()
                         .HasForeignKey("SprintId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.Sprint", null)
                         .WithMany("WorkflowInstances")
@@ -3050,7 +3009,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.UserStory", "UserStory")
                         .WithMany()
                         .HasForeignKey("UserStoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.UserStory", null)
                         .WithMany("WorkflowInstances")
@@ -3128,9 +3087,13 @@ namespace BARQ.Infrastructure.Migrations
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", null)
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
                         .WithMany("WorkflowTemplates")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.AIProviderConfiguration", b =>

@@ -8,11 +8,47 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
 {
     public void Configure(EntityTypeBuilder<WorkflowInstance> builder)
     {
+        builder.ToTable("WorkflowInstances");
+
         builder.HasKey(w => w.Id);
 
         builder.Property(w => w.Name)
             .IsRequired()
             .HasMaxLength(200);
+
+        builder.Property(w => w.Description)
+            .HasMaxLength(1000);
+
+        builder.Property(w => w.Status)
+            .IsRequired()
+            .HasConversion<int>();
+
+        builder.Property(w => w.Priority)
+            .IsRequired()
+            .HasConversion<int>();
+
+        builder.Property(w => w.WorkflowData)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(w => w.ExecutionContext)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(w => w.ErrorMessage)
+            .HasMaxLength(2000);
+
+        builder.Property(w => w.ErrorDetails)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(w => w.PerformanceMetrics)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(w => w.TenantId)
+            .IsRequired();
+
+        builder.Property(w => w.CreatedAt)
+            .IsRequired();
+
+        builder.Property(w => w.UpdatedAt);
 
         builder.HasOne(w => w.WorkflowTemplate)
             .WithMany(wt => wt.WorkflowInstances)
@@ -22,22 +58,22 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
         builder.HasOne(w => w.Project)
             .WithMany()
             .HasForeignKey(w => w.ProjectId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.Sprint)
             .WithMany()
             .HasForeignKey(w => w.SprintId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.UserStory)
             .WithMany()
             .HasForeignKey(w => w.UserStoryId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.CurrentAssignee)
             .WithMany(u => u.AssignedWorkflows)
             .HasForeignKey(w => w.CurrentAssigneeId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.Initiator)
             .WithMany()
@@ -48,5 +84,18 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
             .WithOne(at => at.WorkflowInstance)
             .HasForeignKey(at => at.WorkflowInstanceId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(w => w.TenantId);
+        builder.HasIndex(w => w.WorkflowTemplateId);
+        builder.HasIndex(w => w.Status);
+        builder.HasIndex(w => w.Priority);
+        builder.HasIndex(w => w.ProjectId);
+        builder.HasIndex(w => w.SprintId);
+        builder.HasIndex(w => w.UserStoryId);
+        builder.HasIndex(w => w.CurrentAssigneeId);
+        builder.HasIndex(w => w.InitiatorId);
+        builder.HasIndex(w => new { w.TenantId, w.Status });
+        builder.HasIndex(w => new { w.WorkflowTemplateId, w.Status });
+        builder.HasIndex(w => new { w.ProjectId, w.Status });
     }
 }
