@@ -46,6 +46,13 @@ jobs:
       with:
         args: --severity-threshold=high
 
+    - name: Run CodeQL Init
+      uses: github/codeql-action/init@v3
+      with:
+        languages: 'csharp,javascript'
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
   container-scan:
     runs-on: ubuntu-latest
     steps:
