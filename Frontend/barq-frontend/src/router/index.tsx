@@ -6,6 +6,8 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
+import { MfaVerifyPage } from '../pages/auth/MfaVerifyPage';
+import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 
@@ -17,6 +19,9 @@ import { AITasksPage } from '../pages/ai/AITasksPage';
 
 import { WorkflowsPage } from '../pages/workflows/WorkflowsPage';
 import { WorkflowDesignerPage } from '../pages/workflows/WorkflowDesignerPage';
+
+import { UserProfilePage } from '../pages/profile/UserProfilePage';
+import { OrganizationUsersPage } from '../pages/admin/OrganizationUsersPage';
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +39,14 @@ export const router = createBrowserRouter([
       {
         path: 'forgot-password',
         element: <ForgotPasswordPage />,
+      },
+      {
+        path: 'reset-password',
+        element: <ResetPasswordPage />,
+      },
+      {
+        path: 'mfa-verify',
+        element: <MfaVerifyPage />,
       },
       {
         index: true,
@@ -93,6 +106,19 @@ export const router = createBrowserRouter([
           {
             path: 'designer',
             element: <WorkflowDesignerPage />,
+          },
+        ],
+      },
+      {
+        path: 'profile',
+        element: <UserProfilePage />,
+      },
+      {
+        path: 'admin',
+        children: [
+          {
+            path: 'users',
+            element: <OrganizationUsersPage />,
           },
         ],
       },
