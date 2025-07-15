@@ -20,9 +20,16 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.ConfigureServices(services =>
         {
-            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
-            if (descriptor != null)
+            var descriptors = services.Where(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>) || 
+                                                 d.ServiceType == typeof(DbContextOptions) ||
+                                                 d.ServiceType.IsGenericType && 
+                                                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>))
+                                    .ToList();
+            
+            foreach (var descriptor in descriptors)
+            {
                 services.Remove(descriptor);
+            }
 
             services.AddDbContext<BarqDbContext>(options =>
                 options.UseInMemoryDatabase("TestDatabase"));

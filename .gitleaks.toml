@@ -1,0 +1,34 @@
+[allowlist]
+description = "Allowlist for placeholder values and test configurations"
+
+[[allowlist.regexes]]
+description = "Allow placeholder database passwords in Kubernetes secrets"
+regex = '''database-password.*PLACEHOLDER'''
+
+[[allowlist.regexes]]
+description = "Allow placeholder JWT secrets in Kubernetes secrets"
+regex = '''jwt-secret.*PLACEHOLDER'''
+
+[[allowlist.regexes]]
+description = "Allow placeholder Redis passwords in Kubernetes secrets"
+regex = '''redis-password.*PLACEHOLDER'''
+
+[[allowlist.regexes]]
+description = "Allow test database passwords in CI configuration"
+regex = '''POSTGRES_PASSWORD.*postgres'''
+
+[[allowlist.regexes]]
+description = "Allow connection strings with localhost in CI"
+regex = '''ConnectionStrings.*localhost.*postgres'''
+
+[[allowlist.commits]]
+description = "Allow secrets in initial Kubernetes configuration commit"
+commit = "db4e3630279d0f149a561f0324b05b4ea116b0f5"
+
+[[allowlist.paths]]
+description = "Allow secrets in test and development configurations"
+file = "Backend/src/BARQ.API/appsettings.Development.json"
+
+[[allowlist.paths]]
+description = "Allow secrets in CI/CD pipeline configurations"
+file = ".github/workflows/ci-cd-pipeline.yml"
