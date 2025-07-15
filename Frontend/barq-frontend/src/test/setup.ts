@@ -1,5 +1,19 @@
 import '@testing-library/jest-dom';
 
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_API_BASE_URL: 'http://localhost:5001',
+      },
+    },
+  },
+});
+
 (global as any).IntersectionObserver = class IntersectionObserver {
   constructor() {}
   disconnect() {}
