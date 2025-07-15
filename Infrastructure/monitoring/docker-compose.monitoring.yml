@@ -27,7 +27,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
@@ -59,7 +59,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      - DATA_SOURCE_NAME=postgresql://barq_user:barq_password@barq-database:5432/BarqDB?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://${DB_USER:-barq_user}:${DB_PASSWORD:-changeme}@barq-database:5432/BarqDB?sslmode=disable
     networks:
       - barq-monitoring
     depends_on:
