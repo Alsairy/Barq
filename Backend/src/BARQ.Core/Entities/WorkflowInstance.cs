@@ -123,4 +123,20 @@ public class WorkflowInstance : TenantEntity
     /// AI tasks related to this workflow
     /// </summary>
     public virtual ICollection<AITask> AITasks { get; set; } = new List<AITask>();
+
+    /// <summary>
+    /// </summary>
+    public string? ExecutionContext { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public string? ErrorDetails { get; set; }
+
+    /// <summary>
+    /// </summary>
+    public string? PerformanceMetrics { get; set; }
 }

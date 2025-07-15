@@ -515,6 +515,9 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ProjectId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -548,9 +551,17 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("AuthorId");
 
+                    b.HasIndex("Priority");
+
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("BusinessRequirementDocuments");
+                    b.HasIndex("ProjectId1");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("BusinessRequirementDocuments", (string)null);
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.CostTracking", b =>
@@ -1353,9 +1364,18 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("ProjectKey")
+                        .IsUnique();
+
                     b.HasIndex("ProjectOwnerId");
 
-                    b.ToTable("Projects");
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.ProjectMember", b =>
@@ -1418,11 +1438,15 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive");
+
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ProjectMembers");
+                    b.ToTable("ProjectMembers", (string)null);
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.Role", b =>
@@ -1962,11 +1986,15 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive");
+
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.UserStory", b =>
@@ -2076,6 +2104,116 @@ namespace BARQ.Infrastructure.Migrations
                     b.ToTable("UserStories");
                 });
 
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowDataContext", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccessPermissions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Data")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("{}");
+
+                    b.Property<string>("DataSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EncryptionKeyId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEncrypted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("ParentContextId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("workflow");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TransformationRules")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ValidationRules")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("WorkflowInstanceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WorkflowStepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("ParentContextId");
+
+                    b.HasIndex("Scope");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("WorkflowInstanceId");
+
+                    b.HasIndex("WorkflowStepId");
+
+                    b.HasIndex("WorkflowInstanceId", "Scope");
+
+                    b.ToTable("WorkflowDataContexts", (string)null);
+                });
+
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowInstance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2116,6 +2254,16 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ErrorDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ExecutionContext")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("InitiatorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2126,6 +2274,9 @@ namespace BARQ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PerformanceMetrics")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
@@ -2177,11 +2328,17 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("InitiatorId");
 
+                    b.HasIndex("Priority");
+
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("SprintId");
 
                     b.HasIndex("SprintId1");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserStoryId");
 
@@ -2189,7 +2346,239 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("WorkflowTemplateId");
 
-                    b.ToTable("WorkflowInstances");
+                    b.HasIndex("ProjectId", "Status");
+
+                    b.HasIndex("TenantId", "Status");
+
+                    b.HasIndex("WorkflowTemplateId", "Status");
+
+                    b.ToTable("WorkflowInstances", (string)null);
+                });
+
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowStep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AllowParallelExecution")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Configuration")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ErrorHandling")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExecutionConditions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InputSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OutputSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ParentStepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("RequiresApproval")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("RetryConfiguration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("StepType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("TimeoutMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ValidationRules")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("WorkflowTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("ParentStepId");
+
+                    b.HasIndex("StepType");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("WorkflowTemplateId");
+
+                    b.HasIndex("WorkflowTemplateId", "Order");
+
+                    b.ToTable("WorkflowSteps", (string)null);
+                });
+
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowStepExecution", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedToId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long?>("DurationMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ErrorDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("ExecutedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ExecutionContext")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExecutionLogs")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InputData")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxRetries")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<DateTime?>("NextRetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OutputData")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PerformanceMetrics")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RetryCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WorkflowInstanceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("WorkflowStepId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedToId");
+
+                    b.HasIndex("ExecutedById");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("WorkflowInstanceId");
+
+                    b.HasIndex("WorkflowStepId");
+
+                    b.HasIndex("WorkflowInstanceId", "Status");
+
+                    b.ToTable("WorkflowStepExecutions", (string)null);
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
@@ -2238,7 +2627,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<string>("NotificationSettings")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -2275,7 +2664,15 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsDefault");
+
                     b.HasIndex("OrganizationId");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("WorkflowType");
 
                     b.ToTable("WorkflowTemplates");
                 });
@@ -2350,19 +2747,24 @@ namespace BARQ.Infrastructure.Migrations
                 {
                     b.HasOne("BARQ.Core.Entities.User", "Approver")
                         .WithMany()
-                        .HasForeignKey("ApproverId");
+                        .HasForeignKey("ApproverId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BARQ.Core.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
-                        .WithMany("BusinessRequirements")
+                        .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("BARQ.Core.Entities.Project", null)
+                        .WithMany("BusinessRequirements")
+                        .HasForeignKey("ProjectId1");
 
                     b.Navigation("Approver");
 
@@ -2487,7 +2889,7 @@ namespace BARQ.Infrastructure.Migrations
 
             modelBuilder.Entity("BARQ.Core.Entities.Project", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
+                    b.HasOne("BARQ.Core.Entities.Organization", null)
                         .WithMany("Projects")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2496,7 +2898,13 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.User", "ProjectOwner")
                         .WithMany()
                         .HasForeignKey("ProjectOwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Organization");
@@ -2569,14 +2977,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Organization", null)
                         .WithMany("Users")
                         .HasForeignKey("OrganizationId");
-
-                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.UserRole", b =>
@@ -2590,7 +2990,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.User", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Role");
@@ -2621,12 +3021,36 @@ namespace BARQ.Infrastructure.Migrations
                     b.Navigation("Sprint");
                 });
 
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowDataContext", b =>
+                {
+                    b.HasOne("BARQ.Core.Entities.WorkflowDataContext", "ParentContext")
+                        .WithMany("ChildContexts")
+                        .HasForeignKey("ParentContextId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BARQ.Core.Entities.WorkflowInstance", "WorkflowInstance")
+                        .WithMany()
+                        .HasForeignKey("WorkflowInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("BARQ.Core.Entities.WorkflowStep", "WorkflowStep")
+                        .WithMany()
+                        .HasForeignKey("WorkflowStepId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("ParentContext");
+
+                    b.Navigation("WorkflowInstance");
+
+                    b.Navigation("WorkflowStep");
+                });
+
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowInstance", b =>
                 {
                     b.HasOne("BARQ.Core.Entities.User", "CurrentAssignee")
                         .WithMany("AssignedWorkflows")
                         .HasForeignKey("CurrentAssigneeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BARQ.Core.Entities.User", "Initiator")
                         .WithMany()
@@ -2637,12 +3061,12 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BARQ.Core.Entities.Sprint", "Sprint")
                         .WithMany()
                         .HasForeignKey("SprintId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BARQ.Core.Entities.Sprint", null)
                         .WithMany("WorkflowInstances")
@@ -2651,7 +3075,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.UserStory", "UserStory")
                         .WithMany()
                         .HasForeignKey("UserStoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BARQ.Core.Entities.UserStory", null)
                         .WithMany("WorkflowInstances")
@@ -2676,15 +3100,62 @@ namespace BARQ.Infrastructure.Migrations
                     b.Navigation("WorkflowTemplate");
                 });
 
-            modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowStep", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
-                        .WithMany("WorkflowTemplates")
-                        .HasForeignKey("OrganizationId")
+                    b.HasOne("BARQ.Core.Entities.WorkflowStep", "ParentStep")
+                        .WithMany("ChildSteps")
+                        .HasForeignKey("ParentStepId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BARQ.Core.Entities.WorkflowTemplate", "WorkflowTemplate")
+                        .WithMany()
+                        .HasForeignKey("WorkflowTemplateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Organization");
+                    b.Navigation("ParentStep");
+
+                    b.Navigation("WorkflowTemplate");
+                });
+
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowStepExecution", b =>
+                {
+                    b.HasOne("BARQ.Core.Entities.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BARQ.Core.Entities.User", "ExecutedBy")
+                        .WithMany()
+                        .HasForeignKey("ExecutedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("BARQ.Core.Entities.WorkflowInstance", "WorkflowInstance")
+                        .WithMany()
+                        .HasForeignKey("WorkflowInstanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BARQ.Core.Entities.WorkflowStep", "WorkflowStep")
+                        .WithMany("StepExecutions")
+                        .HasForeignKey("WorkflowStepId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedTo");
+
+                    b.Navigation("ExecutedBy");
+
+                    b.Navigation("WorkflowInstance");
+
+                    b.Navigation("WorkflowStep");
+                });
+
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
+                {
+                    b.HasOne("BARQ.Core.Entities.Organization", null)
+                        .WithMany("WorkflowTemplates")
+                        .HasForeignKey("OrganizationId");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.AIProviderConfiguration", b =>
@@ -2773,9 +3244,21 @@ namespace BARQ.Infrastructure.Migrations
                     b.Navigation("WorkflowInstances");
                 });
 
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowDataContext", b =>
+                {
+                    b.Navigation("ChildContexts");
+                });
+
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowInstance", b =>
                 {
                     b.Navigation("AITasks");
+                });
+
+            modelBuilder.Entity("BARQ.Core.Entities.WorkflowStep", b =>
+                {
+                    b.Navigation("ChildSteps");
+
+                    b.Navigation("StepExecutions");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>

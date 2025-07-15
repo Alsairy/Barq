@@ -66,12 +66,12 @@ public class WorkflowStepExecutionConfiguration : IEntityTypeConfiguration<Workf
         builder.HasOne(wse => wse.ExecutedBy)
             .WithMany()
             .HasForeignKey(wse => wse.ExecutedById)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(wse => wse.AssignedTo)
             .WithMany()
             .HasForeignKey(wse => wse.AssignedToId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(wse => wse.WorkflowInstanceId);
         builder.HasIndex(wse => wse.WorkflowStepId);

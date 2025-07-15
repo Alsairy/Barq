@@ -182,10 +182,6 @@ public class User : TenantEntity
     /// </summary>
     public DateTime? MfaRecoveryTokenExpiry { get; set; }
 
-    /// <summary>
-    /// Organization this user belongs to
-    /// </summary>
-    public virtual Organization Organization { get; set; } = null!;
 
     /// <summary>
     /// User roles
