@@ -58,6 +58,9 @@ public class ITSMTicket : TenantEntity
     /// Requested by user
     /// </summary>
     public Guid RequestedById { get; set; }
+    /// <summary>
+    /// Requested by user
+    /// </summary>
     public virtual User RequestedBy { get; set; } = null!;
 
     /// <summary>
@@ -140,6 +143,9 @@ public class ITSMTicket : TenantEntity
     /// Approver user ID
     /// </summary>
     public Guid? ApproverId { get; set; }
+    /// <summary>
+    /// Approver user
+    /// </summary>
     public virtual User? Approver { get; set; }
 
     /// <summary>
