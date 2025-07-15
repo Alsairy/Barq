@@ -26,6 +26,17 @@ spec:
       containers:
       - image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.21.0
         name: cluster-autoscaler
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534
+          capabilities:
+            drop:
+            - ALL
+            - NET_RAW
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           limits:
             cpu: 100m
@@ -54,11 +65,31 @@ spec:
         - name: ssl-certs
           mountPath: /etc/ssl/certs/ca-certificates.crt
           readOnly: true
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health-check
+            port: 8085
+          initialDelaySeconds: 600
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health-check
+            port: 8085
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         imagePullPolicy: "Always"
       volumes:
       - name: ssl-certs
         hostPath:
           path: "/etc/ssl/certs/ca-certificates.crt"
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: ServiceAccount
