@@ -1,9 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { apiSlice } from '../apiSlice';
-
-const mockEnv = {
-  VITE_API_BASE_URL: 'http://localhost:5001',
-};
 
 jest.mock('../apiSlice', () => ({
   apiSlice: {

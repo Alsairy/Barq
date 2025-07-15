@@ -82,7 +82,7 @@ export const projectApi = apiSlice.injectEndpoints({
 
     getProject: builder.query<Project, string>({
       query: (id) => `/api/projects/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Project', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Project', id }],
     }),
 
     createProject: builder.mutation<Project, Partial<Project>>({
@@ -100,7 +100,7 @@ export const projectApi = apiSlice.injectEndpoints({
         method: 'PUT',
         body: project,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Project', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Project', id }],
     }),
 
     deleteProject: builder.mutation<void, string>({
@@ -116,7 +116,7 @@ export const projectApi = apiSlice.injectEndpoints({
         url: `/api/projects/${projectId}/tasks`,
         params: { status, assigneeId },
       }),
-      providesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      providesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     createTask: builder.mutation<Task, { projectId: string; task: Partial<Task> }>({
@@ -125,7 +125,7 @@ export const projectApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: task,
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     updateTask: builder.mutation<Task, { projectId: string; taskId: string; task: Partial<Task> }>({
@@ -134,7 +134,7 @@ export const projectApi = apiSlice.injectEndpoints({
         method: 'PUT',
         body: task,
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     deleteTask: builder.mutation<void, { projectId: string; taskId: string }>({
@@ -142,12 +142,12 @@ export const projectApi = apiSlice.injectEndpoints({
         url: `/api/projects/${projectId}/tasks/${taskId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     getProjectMembers: builder.query<ProjectMember[], string>({
       query: (projectId) => `/api/projects/${projectId}/members`,
-      providesTags: (result, error, projectId) => [{ type: 'Project', id: projectId }],
+      providesTags: (_result, _error, projectId) => [{ type: 'Project', id: projectId }],
     }),
 
     addProjectMember: builder.mutation<ProjectMember, { projectId: string; userId: string; role: string }>({
@@ -156,7 +156,7 @@ export const projectApi = apiSlice.injectEndpoints({
         method: 'POST',
         body: { userId, role },
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     updateProjectMember: builder.mutation<ProjectMember, { projectId: string; memberId: string; role: string }>({
@@ -165,7 +165,7 @@ export const projectApi = apiSlice.injectEndpoints({
         method: 'PUT',
         body: { role },
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     removeProjectMember: builder.mutation<void, { projectId: string; memberId: string }>({
@@ -173,12 +173,12 @@ export const projectApi = apiSlice.injectEndpoints({
         url: `/api/projects/${projectId}/members/${memberId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     getProjectMetrics: builder.query<ProjectMetrics, string>({
       query: (projectId) => `/api/projects/${projectId}/metrics`,
-      providesTags: (result, error, projectId) => [{ type: 'Project', id: projectId }],
+      providesTags: (_result, _error, projectId) => [{ type: 'Project', id: projectId }],
     }),
 
     getTeamActivity: builder.query<TeamActivity[], { projectId: string; limit?: number }>({
@@ -186,7 +186,7 @@ export const projectApi = apiSlice.injectEndpoints({
         url: `/api/projects/${projectId}/activity`,
         params: { limit },
       }),
-      providesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      providesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     getProjectAnalytics: builder.query<Record<string, any>, { projectId: string; timeRange?: string }>({
@@ -194,7 +194,7 @@ export const projectApi = apiSlice.injectEndpoints({
         url: `/api/projects/${projectId}/analytics`,
         params: { timeRange },
       }),
-      providesTags: (result, error, { projectId }) => [{ type: 'Project', id: projectId }],
+      providesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
     exportProject: builder.mutation<Blob, string>({

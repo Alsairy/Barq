@@ -59,7 +59,7 @@ export const workflowApi = apiSlice.injectEndpoints({
 
     getWorkflowTemplate: builder.query<WorkflowTemplate, string>({
       query: (id) => `/api/workflows/templates/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Workflow', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Workflow', id }],
     }),
 
     createWorkflowTemplate: builder.mutation<WorkflowTemplate, Partial<WorkflowTemplate>>({
@@ -77,7 +77,7 @@ export const workflowApi = apiSlice.injectEndpoints({
         method: 'PUT',
         body: template,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Workflow', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Workflow', id }],
     }),
 
     deleteWorkflowTemplate: builder.mutation<void, string>({
@@ -107,7 +107,7 @@ export const workflowApi = apiSlice.injectEndpoints({
 
     getWorkflowExecution: builder.query<WorkflowExecution, string>({
       query: (id) => `/api/workflows/executions/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Workflow', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Workflow', id }],
     }),
 
     controlWorkflowExecution: builder.mutation<void, { id: string; action: 'pause' | 'resume' | 'stop' | 'restart' }>({
@@ -115,7 +115,7 @@ export const workflowApi = apiSlice.injectEndpoints({
         url: `/api/workflows/executions/${id}/${action}`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Workflow', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Workflow', id }],
     }),
 
     getWorkflowMetrics: builder.query<WorkflowMetrics, void>({

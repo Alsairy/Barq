@@ -75,7 +75,7 @@ export const aiApi = apiSlice.injectEndpoints({
 
     getAIProvider: builder.query<AIProvider, string>({
       query: (id) => `/api/ai/providers/${id}`,
-      providesTags: (result, error, id) => [{ type: 'AITask', id }],
+      providesTags: (_result, _error, id) => [{ type: 'AITask', id }],
     }),
 
     createAIProvider: builder.mutation<AIProvider, Partial<AIProvider>>({
@@ -93,7 +93,7 @@ export const aiApi = apiSlice.injectEndpoints({
         method: 'PUT',
         body: provider,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'AITask', id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'AITask', id }],
     }),
 
     deleteAIProvider: builder.mutation<void, string>({
@@ -121,7 +121,7 @@ export const aiApi = apiSlice.injectEndpoints({
 
     getAITask: builder.query<AITask, string>({
       query: (id) => `/api/ai/tasks/${id}`,
-      providesTags: (result, error, id) => [{ type: 'AITask', id }],
+      providesTags: (_result, _error, id) => [{ type: 'AITask', id }],
     }),
 
     createAITask: builder.mutation<AITask, Partial<AITask>>({
@@ -138,7 +138,7 @@ export const aiApi = apiSlice.injectEndpoints({
         url: `/api/ai/tasks/${id}/cancel`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'AITask', id }],
+      invalidatesTags: (_result, _error, id) => [{ type: 'AITask', id }],
     }),
 
     retryAITask: builder.mutation<AITask, string>({
@@ -146,7 +146,7 @@ export const aiApi = apiSlice.injectEndpoints({
         url: `/api/ai/tasks/${id}/retry`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'AITask', id }],
+      invalidatesTags: (_result, _error, id) => [{ type: 'AITask', id }],
     }),
 
     getAIMetrics: builder.query<AIMetrics, { timeRange?: string }>({
@@ -176,7 +176,7 @@ export const aiApi = apiSlice.injectEndpoints({
 
     getProviderMetrics: builder.query<Record<string, any>, string>({
       query: (providerId) => `/api/ai/providers/${providerId}/metrics`,
-      providesTags: (result, error, providerId) => [{ type: 'AITask', id: providerId }],
+      providesTags: (_result, _error, providerId) => [{ type: 'AITask', id: providerId }],
     }),
 
     getAIConfiguration: builder.query<Record<string, any>, void>({
