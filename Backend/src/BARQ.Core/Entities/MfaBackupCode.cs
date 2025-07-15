@@ -2,6 +2,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BARQ.Core.Entities;
 
+/// <summary>
+/// </summary>
 public class MfaBackupCode : TenantEntity
 {
     [Required]
