@@ -199,7 +199,7 @@ spec:
         - containerPort: 5432
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
           runAsNonRoot: false
           runAsUser: 999
           runAsGroup: 999
