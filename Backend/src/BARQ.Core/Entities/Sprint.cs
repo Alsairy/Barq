@@ -76,6 +76,10 @@ public class Sprint : TenantEntity
     /// Project this sprint belongs to
     /// </summary>
     public Guid ProjectId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the project that this sprint belongs to
+    /// </summary>
     public virtual Project Project { get; set; } = null!;
 
     /// <summary>
