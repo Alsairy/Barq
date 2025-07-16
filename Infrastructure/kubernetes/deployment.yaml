@@ -204,11 +204,18 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
-          runAsNonRoot: true
-          runAsUser: 65534
+          runAsNonRoot: false
+          runAsUser: 999
+          runAsGroup: 999
           capabilities:
             drop:
             - ALL
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - SETGID
+            - SETUID
           seccompProfile:
             type: RuntimeDefault
         env:
