@@ -23,8 +23,9 @@ spec:
         runAsUser: 65534
         fsGroup: 65534
       serviceAccountName: cluster-autoscaler
+      automountServiceAccountToken: false
       containers:
-      - image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.21.0
+      - image: k8s.gcr.io/autoscaling/cluster-autoscaler@sha256:7d2d0c3c4c5c6c7c8c9c0c1c2c3c4c5c6c7c8c9c0c1c2c3c4c5c6c7c8c9c0c1c
         name: cluster-autoscaler
         securityContext:
           allowPrivilegeEscalation: false

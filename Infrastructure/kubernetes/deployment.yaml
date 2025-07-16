@@ -18,12 +18,28 @@ spec:
         app: barq-backend
         version: v1
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      serviceAccountName: barq-backend
+      automountServiceAccountToken: false
       containers:
       - name: barq-backend
-        image: ${BACKEND_IMAGE:-barq/backend:latest}
+        image: ${BACKEND_IMAGE:-barq/backend:latest}@sha256:placeholder
         ports:
         - containerPort: 8080
           name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
@@ -41,6 +57,8 @@ spec:
         - name: config-volume
           mountPath: /app/appsettings.json
           subPath: appsettings.json
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             memory: "512Mi"
@@ -68,6 +86,8 @@ spec:
       - name: config-volume
         configMap:
           name: barq-config
+      - name: tmp
+        emptyDir: {}
       imagePullSecrets:
       - name: barq-registry-secret
 ---
@@ -91,16 +111,38 @@ spec:
         app: barq-frontend
         version: v1
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      serviceAccountName: barq-frontend
+      automountServiceAccountToken: false
       containers:
       - name: barq-frontend
-        image: ${FRONTEND_IMAGE:-barq/frontend:latest}
+        image: ${FRONTEND_IMAGE:-barq/frontend:latest}@sha256:placeholder
         ports:
         - containerPort: 80
           name: http
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
         volumeMounts:
         - name: nginx-config
           mountPath: /etc/nginx/conf.d/default.conf
           subPath: nginx.conf
+        - name: tmp
+          mountPath: /tmp
+        - name: var-cache-nginx
+          mountPath: /var/cache/nginx
+        - name: var-run
+          mountPath: /var/run
         resources:
           requests:
             memory: "128Mi"
@@ -124,6 +166,12 @@ spec:
       - name: nginx-config
         configMap:
           name: barq-frontend-config
+      - name: tmp
+        emptyDir: {}
+      - name: var-cache-nginx
+        emptyDir: {}
+      - name: var-run
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -142,11 +190,27 @@ spec:
       labels:
         app: barq-database
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      serviceAccountName: barq-database
+      automountServiceAccountToken: false
       containers:
       - name: postgres
-        image: postgres:15-alpine
+        image: postgres:15-alpine@sha256:placeholder
         ports:
         - containerPort: 5432
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 999
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
         env:
         - name: POSTGRES_DB
           value: "BarqDB"
@@ -163,6 +227,8 @@ spec:
         - name: postgres-config
           mountPath: /etc/postgresql/postgresql.conf
           subPath: database.conf
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             memory: "512Mi"
@@ -197,6 +263,8 @@ spec:
       - name: postgres-config
         configMap:
           name: barq-config
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -215,11 +283,27 @@ spec:
       labels:
         app: barq-redis
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      serviceAccountName: barq-redis
+      automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:placeholder
         ports:
         - containerPort: 6379
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 999
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
         command:
         - redis-server
         - --requirepass
@@ -254,7 +338,11 @@ spec:
         volumeMounts:
         - name: redis-storage
           mountPath: /data
+        - name: tmp
+          mountPath: /tmp
       volumes:
       - name: redis-storage
         persistentVolumeClaim:
           claimName: barq-redis-pvc
+      - name: tmp
+        emptyDir: {}
