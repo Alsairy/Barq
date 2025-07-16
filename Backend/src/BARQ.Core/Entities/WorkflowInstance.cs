@@ -114,12 +114,18 @@ public class WorkflowInstance : TenantEntity
     /// Current assignee
     /// </summary>
     public Guid? CurrentAssigneeId { get; set; }
+    /// <summary>
+    /// The user currently assigned to this workflow instance
+    /// </summary>
     public virtual User? CurrentAssignee { get; set; }
 
     /// <summary>
     /// Workflow initiator
     /// </summary>
     public Guid InitiatorId { get; set; }
+    /// <summary>
+    /// The user who initiated this workflow instance
+    /// </summary>
     public virtual User Initiator { get; set; } = null!;
 
     /// <summary>

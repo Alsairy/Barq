@@ -74,11 +74,15 @@ public class WorkflowStep : TenantEntity
     /// <summary>
     /// </summary>
     public Guid WorkflowTemplateId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowTemplate WorkflowTemplate { get; set; } = null!;
 
     /// <summary>
     /// </summary>
     public Guid? ParentStepId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowStep? ParentStep { get; set; }
 
     /// <summary>

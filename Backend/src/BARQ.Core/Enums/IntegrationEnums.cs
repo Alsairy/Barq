@@ -1,12 +1,26 @@
 namespace BARQ.Core.Enums;
 
+/// <summary>
+/// </summary>
 public enum IntegrationProtocol
 {
+    /// <summary>
+    /// </summary>
     REST = 0,
+    /// <summary>
+    /// </summary>
     SOAP = 1,
+    /// <summary>
+    /// </summary>
     GraphQL = 2,
+    /// <summary>
+    /// </summary>
     WebSocket = 3,
+    /// <summary>
+    /// </summary>
     gRPC = 4,
+    /// <summary>
+    /// </summary>
     MessageQueue = 5
 }
 

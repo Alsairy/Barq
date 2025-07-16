@@ -66,20 +66,28 @@ public class WorkflowStepExecution : TenantEntity
     /// <summary>
     /// </summary>
     public Guid WorkflowInstanceId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowInstance WorkflowInstance { get; set; } = null!;
 
     /// <summary>
     /// </summary>
     public Guid WorkflowStepId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowStep WorkflowStep { get; set; } = null!;
 
     /// <summary>
     /// </summary>
     public Guid? ExecutedById { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual User? ExecutedBy { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? AssignedToId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual User? AssignedTo { get; set; }
 }
