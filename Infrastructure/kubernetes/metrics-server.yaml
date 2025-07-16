@@ -130,6 +130,11 @@ spec:
       labels:
         k8s-app: metrics-server
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+      automountServiceAccountToken: false
       containers:
       - args:
         - --cert-dir=/tmp
@@ -138,8 +143,8 @@ spec:
         - --kubelet-use-node-status-port
         - --metric-resolution=15s
         - --kubelet-insecure-tls
-        image: k8s.gcr.io/metrics-server/metrics-server:v0.6.1
-        imagePullPolicy: IfNotPresent
+        image: k8s.gcr.io/metrics-server/metrics-server@sha256:5f9f776df5135bf8a77f8b0dcd4e2f50c9168c27c6b97dc68f6c8c8c8c9c0c1c
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           httpGet:

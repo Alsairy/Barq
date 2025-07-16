@@ -43,22 +43,19 @@ spec:
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
-        - name: ConnectionStrings__DefaultConnection
-          valueFrom:
-            secretKeyRef:
-              name: barq-secrets
-              key: database-connection
-        - name: JwtSettings__SecretKey
-          valueFrom:
-            secretKeyRef:
-              name: barq-secrets
-              key: jwt-secret
+        - name: ConnectionStrings__DefaultConnection_FILE
+          value: "/etc/secrets/database-connection"
+        - name: JwtSettings__SecretKey_FILE
+          value: "/etc/secrets/jwt-secret"
         volumeMounts:
         - name: config-volume
           mountPath: /app/appsettings.json
           subPath: appsettings.json
         - name: tmp
           mountPath: /tmp
+        - name: backend-secrets
+          mountPath: /etc/secrets
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -88,6 +85,9 @@ spec:
           name: barq-config
       - name: tmp
         emptyDir: {}
+      - name: backend-secrets
+        secret:
+          secretName: barq-secrets
       imagePullSecrets:
       - name: barq-registry-secret
 ---
@@ -216,11 +216,8 @@ spec:
           value: "BarqDB"
         - name: POSTGRES_USER
           value: "barq_user"
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: barq-secrets
-              key: database-password
+        - name: POSTGRES_PASSWORD_FILE
+          value: "/etc/secrets/database-password"
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
@@ -229,6 +226,9 @@ spec:
           subPath: database.conf
         - name: tmp
           mountPath: /tmp
+        - name: database-secrets
+          mountPath: /etc/secrets
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -265,6 +265,9 @@ spec:
           name: barq-config
       - name: tmp
         emptyDir: {}
+      - name: database-secrets
+        secret:
+          secretName: barq-secrets
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -309,11 +312,8 @@ spec:
         - --requirepass
         - $(REDIS_PASSWORD)
         env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: barq-secrets
-              key: redis-password
+        - name: REDIS_PASSWORD_FILE
+          value: "/etc/secrets/redis-password"
         resources:
           requests:
             memory: "256Mi"
@@ -340,9 +340,15 @@ spec:
           mountPath: /data
         - name: tmp
           mountPath: /tmp
+        - name: redis-secrets
+          mountPath: /etc/secrets
+          readOnly: true
       volumes:
       - name: redis-storage
         persistentVolumeClaim:
           claimName: barq-redis-pvc
       - name: tmp
         emptyDir: {}
+      - name: redis-secrets
+        secret:
+          secretName: barq-secrets
