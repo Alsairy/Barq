@@ -74,6 +74,8 @@ public class WorkflowInstance : TenantEntity
     /// Workflow template used
     /// </summary>
     public Guid WorkflowTemplateId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowTemplate WorkflowTemplate { get; set; } = null!;
 
     /// <summary>
@@ -85,18 +87,27 @@ public class WorkflowInstance : TenantEntity
     /// Project this workflow belongs to
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// The project this workflow instance belongs to
+    /// </summary>
     public virtual Project? Project { get; set; }
 
     /// <summary>
     /// Sprint this workflow belongs to
     /// </summary>
     public Guid? SprintId { get; set; }
+    /// <summary>
+    /// The sprint this workflow instance belongs to
+    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
     /// <summary>
     /// User story this workflow is related to
     /// </summary>
     public Guid? UserStoryId { get; set; }
+    /// <summary>
+    /// The user story this workflow instance is related to
+    /// </summary>
     public virtual UserStory? UserStory { get; set; }
 
     /// <summary>
