@@ -20,8 +20,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 65534
+        fsGroup: 65534
       serviceAccountName: barq-backend
       automountServiceAccountToken: false
       containers:
@@ -34,7 +34,7 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 65534
           capabilities:
             drop:
             - ALL
@@ -113,8 +113,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 65534
+        fsGroup: 65534
       serviceAccountName: barq-frontend
       automountServiceAccountToken: false
       containers:
@@ -127,7 +127,7 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 1000
+          runAsUser: 65534
           capabilities:
             drop:
             - ALL
@@ -192,8 +192,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 999
-        fsGroup: 999
+        runAsUser: 65534
+        fsGroup: 65534
       serviceAccountName: barq-database
       automountServiceAccountToken: false
       containers:
@@ -205,7 +205,7 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
           runAsNonRoot: true
-          runAsUser: 999
+          runAsUser: 65534
           capabilities:
             drop:
             - ALL
@@ -285,8 +285,8 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 999
-        fsGroup: 999
+        runAsUser: 65534
+        fsGroup: 65534
       serviceAccountName: barq-redis
       automountServiceAccountToken: false
       containers:
@@ -298,7 +298,7 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 999
+          runAsUser: 65534
           capabilities:
             drop:
             - ALL
