@@ -21,23 +21,34 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.ConfigureServices(services =>
         {
-            var dbContextDescriptors = services.Where(d => 
+            var descriptorsToRemove = services.Where(d => 
                 d.ServiceType == typeof(DbContextOptions<BarqDbContext>) || 
                 d.ServiceType == typeof(DbContextOptions) ||
                 d.ServiceType == typeof(BarqDbContext) ||
+                d.ServiceType.Name.Contains("DbContext") ||
                 (d.ServiceType.IsGenericType && 
-                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)))
+                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)) ||
+                d.ImplementationType?.Name.Contains("SqlServer") == true ||
+                d.ImplementationType?.Name.Contains("EntityFramework") == true)
                 .ToList();
             
-            foreach (var descriptor in dbContextDescriptors)
+            foreach (var descriptor in descriptorsToRemove)
             {
                 services.Remove(descriptor);
             }
 
+            services.RemoveAll(typeof(Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator));
+            services.RemoveAll(typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextFactory<>));
+
             services.AddScoped<ITenantProvider, TestTenantProvider>();
 
             services.AddDbContext<BarqDbContext>(options =>
-                options.UseInMemoryDatabase("TestDatabase"));
+            {
+                options.UseInMemoryDatabase($"TestDatabase_{Guid.NewGuid()}");
+                options.EnableSensitiveDataLogging();
+                options.EnableServiceProviderCaching(false);
+                options.EnableDetailedErrors();
+            });
 
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
