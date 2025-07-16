@@ -43,10 +43,6 @@ spec:
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"
-        - name: ConnectionStrings__DefaultConnection_FILE
-          value: "/etc/secrets/database-connection"
-        - name: JwtSettings__SecretKey_FILE
-          value: "/etc/secrets/jwt-secret"
         volumeMounts:
         - name: config-volume
           mountPath: /app/appsettings.json
@@ -223,8 +219,6 @@ spec:
           value: "BarqDB"
         - name: POSTGRES_USER
           value: "barq_user"
-        - name: POSTGRES_PASSWORD_FILE
-          value: "/etc/secrets/database-password"
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
@@ -318,9 +312,6 @@ spec:
         - redis-server
         - --requirepass
         - $(REDIS_PASSWORD)
-        env:
-        - name: REDIS_PASSWORD_FILE
-          value: "/etc/secrets/redis-password"
         resources:
           requests:
             memory: "256Mi"
