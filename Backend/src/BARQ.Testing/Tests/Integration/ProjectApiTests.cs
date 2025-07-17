@@ -3,6 +3,8 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 
+[Collection("ProjectApiTestCollection")]
+
 namespace BARQ.Testing.Tests.Integration;
 
 public class ProjectApiTests : IClassFixture<ApiTestFramework>
