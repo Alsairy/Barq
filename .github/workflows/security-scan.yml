@@ -11,6 +11,9 @@ on:
 jobs:
   dependency-scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
     - uses: actions/checkout@v4
 
@@ -38,6 +41,9 @@ jobs:
       run: npm audit --audit-level=moderate
       working-directory: Frontend/barq-frontend
 
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+
     - name: Run Snyk Security Scan
       uses: snyk/actions/dotnet@master
       continue-on-error: true
@@ -58,9 +64,14 @@ jobs:
         
     - name: Run CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+      with:
+        category: "dependency-scan"
 
   container-scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
     - uses: actions/checkout@v4
 
@@ -84,15 +95,19 @@ jobs:
         format: 'sarif'
         output: 'trivy-frontend-results.sarif'
 
-    - name: Upload Trivy scan results
+    - name: Upload Backend Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-backend-results.sarif'
+        category: 'container-scan-backend'
+      if: success()
 
-    - name: Upload Trivy scan results
+    - name: Upload Frontend Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-frontend-results.sarif'
+        category: 'container-scan-frontend'
+      if: success()
 
   infrastructure-scan:
     runs-on: ubuntu-latest
@@ -181,7 +196,7 @@ jobs:
         echo "- Compliance Check: ${{ needs.compliance-check.result }}" >> security-report.md
 
     - name: Upload Security Report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-report
         path: security-report.md

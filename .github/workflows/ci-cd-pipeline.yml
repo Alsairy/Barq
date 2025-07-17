@@ -81,13 +81,13 @@ jobs:
       working-directory: Frontend/barq-frontend
 
     - name: Upload Backend Coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: Backend/**/coverage.cobertura.xml
         flags: backend
 
     - name: Upload Frontend Coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: Frontend/barq-frontend/coverage/lcov.info
         flags: frontend
