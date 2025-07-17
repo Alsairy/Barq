@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
@@ -37,8 +38,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(descriptor);
             }
 
-            services.RemoveAll(typeof(Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator));
-            services.RemoveAll(typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextFactory<>));
+            services.RemoveAll<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
 
             services.AddScoped<ITenantProvider, TestTenantProvider>();
 

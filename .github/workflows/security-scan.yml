@@ -41,8 +41,6 @@ jobs:
       run: npm audit --audit-level=moderate
       working-directory: Frontend/barq-frontend
 
-    - name: Dependency Review
-      uses: actions/dependency-review-action@v4
 
     - name: Run Snyk Security Scan
       uses: snyk/actions/dotnet@master
