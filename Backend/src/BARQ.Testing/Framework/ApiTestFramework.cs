@@ -131,9 +131,16 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Organizations.RemoveRange(_context.Organizations);
         await _context.SaveChangesAsync();
 
+        var acmeOrgId = Guid.NewGuid();
+        var betaOrgId = Guid.NewGuid();
+        var acmeUserId = Guid.NewGuid();
+        var betaUserId = Guid.NewGuid();
+        var acmeProjectId = Guid.NewGuid();
+        var betaProjectId = Guid.NewGuid();
+
         var acmeOrg = new Organization
         {
-            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Id = acmeOrgId,
             Name = "Acme Corporation",
             Domain = "acme.com",
             SubscriptionPlan = Core.Enums.SubscriptionPlan.Professional,
@@ -143,7 +150,7 @@ public class TestDataSeeder : ITestDataSeeder
 
         var betaOrg = new Organization
         {
-            Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Id = betaOrgId,
             Name = "Beta Industries",
             Domain = "beta.com",
             SubscriptionPlan = Core.Enums.SubscriptionPlan.Enterprise,
@@ -155,11 +162,11 @@ public class TestDataSeeder : ITestDataSeeder
 
         var acmeUser = new User
         {
-            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Id = acmeUserId,
             Email = "test@acme.com",
             FirstName = "John",
             LastName = "Doe",
-            TenantId = acmeOrg.Id,
+            TenantId = acmeOrgId,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
             CreatedAt = DateTime.UtcNow,
@@ -168,11 +175,11 @@ public class TestDataSeeder : ITestDataSeeder
 
         var betaUser = new User
         {
-            Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            Id = betaUserId,
             Email = "test@beta.com",
             FirstName = "Jane",
             LastName = "Smith",
-            TenantId = betaOrg.Id,
+            TenantId = betaOrgId,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
             CreatedAt = DateTime.UtcNow,
@@ -183,22 +190,22 @@ public class TestDataSeeder : ITestDataSeeder
 
         var acmeProject = new Project
         {
-            Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            Id = acmeProjectId,
             Name = "Acme Project",
             Description = "Test project for Acme",
-            TenantId = acmeOrg.Id,
-            CreatedById = acmeUser.Id,
+            TenantId = acmeOrgId,
+            CreatedById = acmeUserId,
             Status = Core.Enums.ProjectStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
 
         var betaProject = new Project
         {
-            Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            Id = betaProjectId,
             Name = "Beta Project",
             Description = "Test project for Beta",
-            TenantId = betaOrg.Id,
-            CreatedById = betaUser.Id,
+            TenantId = betaOrgId,
+            CreatedById = betaUserId,
             Status = Core.Enums.ProjectStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
@@ -211,9 +218,15 @@ public class TestDataSeeder : ITestDataSeeder
 
 public class TestTenantProvider : ITenantProvider
 {
-    private Guid _tenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private Guid _tenantId;
     private string _tenantName = "Test Tenant";
-    private Guid _currentUserId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private Guid _currentUserId;
+
+    public TestTenantProvider()
+    {
+        _tenantId = Guid.NewGuid();
+        _currentUserId = Guid.NewGuid();
+    }
 
     public Guid GetTenantId()
     {
