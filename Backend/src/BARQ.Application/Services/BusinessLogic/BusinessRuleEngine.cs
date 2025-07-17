@@ -6,6 +6,8 @@ using BARQ.Core.Models.Responses;
 
 namespace BARQ.Application.Services.BusinessLogic;
 
+/// <summary>
+/// </summary>
 public class BusinessRuleEngine : IBusinessRuleEngine
 {
     private readonly ILogger<BusinessRuleEngine> _logger;
