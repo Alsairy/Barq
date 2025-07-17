@@ -80,8 +80,24 @@ public interface IAIOrchestrationService
     /// <returns>Update result</returns>
     Task UpdateProviderMetricsAsync(Guid providerId, AIProviderMetrics metrics);
 
+    /// <summary>
+    /// </summary>
+    /// <param name="request">The request containing task details</param>
+    /// <returns>The result of the AI task creation</returns>
     Task<AITaskResult> CreateAITaskAsync(CreateAITaskRequest request);
+    
+    /// <summary>
+    /// Executes an AI task by its ID
+    /// </summary>
+    /// <param name="taskId">The ID of the task to execute</param>
+    /// <returns>The result of the AI task execution</returns>
     Task<AITaskResult> ExecuteAITaskAsync(Guid taskId);
+    
+    /// <summary>
+    /// Gets the status of an AI task by its ID
+    /// </summary>
+    /// <param name="taskId">The ID of the task to check</param>
+    /// <returns>The current status of the AI task</returns>
     Task<AITaskStatus> GetAITaskStatusAsync(Guid taskId);
     Task<bool> CancelAITaskAsync(Guid taskId);
     Task<AITaskResult> GetAITaskResultsAsync(Guid taskId);
