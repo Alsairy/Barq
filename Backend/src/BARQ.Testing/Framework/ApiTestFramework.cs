@@ -37,9 +37,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(dbContextDescriptor);
             }
 
+            var dbName = Guid.NewGuid().ToString();
             services.AddDbContext<BarqDbContext>(options =>
             {
-                options.UseInMemoryDatabase("TestDb");
+                options.UseInMemoryDatabase(dbName);
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
