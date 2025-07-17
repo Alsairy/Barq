@@ -99,16 +99,66 @@ public interface IAIOrchestrationService
     /// <param name="taskId">The ID of the task to check</param>
     /// <returns>The current status of the AI task</returns>
     Task<AITaskStatus> GetAITaskStatusAsync(Guid taskId);
+    /// <summary>
+    /// Cancels an AI task by its ID.
+    /// </summary>
+    /// <param name="taskId">The ID of the task to cancel.</param>
+    /// <returns>True if the task was successfully cancelled; otherwise, false.</returns>
     Task<bool> CancelAITaskAsync(Guid taskId);
+
+    /// <summary>
+    /// Gets the results of an AI task by its ID.
+    /// </summary>
+    /// <param name="taskId">The ID of the task.</param>
+    /// <returns>The result of the AI task.</returns>
     Task<AITaskResult> GetAITaskResultsAsync(Guid taskId);
+
+    /// <summary>
+    /// </summary>
+    /// <param name="projectId">The ID of the project.</param>
+    /// <returns>A collection of AI tasks for the project.</returns>
     Task<IEnumerable<AITask>> GetProjectAITasksAsync(Guid projectId);
+
+    /// <summary>
+    /// </summary>
+    /// <returns>Analytics data for AI tasks.</returns>
     Task<object> GetAITaskAnalyticsAsync();
+
+    /// <summary>
+    /// </summary>
+    /// <returns>A collection of available AI provider configurations.</returns>
     Task<IEnumerable<AIProviderConfiguration>> GetAvailableProvidersAsync();
+
+    /// <summary>
+    /// </summary>
+    /// <param name="providerId">The ID of the provider to check.</param>
+    /// <returns>The health status of the AI provider.</returns>
     Task<AIProviderHealthStatus> CheckProviderHealthAsync(Guid providerId);
+
+    /// <summary>
+    /// </summary>
+    /// <param name="request">The configuration request for the AI provider.</param>
+    /// <returns>The configured AI provider.</returns>
     Task<AIProviderConfiguration> ConfigureProviderAsync(ConfigureAIProviderRequest request);
+
+    /// <summary>
+    /// Executes a batch of AI tasks.
+    /// </summary>
+    /// <param name="request">The batch execution request.</param>
+    /// <returns>The result of the batch execution.</returns>
     Task<object> ExecuteBatchTasksAsync(ExecuteBatchAITasksRequest request);
+
+    /// <summary>
+    /// Gets the status of the AI task queue.
+    /// </summary>
+    /// <returns>The status of the AI task queue.</returns>
     Task<object> GetQueueStatusAsync();
+
+    /// <summary>
+    /// </summary>
+    /// <returns>Cost analysis data for AI tasks.</returns>
     Task<object> GetCostAnalysisAsync();
+
 }
 
 /// <summary>
