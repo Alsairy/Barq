@@ -125,8 +125,10 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (await _context.Organizations.AnyAsync())
-            return;
+        _context.Projects.RemoveRange(_context.Projects);
+        _context.Users.RemoveRange(_context.Users);
+        _context.Organizations.RemoveRange(_context.Organizations);
+        await _context.SaveChangesAsync();
 
         var acmeOrg = new Organization
         {
