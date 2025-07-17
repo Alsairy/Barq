@@ -66,16 +66,47 @@ public class AITaskDto
 }
 
 
+/// <summary>
+/// </summary>
 public class AIProviderDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public bool IsEnabled { get; set; }
+
+    /// <summary>
+    /// </summary>
     public Dictionary<string, object> Configuration { get; set; } = new();
+
+    /// <summary>
+    /// </summary>
     public List<string> Capabilities { get; set; } = new();
+
+    /// <summary>
+    /// </summary>
     public decimal CostPerRequest { get; set; }
+
+    /// <summary>
+    /// </summary>
     public TimeSpan AverageResponseTime { get; set; }
+
+    /// <summary>
+    /// </summary>
     public DateTime LastHealthCheck { get; set; }
 }
