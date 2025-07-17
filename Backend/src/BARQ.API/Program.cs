@@ -110,8 +110,15 @@ builder.Services.AddSwaggerGen(options =>
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 });
 
-builder.Services.AddDbContext<BarqDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+var environment = builder.Environment.EnvironmentName;
+var isTestingEnvironment = environment.Equals("Testing", StringComparison.OrdinalIgnoreCase) || 
+                          Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.Equals("Testing", StringComparison.OrdinalIgnoreCase) == true;
+
+if (!isTestingEnvironment)
+{
+    builder.Services.AddDbContext<BarqDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 builder.Services.AddHttpContextAccessor();

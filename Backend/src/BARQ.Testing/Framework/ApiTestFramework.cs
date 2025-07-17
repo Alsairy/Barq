@@ -11,49 +11,43 @@ using System.Text;
 using FluentAssertions;
 using Xunit;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
 
 namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _connectionString = "Server=localhost,1433;Database=BarqTestDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;";
-    
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        builder.UseEnvironment("Testing");
+        
         builder.ConfigureServices(services =>
         {
-            var descriptorsToRemove = services.Where(d => 
-                d.ServiceType == typeof(DbContextOptions<BarqDbContext>) || 
-                d.ServiceType == typeof(DbContextOptions) ||
-                d.ServiceType == typeof(BarqDbContext) ||
-                d.ServiceType.Name.Contains("DbContext") ||
-                (d.ServiceType.IsGenericType && 
-                 d.ServiceType.GetGenericTypeDefinition() == typeof(DbContextOptions<>)) ||
-                d.ImplementationType?.Name.Contains("SqlServer") == true ||
-                d.ImplementationType?.Name.Contains("EntityFramework") == true)
-                .ToList();
-            
-            foreach (var descriptor in descriptorsToRemove)
+            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
+            if (descriptor != null)
             {
                 services.Remove(descriptor);
             }
 
-            services.RemoveAll<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
-
-            services.AddScoped<ITenantProvider, TestTenantProvider>();
+            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(BarqDbContext));
+            if (dbContextDescriptor != null)
+            {
+                services.Remove(dbContextDescriptor);
+            }
 
             services.AddDbContext<BarqDbContext>(options =>
             {
-                options.UseInMemoryDatabase($"TestDatabase_{Guid.NewGuid()}");
+                options.UseInMemoryDatabase("TestDb");
                 options.EnableSensitiveDataLogging();
-                options.EnableServiceProviderCaching(false);
                 options.EnableDetailedErrors();
             });
 
+            services.RemoveAll<ITenantProvider>();
+            services.AddScoped<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
-
-        builder.UseEnvironment("Testing");
     }
 
     public async Task InitializeAsync()
@@ -251,6 +245,31 @@ public class TestTenantProvider : ITenantProvider
     public Guid GetCurrentUserId()
     {
         return _currentUserId;
+    }
+}
+
+
+public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.AuthenticationHandler<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions>
+{
+    public TestAuthenticationHandler(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions> options,
+        Microsoft.Extensions.Logging.ILoggerFactory logger, System.Text.Encodings.Web.UrlEncoder encoder, Microsoft.AspNetCore.Authentication.ISystemClock clock)
+        : base(options, logger, encoder, clock)
+    {
+    }
+
+    protected override Task<Microsoft.AspNetCore.Authentication.AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var claims = new[]
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "TestUser"),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "33333333-3333-3333-3333-333333333333")
+        };
+
+        var identity = new System.Security.Claims.ClaimsIdentity(claims, "Test");
+        var principal = new System.Security.Claims.ClaimsPrincipal(identity);
+        var ticket = new Microsoft.AspNetCore.Authentication.AuthenticationTicket(principal, "Test");
+
+        return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
 }
 
