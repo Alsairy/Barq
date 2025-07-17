@@ -100,7 +100,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
-        var loginRequest = new { Email = email, Password = password };
+        var loginRequest = new { Request = new { Email = email, Password = password } };
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
         
         response.Should().BeSuccessful();

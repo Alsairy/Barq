@@ -19,8 +19,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "test@acme.com",
-            Password = "TestPassword123!"
+            Request = new
+            {
+                Email = "test@acme.com",
+                Password = "TestPassword123!"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
@@ -38,8 +41,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "test@acme.com",
-            Password = "WrongPassword"
+            Request = new
+            {
+                Email = "test@acme.com",
+                Password = "WrongPassword"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
@@ -52,8 +58,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "invalid-email",
-            Password = "TestPassword123!"
+            Request = new
+            {
+                Email = "invalid-email",
+                Password = "TestPassword123!"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
