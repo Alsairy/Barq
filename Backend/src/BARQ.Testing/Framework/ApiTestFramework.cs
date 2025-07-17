@@ -159,7 +159,8 @@ public class TestDataSeeder : ITestDataSeeder
             TenantId = acmeOrg.Id,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
         };
 
         var betaUser = new User
@@ -171,7 +172,8 @@ public class TestDataSeeder : ITestDataSeeder
             TenantId = betaOrg.Id,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
         };
 
         _context.Users.AddRange(acmeUser, betaUser);
