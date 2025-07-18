@@ -151,25 +151,57 @@ public class DataPortabilityResponseDto
     public long DataSize { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class DataErasureResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> ErasedDataTypes { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> RetainedDataTypes { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public string RetentionReason { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ErasedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ErasedBy { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataProcessingAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ProcessingActivity { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ProcessedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ProcessedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string DataTypes { get; set; } = string.Empty;
 }
 
