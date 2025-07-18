@@ -125,15 +125,60 @@ public interface IWorkflowService
     /// <returns>Notification result</returns>
     Task<bool> SendWorkflowNotificationAsync(Guid instanceId, WorkflowNotificationType notificationType, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Creates a new workflow.
+    /// </summary>
+    /// <param name="request">The request containing workflow creation details.</param>
+    /// <returns>The created workflow instance.</returns>
     Task<WorkflowInstance> CreateWorkflowAsync(CreateWorkflowRequest request);
+
+    /// <summary>
+    /// Approves a workflow.
+    /// </summary>
+    /// <param name="request">The request containing approval details.</param>
+    /// <returns>The result of the approval operation.</returns>
     Task<WorkflowExecutionResult> ApproveWorkflowAsync(ApproveWorkflowRequest request);
+
+    /// <summary>
+    /// Rejects a workflow.
+    /// </summary>
+    /// <param name="request">The request containing rejection details.</param>
+    /// <returns>The result of the rejection operation.</returns>
     Task<WorkflowExecutionResult> RejectWorkflowAsync(RejectWorkflowRequest request);
+
+    /// <summary>
+    /// </summary>
+    /// <param name="projectId">The ID of the project.</param>
+    /// <returns>A collection of workflow instances for the project.</returns>
     Task<IEnumerable<WorkflowInstance>> GetProjectWorkflowsAsync(Guid projectId);
+
+    /// <summary>
+    /// </summary>
+    /// <returns>Analytics data for workflows.</returns>
     Task<object> GetWorkflowAnalyticsAsync();
+
+    /// <summary>
+    /// </summary>
+    /// <returns>A collection of workflow templates.</returns>
     Task<IEnumerable<WorkflowTemplate>> GetWorkflowTemplatesAsync();
+
+    /// <summary>
+    /// Creates a new workflow template.
+    /// </summary>
+    /// <param name="request">The request containing template creation details.</param>
+    /// <returns>The created workflow template.</returns>
     Task<WorkflowTemplate> CreateWorkflowTemplateAsync(CreateWorkflowTemplateRequest request);
+
+    /// <summary>
+    /// </summary>
+    /// <returns>Information about SLA breaches.</returns>
     Task<object> CheckSlaBreachesAsync();
+
+    /// <summary>
+    /// </summary>
+    /// <returns>Performance data for workflows.</returns>
     Task<object> GetWorkflowPerformanceAsync();
+
 }
 
 

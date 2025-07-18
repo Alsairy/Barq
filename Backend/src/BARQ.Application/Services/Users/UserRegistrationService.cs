@@ -10,6 +10,8 @@ using System.Text;
 
 namespace BARQ.Application.Services.Users;
 
+/// <summary>
+/// </summary>
 public class UserRegistrationService : IUserRegistrationService
 {
     private readonly IRepository<User> _userRepository;

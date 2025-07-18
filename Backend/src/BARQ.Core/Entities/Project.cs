@@ -121,9 +121,13 @@ public class Project : TenantEntity
     public string? DesignSystemUrl { get; set; }
 
     /// <summary>
-    /// Project owner
+    /// Project owner identifier
     /// </summary>
     public Guid ProjectOwnerId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the user who owns this project
+    /// </summary>
     public virtual User ProjectOwner { get; set; } = null!;
 
     /// <summary>

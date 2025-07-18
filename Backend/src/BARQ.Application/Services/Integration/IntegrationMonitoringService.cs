@@ -7,6 +7,8 @@ using BARQ.Core.Services;
 
 namespace BARQ.Application.Services.Integration;
 
+/// <summary>
+/// </summary>
 public class IntegrationMonitoringService : IIntegrationMonitoringService
 {
     private readonly ILogger<IntegrationMonitoringService> _logger;

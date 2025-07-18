@@ -1,83 +1,207 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// </summary>
 public class DataSubjectRequestDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string RequestType { get; set; } = string.Empty; // Access, Rectification, Erasure, Portability, Restriction
+
+    /// <summary>
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string IdentityVerification { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public DateTime RequestDate { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string ContactEmail { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataSubjectRightsResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid RequestId { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string ResponseData { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public DateTime ProcessedAt { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string ProcessedBy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string Notes { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentUpdateRequestDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool ConsentGiven { get; set; }
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ConsentDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentManagementResponseDto
 {
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// </summary>
     public string Message { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentId { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentStatusDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool ConsentGiven { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime ConsentDate { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime? WithdrawnDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataPortabilityResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string Format { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string DataPackage { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ExportedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ExportedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public long DataSize { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class DataErasureResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> ErasedDataTypes { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> RetainedDataTypes { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public string RetentionReason { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ErasedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ErasedBy { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataProcessingAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ProcessingActivity { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ProcessedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ProcessedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string DataTypes { get; set; } = string.Empty;
 }
 

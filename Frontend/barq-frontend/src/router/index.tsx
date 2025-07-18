@@ -23,6 +23,11 @@ import { WorkflowDesignerPage } from '../pages/workflows/WorkflowDesignerPage';
 import { UserProfilePage } from '../pages/profile/UserProfilePage';
 import { OrganizationUsersPage } from '../pages/admin/OrganizationUsersPage';
 
+import IntegrationDashboardPage from '../pages/integration/IntegrationDashboardPage';
+import DevToolsIntegrationPage from '../pages/integration/DevToolsIntegrationPage';
+import BusinessSystemsPage from '../pages/integration/BusinessSystemsPage';
+import SecurityCompliancePage from '../pages/integration/SecurityCompliancePage';
+
 export const router = createBrowserRouter([
   {
     path: '/auth',
@@ -119,6 +124,27 @@ export const router = createBrowserRouter([
           {
             path: 'users',
             element: <OrganizationUsersPage />,
+          },
+        ],
+      },
+      {
+        path: 'integration',
+        children: [
+          {
+            index: true,
+            element: <IntegrationDashboardPage />,
+          },
+          {
+            path: 'dev-tools',
+            element: <DevToolsIntegrationPage />,
+          },
+          {
+            path: 'business-systems',
+            element: <BusinessSystemsPage />,
+          },
+          {
+            path: 'security',
+            element: <SecurityCompliancePage />,
           },
         ],
       },

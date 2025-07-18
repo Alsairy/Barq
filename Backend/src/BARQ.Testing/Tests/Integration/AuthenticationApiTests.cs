@@ -3,8 +3,9 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 
-namespace BARQ.Testing.Tests.Integration;
-
+namespace BARQ.Testing.Tests.Integration
+{
+[Collection("AuthenticationApiTestCollection")]
 public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 {
     private readonly ApiTestFramework _factory;
@@ -19,8 +20,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "test@acme.com",
-            Password = "TestPassword123!"
+            Request = new
+            {
+                Email = "test@acme.com",
+                Password = "TestPassword123!"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
@@ -38,8 +42,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "test@acme.com",
-            Password = "WrongPassword"
+            Request = new
+            {
+                Email = "test@acme.com",
+                Password = "WrongPassword"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
@@ -52,8 +59,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "invalid-email",
-            Password = "TestPassword123!"
+            Request = new
+            {
+                Email = "invalid-email",
+                Password = "TestPassword123!"
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
@@ -148,4 +158,5 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
     }
+}
 }

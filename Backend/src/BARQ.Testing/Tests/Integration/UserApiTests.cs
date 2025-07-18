@@ -1,10 +1,12 @@
 using BARQ.Testing.Framework;
 using FluentAssertions;
 using System.Net;
+using System.Linq;
 using Xunit;
 
-namespace BARQ.Testing.Tests.Integration;
-
+namespace BARQ.Testing.Tests.Integration
+{
+[Collection("UserApiTestCollection")]
 public class UserApiTests : IClassFixture<ApiTestFramework>
 {
     private readonly ApiTestFramework _factory;
@@ -101,7 +103,17 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
     public async Task UserTenantIsolation_UserCannotAccessOtherTenantUsers()
     {
         var acmeToken = await _factory.GetAuthTokenAsync("test@acme.com");
-        var betaUserId = "44444444-4444-4444-4444-444444444444";
+        
+        var betaToken = await _factory.GetAuthTokenAsync("test@beta.com");
+        var betaUsersResponse = await _factory.GetAsync("/api/users", betaToken);
+        betaUsersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var betaUsersContent = await betaUsersResponse.Content.ReadAsStringAsync();
+        var betaUsers = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaUsersContent);
+        var betaUser = betaUsers?.FirstOrDefault(u => u.GetProperty("email").GetString() == "test@beta.com");
+        betaUser.Should().NotBeNull();
+        
+        var betaUserId = betaUser.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/users/{betaUserId}", acmeToken);
 
@@ -123,4 +135,5 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
+}
 }

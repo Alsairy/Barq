@@ -29,7 +29,8 @@ export const apiSlice = createApi({
     'Project',
     'Workflow',
     'AITask',
-    'Notification'
+    'Notification',
+    'Integration'
   ],
   endpoints: () => ({}),
 });

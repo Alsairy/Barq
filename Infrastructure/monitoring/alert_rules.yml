@@ -1,0 +1,200 @@
+groups:
+  - name: barq.rules
+    rules:
+      # Application Health Alerts
+      - alert: BarqBackendDown
+        expr: up{job="barq-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Barq Backend service is down"
+          description: "Barq Backend has been down for more than 1 minute. Instance: {{ $labels.instance }}"
+
+      - alert: BarqFrontendDown
+        expr: up{job="barq-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: frontend
+        annotations:
+          summary: "Barq Frontend service is down"
+          description: "Barq Frontend has been down for more than 1 minute. Instance: {{ $labels.instance }}"
+
+      # Performance Alerts
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{pod=~"barq-.*"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.pod }}"
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for {{ $labels.pod }} for more than 5 minutes. Current value: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes{pod=~"barq-.*"} / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: "{{ $labels.pod }}"
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 90% for {{ $labels.pod }} for more than 5 minutes. Current value: {{ $value }}%"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="barq-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 2 seconds for more than 5 minutes. Current value: {{ $value }}s"
+
+      # Database Alerts
+      - alert: DatabaseConnectionFailure
+        expr: increase(barq_database_connections_failed_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection failures"
+          description: "More than 10 database connection failures in the last 5 minutes. Current value: {{ $value }}"
+
+      - alert: DatabaseHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connections"
+          description: "Database connections are above 80% of maximum. Current: {{ $value }}%"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database slow queries detected"
+          description: "Database query efficiency is below 10% for more than 10 minutes."
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is above 90% for more than 5 minutes. Current: {{ $value }}%"
+
+      # Kubernetes Alerts
+      - alert: KubernetesPodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: kubernetes
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping."
+
+      - alert: KubernetesNodeNotReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: kubernetes
+        annotations:
+          summary: "Kubernetes node not ready"
+          description: "Node {{ $labels.node }} has been not ready for more than 5 minutes."
+
+      - alert: KubernetesPodNotReady
+        expr: kube_pod_status_phase{phase=~"Pending|Unknown"} > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: kubernetes
+        annotations:
+          summary: "Pod not ready"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been in {{ $labels.phase }} state for more than 10 minutes."
+
+      # Security Alerts
+      - alert: SecurityThreatDetected
+        expr: increase(barq_security_threats_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Security threat detected"
+          description: "{{ $value }} security threats detected in the last 5 minutes."
+
+      - alert: FailedLoginAttempts
+        expr: increase(barq_failed_login_attempts_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "{{ $value }} failed login attempts in the last 5 minutes."
+
+      # Business Logic Alerts
+      - alert: WorkflowExecutionFailures
+        expr: increase(barq_workflow_execution_failures_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: workflow
+        annotations:
+          summary: "High workflow execution failures"
+          description: "{{ $value }} workflow execution failures in the last 10 minutes."
+
+      - alert: AITaskProcessingDelay
+        expr: barq_ai_task_queue_size > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: ai
+        annotations:
+          summary: "AI task processing delay"
+          description: "AI task queue size is {{ $value }}, indicating processing delays."
+
+      # Integration Alerts
+      - alert: IntegrationEndpointDown
+        expr: barq_integration_endpoint_status == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: integration
+        annotations:
+          summary: "Integration endpoint down"
+          description: "Integration endpoint {{ $labels.endpoint }} is down for more than 2 minutes."
+
+      - alert: HighIntegrationLatency
+        expr: barq_integration_response_time_seconds > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: integration
+        annotations:
+          summary: "High integration latency"
+          description: "Integration {{ $labels.integration }} has high latency: {{ $value }}s"

@@ -1,36 +1,54 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
+using BARQ.Core.Services;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
 using FluentAssertions;
 using Xunit;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
 
 namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly string _connectionString = "Server=localhost,1433;Database=BarqTestDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;";
-    
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        builder.UseEnvironment("Testing");
+        
         builder.ConfigureServices(services =>
         {
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
             if (descriptor != null)
+            {
                 services.Remove(descriptor);
+            }
 
+            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(BarqDbContext));
+            if (dbContextDescriptor != null)
+            {
+                services.Remove(dbContextDescriptor);
+            }
+
+            var dbName = Guid.NewGuid().ToString();
             services.AddDbContext<BarqDbContext>(options =>
-                options.UseInMemoryDatabase("TestDatabase"));
+            {
+                options.UseInMemoryDatabase(dbName);
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+            });
 
+            services.RemoveAll<ITenantProvider>();
+            services.AddScoped<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
-
-        builder.UseEnvironment("Testing");
     }
 
     public async Task InitializeAsync()
@@ -83,7 +101,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
-        var loginRequest = new { Email = email, Password = password };
+        var loginRequest = new { Request = new { Email = email, Password = password } };
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
         
         response.Should().BeSuccessful();
@@ -108,12 +126,21 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (await _context.Organizations.AnyAsync())
+        if (_context.Organizations.Any())
+        {
             return;
+        }
+
+        var acmeOrgId = Guid.NewGuid();
+        var betaOrgId = Guid.NewGuid();
+        var acmeUserId = Guid.NewGuid();
+        var betaUserId = Guid.NewGuid();
+        var acmeProjectId = Guid.NewGuid();
+        var betaProjectId = Guid.NewGuid();
 
         var acmeOrg = new Organization
         {
-            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Id = acmeOrgId,
             Name = "Acme Corporation",
             Domain = "acme.com",
             SubscriptionPlan = Core.Enums.SubscriptionPlan.Professional,
@@ -123,7 +150,7 @@ public class TestDataSeeder : ITestDataSeeder
 
         var betaOrg = new Organization
         {
-            Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Id = betaOrgId,
             Name = "Beta Industries",
             Domain = "beta.com",
             SubscriptionPlan = Core.Enums.SubscriptionPlan.Enterprise,
@@ -135,48 +162,53 @@ public class TestDataSeeder : ITestDataSeeder
 
         var acmeUser = new User
         {
-            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Id = acmeUserId,
             Email = "test@acme.com",
             FirstName = "John",
             LastName = "Doe",
-            TenantId = acmeOrg.Id,
+            TenantId = acmeOrgId,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
-            CreatedAt = DateTime.UtcNow
+                EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
         };
+        
 
         var betaUser = new User
         {
-            Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            Id = betaUserId,
             Email = "test@beta.com",
             FirstName = "Jane",
             LastName = "Smith",
-            TenantId = betaOrg.Id,
+            TenantId = betaOrgId,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
-            CreatedAt = DateTime.UtcNow
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
         };
 
         _context.Users.AddRange(acmeUser, betaUser);
 
         var acmeProject = new Project
         {
-            Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            Id = acmeProjectId,
             Name = "Acme Project",
             Description = "Test project for Acme",
-            TenantId = acmeOrg.Id,
-            CreatedById = acmeUser.Id,
+            TenantId = acmeOrgId,
+            CreatedById = acmeUserId,
             Status = Core.Enums.ProjectStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
 
         var betaProject = new Project
         {
-            Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
+            Id = betaProjectId,
             Name = "Beta Project",
             Description = "Test project for Beta",
-            TenantId = betaOrg.Id,
-            CreatedById = betaUser.Id,
+            TenantId = betaOrgId,
+            CreatedById = betaUserId,
             Status = Core.Enums.ProjectStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
@@ -184,6 +216,81 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Projects.AddRange(acmeProject, betaProject);
 
         await _context.SaveChangesAsync();
+    }
+}
+
+public class TestTenantProvider : ITenantProvider
+{
+    private Guid _tenantId;
+    private string _tenantName = "Test Tenant";
+    private Guid _currentUserId;
+
+    public TestTenantProvider()
+    {
+        _tenantId = Guid.NewGuid();
+        _currentUserId = Guid.NewGuid();
+    }
+
+    public Guid GetTenantId()
+    {
+        return _tenantId;
+    }
+
+    public void SetTenantId(Guid tenantId)
+    {
+        _tenantId = tenantId;
+    }
+
+    public string GetTenantName()
+    {
+        return _tenantName;
+    }
+
+    public void SetTenantName(string tenantName)
+    {
+        _tenantName = tenantName;
+    }
+
+    public bool IsMultiTenant()
+    {
+        return true;
+    }
+
+    public void ClearTenantContext()
+    {
+        _tenantId = Guid.Empty;
+        _tenantName = string.Empty;
+        _currentUserId = Guid.Empty;
+    }
+
+    public Guid GetCurrentUserId()
+    {
+        return _currentUserId;
+    }
+}
+
+
+public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.AuthenticationHandler<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions>
+{
+    public TestAuthenticationHandler(Microsoft.Extensions.Options.IOptionsMonitor<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions> options,
+        Microsoft.Extensions.Logging.ILoggerFactory logger, System.Text.Encodings.Web.UrlEncoder encoder, Microsoft.AspNetCore.Authentication.ISystemClock clock)
+        : base(options, logger, encoder, clock)
+    {
+    }
+
+    protected override Task<Microsoft.AspNetCore.Authentication.AuthenticateResult> HandleAuthenticateAsync()
+    {
+        var claims = new[]
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "TestUser"),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+        };
+
+        var identity = new System.Security.Claims.ClaimsIdentity(claims, "Test");
+        var principal = new System.Security.Claims.ClaimsPrincipal(identity);
+        var ticket = new Microsoft.AspNetCore.Authentication.AuthenticationTicket(principal, "Test");
+
+        return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
 }
 

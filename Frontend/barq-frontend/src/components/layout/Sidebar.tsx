@@ -6,7 +6,8 @@ import {
   Workflow,
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Plug
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '../../hooks/redux';
 import { toggleSidebar } from '../../store/slices/uiSlice';
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Projects', href: '/projects', icon: FolderOpen },
   { name: 'AI Management', href: '/ai', icon: Bot },
   { name: 'Workflows', href: '/workflows', icon: Workflow },
+  { name: 'Integration', href: '/integration', icon: Plug },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

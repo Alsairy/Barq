@@ -113,6 +113,9 @@ public class CostTracking : TenantEntity
     /// Approved by user
     /// </summary>
     public Guid? ApprovedById { get; set; }
+    /// <summary>
+    /// User who approved the cost
+    /// </summary>
     public virtual User? ApprovedBy { get; set; }
 
     /// <summary>
@@ -149,36 +152,54 @@ public class CostTracking : TenantEntity
     /// Project this cost belongs to
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// Project this cost belongs to
+    /// </summary>
     public virtual Project? Project { get; set; }
 
     /// <summary>
     /// Sprint this cost belongs to
     /// </summary>
     public Guid? SprintId { get; set; }
+    /// <summary>
+    /// Sprint this cost belongs to
+    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
     /// <summary>
     /// User story this cost is related to
     /// </summary>
     public Guid? UserStoryId { get; set; }
+    /// <summary>
+    /// User story this cost is related to
+    /// </summary>
     public virtual UserStory? UserStory { get; set; }
 
     /// <summary>
     /// AI task this cost is related to
     /// </summary>
     public Guid? AITaskId { get; set; }
+    /// <summary>
+    /// AI task this cost is related to
+    /// </summary>
     public virtual AITask? AITask { get; set; }
 
     /// <summary>
     /// AI provider configuration used
     /// </summary>
     public Guid? AIProviderConfigurationId { get; set; }
+    /// <summary>
+    /// AI provider configuration used
+    /// </summary>
     public virtual AIProviderConfiguration? AIProviderConfiguration { get; set; }
 
     /// <summary>
     /// User who incurred the cost
     /// </summary>
     public Guid? UserId { get; set; }
+    /// <summary>
+    /// User who incurred the cost
+    /// </summary>
     public virtual User? User { get; set; }
 
     /// <summary>
@@ -317,6 +338,9 @@ public class CostSummary : TenantEntity
     /// Project this summary belongs to (if applicable)
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// Project this summary belongs to (if applicable)
+    /// </summary>
     public virtual Project? Project { get; set; }
 }
 

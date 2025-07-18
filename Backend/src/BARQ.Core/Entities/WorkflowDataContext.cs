@@ -56,16 +56,22 @@ public class WorkflowDataContext : TenantEntity
     /// <summary>
     /// </summary>
     public Guid? WorkflowInstanceId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowInstance? WorkflowInstance { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? WorkflowStepId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowStep? WorkflowStep { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? ParentContextId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowDataContext? ParentContext { get; set; }
 
     /// <summary>

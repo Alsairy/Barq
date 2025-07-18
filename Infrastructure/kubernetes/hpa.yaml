@@ -1,0 +1,134 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: barq-backend-hpa
+  namespace: barq-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: barq-backend
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: barq-frontend-hpa
+  namespace: barq-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: barq-frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: barq-backend-vpa
+  namespace: barq-system
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: barq-backend
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: barq-backend
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+---
+apiVersion: autoscaling/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: barq-frontend-vpa
+  namespace: barq-system
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: barq-frontend
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: barq-frontend
+      minAllowed:
+        cpu: 50m
+        memory: 64Mi
+      maxAllowed:
+        cpu: 500m
+        memory: 512Mi
+      controlledResources: ["cpu", "memory"]

@@ -135,24 +135,32 @@ public class AITask : TenantEntity
     /// Project this task belongs to
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual Project? Project { get; set; }
 
     /// <summary>
     /// Sprint this task belongs to
     /// </summary>
     public Guid? SprintId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
     /// <summary>
     /// User story this task is related to
     /// </summary>
     public Guid? UserStoryId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual UserStory? UserStory { get; set; }
 
     /// <summary>
     /// Parent task (for sub-tasks)
     /// </summary>
     public Guid? ParentTaskId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual AITask? ParentTask { get; set; }
 
     /// <summary>
@@ -164,12 +172,16 @@ public class AITask : TenantEntity
     /// Workflow instance this task belongs to
     /// </summary>
     public Guid? WorkflowInstanceId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowInstance? WorkflowInstance { get; set; }
 
     /// <summary>
     /// Task assignee (for human review)
     /// </summary>
     public Guid? AssigneeId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual User? Assignee { get; set; }
 
     /// <summary>

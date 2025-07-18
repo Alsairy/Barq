@@ -94,18 +94,27 @@ public class UserStory : TenantEntity
     /// Project this user story belongs to
     /// </summary>
     public Guid ProjectId { get; set; }
+    /// <summary>
+    /// The project this user story belongs to
+    /// </summary>
     public virtual Project Project { get; set; } = null!;
 
     /// <summary>
     /// Sprint this user story is assigned to
     /// </summary>
     public Guid? SprintId { get; set; }
+    /// <summary>
+    /// The sprint this user story is assigned to
+    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
     /// <summary>
     /// User story assignee
     /// </summary>
     public Guid? AssigneeId { get; set; }
+    /// <summary>
+    /// The user assigned to this user story
+    /// </summary>
     public virtual User? Assignee { get; set; }
 
 

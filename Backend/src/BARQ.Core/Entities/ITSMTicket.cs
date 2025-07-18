@@ -58,6 +58,9 @@ public class ITSMTicket : TenantEntity
     /// Requested by user
     /// </summary>
     public Guid RequestedById { get; set; }
+    /// <summary>
+    /// Requested by user
+    /// </summary>
     public virtual User RequestedBy { get; set; } = null!;
 
     /// <summary>
@@ -140,6 +143,9 @@ public class ITSMTicket : TenantEntity
     /// Approver user ID
     /// </summary>
     public Guid? ApproverId { get; set; }
+    /// <summary>
+    /// Approver user
+    /// </summary>
     public virtual User? Approver { get; set; }
 
     /// <summary>
@@ -156,24 +162,36 @@ public class ITSMTicket : TenantEntity
     /// Project this ticket is related to
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// Project this ticket is related to
+    /// </summary>
     public virtual Project? Project { get; set; }
 
     /// <summary>
     /// Sprint this ticket is related to
     /// </summary>
     public Guid? SprintId { get; set; }
+    /// <summary>
+    /// Sprint this ticket is related to
+    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
     /// <summary>
     /// AI task that triggered this ticket
     /// </summary>
     public Guid? AITaskId { get; set; }
+    /// <summary>
+    /// AI task that triggered this ticket
+    /// </summary>
     public virtual AITask? AITask { get; set; }
 
     /// <summary>
     /// Workflow instance that triggered this ticket
     /// </summary>
     public Guid? WorkflowInstanceId { get; set; }
+    /// <summary>
+    /// Workflow instance that triggered this ticket
+    /// </summary>
     public virtual WorkflowInstance? WorkflowInstance { get; set; }
 
     /// <summary>
@@ -207,6 +225,9 @@ public class ITSMTicketUpdate : TenantEntity
     /// User who created the update
     /// </summary>
     public Guid? UpdatedByUserId { get; set; }
+    /// <summary>
+    /// User who created the update
+    /// </summary>
     public virtual User? UpdatedBy { get; set; }
 
     /// <summary>
@@ -224,6 +245,9 @@ public class ITSMTicketUpdate : TenantEntity
     /// ITSM ticket this update belongs to
     /// </summary>
     public Guid ITSMTicketId { get; set; }
+    /// <summary>
+    /// ITSM ticket this update belongs to
+    /// </summary>
     public virtual ITSMTicket ITSMTicket { get; set; } = null!;
 }
 

@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: barq-backend-monitor
+  namespace: barq-system
+  labels:
+    app: barq-backend
+spec:
+  selector:
+    matchLabels:
+      app: barq-backend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: barq-frontend-monitor
+  namespace: barq-system
+  labels:
+    app: barq-frontend
+spec:
+  selector:
+    matchLabels:
+      app: barq-frontend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: barq-alerts
+  namespace: barq-system
+  labels:
+    app: barq
+spec:
+  groups:
+  - name: barq.rules
+    rules:
+    - alert: BarqBackendDown
+      expr: up{job="barq-backend"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Barq Backend is down"
+        description: "Barq Backend has been down for more than 1 minute."
+    
+    - alert: BarqHighCPUUsage
+      expr: rate(container_cpu_usage_seconds_total{pod=~"barq-backend-.*"}[5m]) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU usage on Barq Backend"
+        description: "CPU usage is above 80% for more than 5 minutes."
+    
+    - alert: BarqHighMemoryUsage
+      expr: container_memory_usage_bytes{pod=~"barq-backend-.*"} / container_spec_memory_limit_bytes > 0.9
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage on Barq Backend"
+        description: "Memory usage is above 90% for more than 5 minutes."
+    
+    - alert: BarqDatabaseConnectionFailure
+      expr: barq_database_connections_failed_total > 10
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Database connection failures"
+        description: "More than 10 database connection failures in the last 2 minutes."
+    
+    - alert: BarqHighResponseTime
+      expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="barq-backend"}[5m])) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High response time"
+        description: "95th percentile response time is above 2 seconds for more than 5 minutes."

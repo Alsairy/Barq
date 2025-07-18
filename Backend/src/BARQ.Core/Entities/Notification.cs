@@ -62,25 +62,35 @@ public class Notification : TenantEntity
     /// <summary>
     /// </summary>
     public Guid RecipientUserId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual User RecipientUser { get; set; } = null!;
 
     /// <summary>
     /// </summary>
     public Guid? SenderUserId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual User? SenderUser { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? ProjectId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual Project? Project { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? WorkflowInstanceId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual WorkflowInstance? WorkflowInstance { get; set; }
 
     /// <summary>
     /// </summary>
     public Guid? AITaskId { get; set; }
+    /// <summary>
+    /// </summary>
     public virtual AITask? AITask { get; set; }
 }
