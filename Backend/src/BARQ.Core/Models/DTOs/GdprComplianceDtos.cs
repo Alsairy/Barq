@@ -1,22 +1,60 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// </summary>
 public class DataSubjectRequestDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string RequestType { get; set; } = string.Empty; // Access, Rectification, Erasure, Portability, Restriction
+
+    /// <summary>
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string IdentityVerification { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public DateTime RequestDate { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string ContactEmail { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataSubjectRightsResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid RequestId { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string ResponseData { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public DateTime ProcessedAt { get; set; }
+
+    /// <summary>
+    /// </summary>
     public string ProcessedBy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// </summary>
     public string Notes { get; set; } = string.Empty;
 }
 
