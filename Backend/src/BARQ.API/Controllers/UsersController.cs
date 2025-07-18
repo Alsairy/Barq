@@ -19,19 +19,24 @@ namespace BARQ.API.Controllers
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                 OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Email = "test@acme.com",
-                FirstName = "Acme",
+                FirstName = "Acme",,
+                PhoneNumber = "1234567890",
                 LastName = "User"
             },
             new UserDto
             {
                 Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                                
                 OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 Email = "test@beta.com",
-                FirstName = "Jane",
+                FirstName = "J
+                ane",
+                                PhoneNumber = "0987654321", 
                 LastName = "Smith";
 
         private UserDto GetCurrentUser()
         {
+                
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             if (Guid.TryParse(userIdStr, out var userId))
             {
