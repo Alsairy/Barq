@@ -3,10 +3,9 @@ using FluentAssertions;
 using System.Net;
 using Xunit;
 
+namespace BARQ.Testing.Tests.Integration
+{
 [Collection("AuthenticationApiTestCollection")]
-
-namespace BARQ.Testing.Tests.Integration;
-
 public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 {
     private readonly ApiTestFramework _factory;
@@ -159,4 +158,5 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
     }
+}
 }

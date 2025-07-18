@@ -4,10 +4,9 @@ using System.Net;
 using System.Linq;
 using Xunit;
 
+namespace BARQ.Testing.Tests.Integration
+{
 [Collection("UserApiTestCollection")]
-
-namespace BARQ.Testing.Tests.Integration;
-
 public class UserApiTests : IClassFixture<ApiTestFramework>
 {
     private readonly ApiTestFramework _factory;
@@ -136,4 +135,5 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
+}
 }
