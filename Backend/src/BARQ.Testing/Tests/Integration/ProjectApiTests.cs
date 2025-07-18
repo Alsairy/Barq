@@ -1,6 +1,7 @@
 using BARQ.Testing.Framework;
 using FluentAssertions;
 using System.Net;
+using System.Linq;
 using Xunit;
 
 [Collection("ProjectApiTestCollection")]
@@ -48,7 +49,16 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
     public async Task GetProject_WithValidId_ReturnsProject()
     {
         var authToken = await _factory.GetAuthTokenAsync();
-        var projectId = "55555555-5555-5555-5555-555555555555";
+        
+        var projectsResponse = await _factory.GetAsync("/api/projects", authToken);
+        projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
+        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
+        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.Should().NotBeNull();
+        
+        var projectId = acmeProject.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
@@ -62,7 +72,17 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
     public async Task ProjectTenantIsolation_UserCannotAccessOtherTenantProjects()
     {
         var acmeToken = await _factory.GetAuthTokenAsync("test@acme.com");
-        var betaProjectId = "66666666-6666-6666-6666-666666666666";
+        
+        var betaToken = await _factory.GetAuthTokenAsync("test@beta.com");
+        var betaProjectsResponse = await _factory.GetAsync("/api/projects", betaToken);
+        betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
+        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaProjectsContent);
+        var betaProject = betaProjects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
+        betaProject.Should().NotBeNull();
+        
+        var betaProjectId = betaProject.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -73,7 +93,16 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
     public async Task UpdateProject_WithValidData_ReturnsSuccess()
     {
         var authToken = await _factory.GetAuthTokenAsync();
-        var projectId = "55555555-5555-5555-5555-555555555555";
+        
+        var projectsResponse = await _factory.GetAsync("/api/projects", authToken);
+        projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
+        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
+        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.Should().NotBeNull();
+        
+        var projectId = acmeProject.Value.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Project",

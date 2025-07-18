@@ -1,6 +1,7 @@
 using BARQ.Testing.Framework;
 using FluentAssertions;
 using System.Net;
+using System.Linq;
 using Xunit;
 
 namespace BARQ.Testing.Tests.Integration;
@@ -69,7 +70,16 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
     public async Task GetOrganization_WithValidId_ReturnsOrganization()
     {
         var authToken = await _factory.GetAuthTokenAsync();
-        var organizationId = "11111111-1111-1111-1111-111111111111";
+        
+        var orgsResponse = await _factory.GetAsync("/api/organizations", authToken);
+        orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
+        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
+        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        acmeOrg.Should().NotBeNull();
+        
+        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -94,7 +104,16 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
     public async Task UpdateOrganization_WithValidData_ReturnsSuccess()
     {
         var authToken = await _factory.GetAuthTokenAsync();
-        var organizationId = "11111111-1111-1111-1111-111111111111";
+        
+        var orgsResponse = await _factory.GetAsync("/api/organizations", authToken);
+        orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
+        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
+        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        acmeOrg.Should().NotBeNull();
+        
+        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
@@ -110,7 +129,17 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
     public async Task TenantIsolation_UserCannotAccessOtherTenantData()
     {
         var acmeToken = await _factory.GetAuthTokenAsync("test@acme.com");
-        var betaOrganizationId = "22222222-2222-2222-2222-222222222222";
+        
+        var betaToken = await _factory.GetAuthTokenAsync("test@beta.com");
+        var betaOrgsResponse = await _factory.GetAsync("/api/organizations", betaToken);
+        betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
+        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaOrgsContent);
+        var betaOrg = betaOrganizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Beta Industries");
+        betaOrg.Should().NotBeNull();
+        
+        var betaOrganizationId = betaOrg.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{betaOrganizationId}", acmeToken);
 
