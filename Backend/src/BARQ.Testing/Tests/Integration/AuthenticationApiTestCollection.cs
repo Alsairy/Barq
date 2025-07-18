@@ -1,4 +1,5 @@
 using Xunit;
+using BARQ.Testing.Framework;
 
 namespace BARQ.Testing.Tests.Integration;
 
