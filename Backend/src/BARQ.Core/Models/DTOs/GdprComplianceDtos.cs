@@ -58,21 +58,45 @@ public class DataSubjectRightsResponseDto
     public string Notes { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentUpdateRequestDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool ConsentGiven { get; set; }
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ConsentDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentManagementResponseDto
 {
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// </summary>
     public string Message { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentId { get; set; } = string.Empty;
 }
 
