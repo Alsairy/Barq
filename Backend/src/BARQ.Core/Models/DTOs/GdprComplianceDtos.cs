@@ -100,24 +100,54 @@ public class ConsentManagementResponseDto
     public string ConsentId { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ConsentStatusDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string ConsentType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool ConsentGiven { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime ConsentDate { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime? WithdrawnDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string LegalBasis { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class DataPortabilityResponseDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public string Format { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string DataPackage { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime ExportedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public string ExportedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public long DataSize { get; set; }
 }
 
