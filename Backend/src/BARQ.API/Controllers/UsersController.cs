@@ -27,10 +27,8 @@ namespace BARQ.API.Controllers
                 Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
                 OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 Email = "test@beta.com",
-                FirstName = "Beta",
-                LastName = "User"
-            }
-        };
+                FirstName = "Jane",
+                LastName = "Smith";
 
         private UserDto GetCurrentUser()
         {
@@ -59,8 +57,11 @@ namespace BARQ.API.Controllers
                 user.FirstName = request.FirstName;
             if (!string.IsNullOrEmpty(request.LastName))
                 user.LastName = request.LastName;
-            return Ok(user);
-        }
+            
+                        if (!string.IsNullOrEmpty(request.PhoneNumber))
+                user.PhoneNumber = request.PhoneNumber;
+return Ok(user);
+                        
 
         [HttpGet]
         public ActionResult<IEnumerable<UserDto>> GetUsers()
@@ -120,18 +121,25 @@ namespace BARQ.API.Controllers
         {
             public string FirstName { get; set; }
             public string LastName { get; set; }
+                            public string PhoneNumber { get; set; }
+
         }
 
         public class ChangePasswordRequest
         {
             public string OldPassword { get; set; }
             public string NewPassword { get; set; }
+                    public string CurrentPassword { get; set; }
+        public string ConfirmPassword { get; set; }
+
         }
 
         public class UserDto
         {
             public Guid Id { get; set; }
             public Guid OrganizationId { get; set; }
+                    public string PhoneNumber { get; set; }
+
             public string Email { get; set; }
             public string FirstName { get; set; }
             public string LastName { get; set; }
