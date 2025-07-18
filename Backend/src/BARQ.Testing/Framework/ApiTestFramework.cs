@@ -126,10 +126,10 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        _context.Projects.RemoveRange(_context.Projects);
-        _context.Users.RemoveRange(_context.Users);
-        _context.Organizations.RemoveRange(_context.Organizations);
-        await _context.SaveChangesAsync();
+        if (_context.Organizations.Any())
+        {
+            return;
+        }
 
         var acmeOrgId = Guid.NewGuid();
         var betaOrgId = Guid.NewGuid();
@@ -280,7 +280,7 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
         var claims = new[]
         {
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, "TestUser"),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, "33333333-3333-3333-3333-333333333333")
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
         };
 
         var identity = new System.Security.Claims.ClaimsIdentity(claims, "Test");
