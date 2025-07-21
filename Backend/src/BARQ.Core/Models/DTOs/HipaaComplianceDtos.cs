@@ -100,11 +100,23 @@ public class BusinessAssociateAgreementDto
     /// <summary>
     /// </summary>
     public string OrganizationName { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string AgreementNumber { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime EffectiveDate { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime ExpirationDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> PermittedUses { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> RequiredSafeguards { get; set; } = new List<string>();
 }
 
