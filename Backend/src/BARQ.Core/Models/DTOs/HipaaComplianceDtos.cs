@@ -66,19 +66,39 @@ public class PhiAccessAuditDto
     public string AuthorizationLevel { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class BusinessAssociateRequestDto
 {
+    /// <summary>
+    /// </summary>
     public string OrganizationName { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ContactPerson { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ContactEmail { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ServicesProvided { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> PhiTypesAccessed { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public DateTime RequestDate { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class BusinessAssociateAgreementDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// </summary>
     public string OrganizationName { get; set; } = string.Empty;
     public string AgreementNumber { get; set; } = string.Empty;
     public DateTime EffectiveDate { get; set; }
