@@ -1,28 +1,68 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// </summary>
 public class PhiAccessLogDto
 {
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public Guid? PatientId { get; set; }
+    /// <summary>
+    /// </summary>
     public string AccessType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ResourceAccessed { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime AccessTime { get; set; }
+    /// <summary>
+    /// </summary>
     public string IpAddress { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string UserAgent { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class PhiAccessAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// </summary>
     public Guid? PatientId { get; set; }
+    /// <summary>
+    /// </summary>
     public string AccessType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ResourceAccessed { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime AccessTime { get; set; }
+    /// <summary>
+    /// </summary>
     public string IpAddress { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string UserAgent { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string AuthorizationLevel { get; set; } = string.Empty;
 }
 

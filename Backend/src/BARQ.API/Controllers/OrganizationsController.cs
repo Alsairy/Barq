@@ -35,7 +35,8 @@ namespace BARQ.API.Controllers
             },
             new OrganizationDto
             {
-                Id = Guid "Beta Industries",
+                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+                Name = "Beta Industries"
             }
         };
 
