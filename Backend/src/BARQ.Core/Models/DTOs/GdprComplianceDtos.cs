@@ -296,20 +296,23 @@ public class DataProcessingAuditDto
 /// <summary>
 /// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity under GDPR compliance requirements.
 /// </summary>
+/// <summary>
+/// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity under GDPR compliance requirements.
+/// </summary>
 public class PrivacyImpactAssessmentDto
 {
     /// <summary>
-    /// Gets or sets the unique identifier of the assessment.
+    /// Gets or sets the unique identifier of the privacy impact assessment.
     /// </summary>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the name of the process being assessed.
+    /// Gets or sets the name of the process being assessed for privacy impact.
     /// </summary>
     public string ProcessName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a description of the process being assessed.
+    /// Gets or sets a detailed description of the process being assessed.
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
@@ -319,25 +322,26 @@ public class PrivacyImpactAssessmentDto
     public string RiskLevel { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the collection of identified risks.
+    /// Gets or sets the collection of risks identified during the assessment.
     /// </summary>
     public IEnumerable<string> IdentifiedRisks { get; set; } = new List<string>();
 
     /// <summary>
-    /// Gets or sets the collection of mitigation actions proposed to address the risks.
+    /// Gets or sets the collection of mitigation actions proposed to address the identified risks.
     /// </summary>
     public IEnumerable<string> Mitigations { get; set; } = new List<string>();
 
     /// <summary>
-    /// Gets or sets the date when the assessment was performed.
+    /// Gets or sets the date when the privacy impact assessment was performed.
     /// </summary>
     public DateTime AssessmentDate { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the person or team that performed the assessment.
+    /// Gets or sets the name or identifier of the person or team that performed the assessment.
     /// </summary>
     public string AssessedBy { get; set; } = string.Empty;
 }
+
 
 /// <summary>
 /// Represents the validation of a lawful basis for processing personal data under GDPR Article 6 requirements.
@@ -345,27 +349,27 @@ public class PrivacyImpactAssessmentDto
 public class LawfulBasisValidationDto
 {
     /// <summary>
-    /// Gets or sets the processing activity being validated.
+    /// Gets or sets the name of the processing activity being validated for lawful basis.
     /// </summary>
     public string ProcessingActivity { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the lawful basis used for processing.
+    /// Gets or sets the lawful basis (e.g., consent, contract, legal obligation) used for processing.
     /// </summary>
     public string LawfulBasis { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the lawful basis is valid.
+    /// Gets or sets a value indicating whether the lawful basis for processing is valid.
     /// </summary>
     public bool IsValid { get; set; }
 
     /// <summary>
-    /// Gets or sets the reason behind the validation outcome.
+    /// Gets or sets the reason or explanation behind the validation outcome.
     /// </summary>
     public string ValidationReason { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the date when the validation was performed.
+    /// Gets or sets the date when the lawful basis validation was performed.
     /// </summary>
     public DateTime ValidatedAt { get; set; }
 }
