@@ -45,16 +45,44 @@ public class IntegrationRequest
     public int TimeoutSeconds { get; set; } = 30;
 }
 
+/// <summary>
+/// </summary>
 public class IntegrationResponse
 {
+    /// <summary>
+    /// </summary>
     public string RequestId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public int StatusCode { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public string? Body { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    
+    /// <summary>
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public DateTime ProcessedAt { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// </summary>
     public long ProcessingTimeMs { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public string? EndpointId { get; set; }
 }
 

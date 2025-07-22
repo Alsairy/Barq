@@ -56,6 +56,9 @@ public class AuthenticationService : IAuthenticationService
             var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
             var user = users.FirstOrDefault();
             
+            _logger.LogInformation("User lookup for email: {Email}, Found: {UserFound}, Total users in DB: {UserCount}", 
+                request.Email, user != null, (await _userRepository.FindAsync(u => true)).Count());
+            
             if (user == null)
             {
                 _logger.LogWarning("User not found: {Email}", request.Email);
@@ -408,30 +411,51 @@ public class AuthenticationService : IAuthenticationService
 
     private string GenerateAccessToken(User user, IList<string> roles)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(GetJwtSecret());
-
-        var claims = new List<Claim>
+        try
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-            new("tenant_id", user.TenantId.ToString())
-        };
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtSecret = GetJwtSecret();
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+            _logger.LogInformation("Generating JWT token for user: {Email}, Secret length: {SecretLength}", user.Email, jwtSecret.Length);
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new("tenant_id", user.TenantId.ToString())
+            };
+
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+            var expiryMinutes = GetTokenExpiryMinutes();
+
+            _logger.LogInformation("JWT Config - Issuer: {Issuer}, Audience: {Audience}, ExpiryMinutes: {ExpiryMinutes}", issuer, audience, expiryMinutes);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+            
+            _logger.LogInformation("JWT token generated successfully, length: {TokenLength}", tokenString?.Length ?? 0);
+            
+            return tokenString ?? string.Empty;
+        }
+        catch (Exception ex)
         {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
-            Issuer = _configuration["Jwt:Issuer"],
-            Audience = _configuration["Jwt:Audience"],
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+            _logger.LogError(ex, "Error generating JWT token for user: {Email}", user.Email);
+            return string.Empty;
+        }
     }
 
     private string GenerateRefreshToken()
