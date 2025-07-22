@@ -106,7 +106,7 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task HealthCheckEndpoint_ShouldMeetPerformanceRequirements()
     {
-        var result = await _performanceFramework.RunLoadTestAsync("/api/health", virtualUsers: 10, duration: TimeSpan.FromSeconds(15));
+        var result = await _performanceFramework.RunLoadTestAsync("/api/health", virtualUsers: 10, duration: TimeSpan.FromSeconds(60));
         
         var requirements = new PerformanceRequirements
         {
