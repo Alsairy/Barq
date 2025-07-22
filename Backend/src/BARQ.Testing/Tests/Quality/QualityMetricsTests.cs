@@ -4,12 +4,12 @@ using Xunit;
 
 namespace BARQ.Testing.Tests.Quality;
 
-public class QualityMetricsTests : IClassFixture<ApiTestFramework>
+public class QualityMetricsTests : IClassFixture<StandaloneTestFramework>
 {
-    private readonly ApiTestFramework _factory;
+    private readonly StandaloneTestFramework _factory;
     private readonly QualityMetricsFramework _qualityFramework;
 
-    public QualityMetricsTests(ApiTestFramework factory)
+    public QualityMetricsTests(StandaloneTestFramework factory)
     {
         _factory = factory;
         _qualityFramework = new QualityMetricsFramework();

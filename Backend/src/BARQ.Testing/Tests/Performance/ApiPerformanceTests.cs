@@ -4,12 +4,12 @@ using Xunit;
 
 namespace BARQ.Testing.Tests.Performance;
 
-public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
+public class ApiPerformanceTests : IClassFixture<StandaloneTestFramework>
 {
-    private readonly ApiTestFramework _factory;
+    private readonly StandaloneTestFramework _factory;
     private readonly PerformanceTestFramework _performanceFramework;
 
-    public ApiPerformanceTests(ApiTestFramework factory)
+    public ApiPerformanceTests(StandaloneTestFramework factory)
     {
         _factory = factory;
         _performanceFramework = new PerformanceTestFramework(_factory.CreateClient(), "http://localhost");
