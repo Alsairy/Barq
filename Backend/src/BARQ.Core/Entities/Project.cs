@@ -187,5 +187,15 @@ public class Project : TenantEntity
     /// ITSM tickets related to this project
     /// </summary>
     public virtual ICollection<ITSMTicket> ITSMTickets { get; set; } = new List<ITSMTicket>();
+
+    /// <summary>
+    /// Workflow instances for this project
+    /// </summary>
+    public virtual ICollection<WorkflowInstance> WorkflowInstances { get; set; } = new List<WorkflowInstance>();
+
+    /// <summary>
+    /// Business requirement documents for this project
+    /// </summary>
+    public virtual ICollection<BusinessRequirementDocument> BusinessRequirementDocuments { get; set; } = new List<BusinessRequirementDocument>();
 }
 

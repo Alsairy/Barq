@@ -56,17 +56,17 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.Project)
-            .WithMany()
+            .WithMany(p => p.WorkflowInstances)
             .HasForeignKey(w => w.ProjectId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.Sprint)
-            .WithMany()
+            .WithMany(s => s.WorkflowInstances)
             .HasForeignKey(w => w.SprintId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(w => w.UserStory)
-            .WithMany()
+            .WithMany(us => us.WorkflowInstances)
             .HasForeignKey(w => w.UserStoryId)
             .OnDelete(DeleteBehavior.Restrict);
 

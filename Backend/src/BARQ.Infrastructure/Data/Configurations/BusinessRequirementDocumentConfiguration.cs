@@ -46,7 +46,7 @@ public class BusinessRequirementDocumentConfiguration : IEntityTypeConfiguration
         builder.Property(brd => brd.UpdatedAt);
 
         builder.HasOne(brd => brd.Project)
-            .WithMany()
+            .WithMany(p => p.BusinessRequirementDocuments)
             .HasForeignKey(brd => brd.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
 
