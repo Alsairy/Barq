@@ -1,4 +1,6 @@
 using BARQ.Testing.Framework;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using FluentAssertions;
 using Microsoft.OpenApi.Models;
 using Xunit;
@@ -45,7 +47,7 @@ public class OpenApiContractTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task AuthenticationEndpoints_ShouldHaveCorrectSchemas()
     {
-        await _contractFramework.ValidateResponseSchemaAsync<AuthenticationResponse>("/api/auth/login", HttpMethod.Post);
+        await _contractFramework.ValidateResponseSchemaAsync<ApiResponse<AuthenticationResponse>>("/api/auth/login", HttpMethod.Post);
     }
 
     [Fact]

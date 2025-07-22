@@ -31,10 +31,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var authResponse = await _factory.DeserializeResponseAsync<AuthenticationResponse>(response);
-        authResponse.Should().NotBeNull();
-        authResponse!.AccessToken.Should().NotBeNullOrEmpty();
-        authResponse.Success.Should().BeTrue();
+        var apiResponse = await _factory.DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
+        apiResponse.Should().NotBeNull();
+        apiResponse!.Data.Should().NotBeNull();
+        apiResponse.Data!.AccessToken.Should().NotBeNullOrEmpty();
+        apiResponse.Data.Success.Should().BeTrue();
     }
 
     [Fact]

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
 using BARQ.Core.Services;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -18,6 +20,10 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private static readonly string DatabaseName = $"TestDb_{Guid.NewGuid()}";
+    private static readonly object DatabaseLock = new object();
+    private static bool DatabaseSeeded = false;
+    
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
@@ -37,13 +43,12 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(dbContextDescriptor);
             }
 
-            var dbName = Guid.NewGuid().ToString();
             services.AddDbContext<BarqDbContext>(options =>
             {
-                options.UseInMemoryDatabase(dbName);
+                options.UseInMemoryDatabase(DatabaseName);
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
-            });
+            }, ServiceLifetime.Scoped);
 
             services.RemoveAll<ITenantProvider>();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
@@ -61,12 +66,32 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        Console.WriteLine($"[INIT] Starting test framework initialization at {DateTime.UtcNow}");
+        
+        lock (DatabaseLock)
+        {
+            if (DatabaseSeeded)
+            {
+                Console.WriteLine($"[INIT] Database already seeded, skipping initialization");
+                return;
+            }
+        }
+        
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureCreatedAsync();
+        Console.WriteLine($"[INIT] Database created successfully");
         
         var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
         await seeder.SeedTestDataAsync();
+        
+        var userCount = await context.Users.CountAsync();
+        Console.WriteLine($"[INIT] Initialization completed. Users in DB: {userCount}");
+        
+        lock (DatabaseLock)
+        {
+            DatabaseSeeded = true;
+        }
     }
 
     public new async Task DisposeAsync()
@@ -109,12 +134,26 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
+        Console.WriteLine($"[AUTH TOKEN] Attempting to get auth token for {email}");
+        
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        var userExists = await context.Users.AnyAsync(u => u.Email == email);
+        var userCount = await context.Users.CountAsync();
+        Console.WriteLine($"[AUTH TOKEN] User exists: {userExists}, Total users in DB: {userCount}");
+        
         var loginRequest = new { Request = new { Email = email, Password = password } };
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
         
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[AUTH TOKEN] Login failed with status {response.StatusCode}: {errorContent}");
+        }
+        
         response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        var apiResponse = await DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
 }
 
@@ -134,17 +173,31 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (_context.Organizations.Any())
+        Console.WriteLine($"[TEST SEEDING] Starting test data seeding at {DateTime.UtcNow}");
+        
+        if (await _context.Users.AnyAsync())
         {
-            return;
+            _context.Users.RemoveRange(await _context.Users.ToListAsync());
         }
+        if (await _context.Organizations.AnyAsync())
+        {
+            _context.Organizations.RemoveRange(await _context.Organizations.ToListAsync());
+        }
+        if (await _context.Projects.AnyAsync())
+        {
+            _context.Projects.RemoveRange(await _context.Projects.ToListAsync());
+        }
+        await _context.SaveChangesAsync();
+        
 
-        var acmeOrgId = Guid.NewGuid();
-        var betaOrgId = Guid.NewGuid();
+        var acmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
+        var betaOrgId = new Guid("22222222-2222-2222-2222-222222222222");
         var acmeUserId = Guid.NewGuid();
         var betaUserId = Guid.NewGuid();
         var acmeProjectId = Guid.NewGuid();
         var betaProjectId = Guid.NewGuid();
+        
+        Console.WriteLine($"[TEST SEEDING] Generated IDs - AcmeOrg: {acmeOrgId}, AcmeUser: {acmeUserId}");
 
         var acmeOrg = new Organization
         {
@@ -200,6 +253,7 @@ public class TestDataSeeder : ITestDataSeeder
         };
 
         _context.Users.AddRange(acmeUser, betaUser);
+        Console.WriteLine($"[TEST SEEDING] Added users to context. AcmeUser email: {acmeUser.Email}, password hash length: {acmeUser.PasswordHash?.Length}");
 
         var acmeProject = new Project
         {
@@ -226,6 +280,13 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Projects.AddRange(acmeProject, betaProject);
 
         await _context.SaveChangesAsync();
+        
+        var userCount = await _context.Users.CountAsync();
+        var orgCount = await _context.Organizations.CountAsync();
+        Console.WriteLine($"[TEST SEEDING] Seeding completed. Users: {userCount}, Organizations: {orgCount}");
+        
+        var testUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@acme.com");
+        Console.WriteLine($"[TEST SEEDING] Test user found: {testUser != null}, Email: {testUser?.Email}, TenantId: {testUser?.TenantId}");
     }
 }
 
@@ -234,10 +295,13 @@ public class TestTenantProvider : ITenantProvider
     private Guid _tenantId;
     private string _tenantName = "Test Tenant";
     private Guid _currentUserId;
+    
+    // Use a static tenant ID that matches the seeded organization
+    private static readonly Guid AcmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
 
     public TestTenantProvider()
     {
-        _tenantId = Guid.NewGuid();
+        _tenantId = AcmeOrgId;
         _currentUserId = Guid.NewGuid();
     }
 
@@ -249,6 +313,7 @@ public class TestTenantProvider : ITenantProvider
     public void SetTenantId(Guid tenantId)
     {
         _tenantId = tenantId;
+        Console.WriteLine($"[TEST TENANT] Tenant ID set to: {tenantId}");
     }
 
     public string GetTenantName()
@@ -302,13 +367,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }
