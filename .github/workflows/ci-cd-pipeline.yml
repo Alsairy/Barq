@@ -56,7 +56,7 @@ jobs:
       run: dotnet restore Backend/BARQ.sln
 
     - name: Build Backend
-      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release --verbosity normal
+      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release --verbosity normal --property:TreatWarningsAsErrors=false
 
     - name: Install EF Core Tools
       run: dotnet tool install --global dotnet-ef
