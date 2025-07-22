@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
@@ -15,53 +13,44 @@ using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Logging;
 
 namespace BARQ.Testing.Framework;
 
-public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
+public class ApiTestFramework : IAsyncLifetime
 {
     private readonly string DatabaseName = $"TestDb_{Guid.NewGuid()}";
     private readonly object DatabaseLock = new object();
     private bool DatabaseSeeded = false;
     
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    private ServiceProvider _serviceProvider = null!;
+    
+    private void ConfigureServices()
     {
-        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
-        builder.UseEnvironment("Testing");
+        var services = new ServiceCollection();
         
-        builder.ConfigureServices(services =>
+        services.AddLogging(builder => builder.AddConsole());
+        
+        services.AddDbContext<BarqDbContext>(options =>
         {
-            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-
-            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(BarqDbContext));
-            if (dbContextDescriptor != null)
-            {
-                services.Remove(dbContextDescriptor);
-            }
-
-            services.AddDbContext<BarqDbContext>(options =>
-            {
-                options.UseInMemoryDatabase(DatabaseName);
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            }, ServiceLifetime.Scoped);
-
-            services.RemoveAll<ITenantProvider>();
-            services.AddScoped<ITenantProvider, TestTenantProvider>();
-            services.AddScoped<ITestDataSeeder, TestDataSeeder>();
-            
-            services.AddScoped<BARQ.Core.Services.IAuthenticationService, BARQ.Application.Services.Authentication.AuthenticationService>();
-            services.AddScoped<BARQ.Core.Services.IPasswordService, BARQ.Application.Services.Authentication.PasswordService>();
-            services.AddScoped<BARQ.Core.Services.IMultiFactorAuthService, BARQ.Application.Services.Authentication.MultiFactorAuthService>();
-            services.AddScoped<BARQ.Core.Services.IUserRoleService, BARQ.Application.Services.Users.UserRoleService>();
-            services.AddScoped<BARQ.Core.Repositories.IUnitOfWork, BARQ.Infrastructure.Repositories.UnitOfWork>();
-            
-            services.AddScoped(typeof(BARQ.Core.Repositories.IRepository<>), typeof(BARQ.Infrastructure.Repositories.GenericRepository<>));
+            options.UseInMemoryDatabase(DatabaseName);
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
         });
+
+        services.AddScoped<ITenantProvider, TestTenantProvider>();
+        services.AddScoped<ITestDataSeeder, TestDataSeeder>();
+        
+        services.AddScoped<BARQ.Core.Services.IAuthenticationService, BARQ.Application.Services.Authentication.AuthenticationService>();
+        services.AddScoped<BARQ.Core.Services.IPasswordService, BARQ.Application.Services.Authentication.PasswordService>();
+        services.AddScoped<BARQ.Core.Services.IMultiFactorAuthService, BARQ.Application.Services.Authentication.MultiFactorAuthService>();
+        services.AddScoped<BARQ.Core.Services.IUserRoleService, BARQ.Application.Services.Users.UserRoleService>();
+        services.AddScoped<BARQ.Core.Repositories.IUnitOfWork, BARQ.Infrastructure.Repositories.UnitOfWork>();
+        
+        services.AddScoped(typeof(BARQ.Core.Repositories.IRepository<>), typeof(BARQ.Infrastructure.Repositories.GenericRepository<>));
+        
+        _serviceProvider = services.BuildServiceProvider();
     }
 
     public async Task InitializeAsync()
@@ -77,7 +66,9 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             }
         }
         
-        using var scope = Services.CreateScope();
+        ConfigureServices();
+        
+        using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureCreatedAsync();
         Console.WriteLine($"[INIT] Database {DatabaseName} created successfully");
@@ -94,17 +85,18 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
-    public new async Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        using var scope = Services.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureDeletedAsync();
-        await base.DisposeAsync();
+        
+        _serviceProvider?.Dispose();
     }
 
     public async Task<HttpResponseMessage> PostJsonAsync<T>(string endpoint, T data, string? authToken = null)
     {
-        var client = CreateClient();
+        var client = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
         if (!string.IsNullOrEmpty(authToken))
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
 
@@ -116,7 +108,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<HttpResponseMessage> GetAsync(string endpoint, string? authToken = null)
     {
-        var client = CreateClient();
+        var client = new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
         if (!string.IsNullOrEmpty(authToken))
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
 
@@ -136,7 +128,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         Console.WriteLine($"[AUTH TOKEN] Attempting to get auth token for {email}");
         
-        using var scope = Services.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         var userExists = await context.Users.AnyAsync(u => u.Email == email);
         var userCount = await context.Users.CountAsync();
