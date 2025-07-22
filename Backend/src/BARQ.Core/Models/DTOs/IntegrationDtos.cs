@@ -148,29 +148,69 @@ public class IntegrationEndpoint
     public bool IsHealthy { get; set; } = true;
 }
 
+/// <summary>
+/// </summary>
 public class IntegrationHealthStatus
 {
+    /// <summary>
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool IsHealthy { get; set; }
+    /// <summary>
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// </summary>
     public long ResponseTimeMs { get; set; }
+    /// <summary>
+    /// </summary>
     public Dictionary<string, object> AdditionalInfo { get; set; } = new();
 }
 
+/// <summary>
+/// </summary>
 public class IntegrationLog
 {
+    /// <summary>
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// </summary>
     public string RequestId { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Method { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Path { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public int StatusCode { get; set; }
+    /// <summary>
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// </summary>
     public long ProcessingTimeMs { get; set; }
+    /// <summary>
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// </summary>
     public Guid TenantId { get; set; }
 }
 
