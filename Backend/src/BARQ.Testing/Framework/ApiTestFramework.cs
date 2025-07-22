@@ -124,6 +124,11 @@ public class ApiTestFramework : IAsyncLifetime
         });
     }
 
+    public HttpClient CreateClient()
+    {
+        return new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
+    }
+
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
         Console.WriteLine($"[AUTH TOKEN] Attempting to get auth token for {email}");
