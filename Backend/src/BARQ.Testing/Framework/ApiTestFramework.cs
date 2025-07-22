@@ -20,9 +20,9 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private static readonly string DatabaseName = $"TestDb_{Guid.NewGuid()}";
-    private static readonly object DatabaseLock = new object();
-    private static bool DatabaseSeeded = false;
+    private readonly string DatabaseName = $"TestDb_{Guid.NewGuid()}";
+    private readonly object DatabaseLock = new object();
+    private bool DatabaseSeeded = false;
     
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -66,13 +66,13 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Console.WriteLine($"[INIT] Starting test framework initialization at {DateTime.UtcNow}");
+        Console.WriteLine($"[INIT] Starting test framework initialization at {DateTime.UtcNow} for database {DatabaseName}");
         
         lock (DatabaseLock)
         {
             if (DatabaseSeeded)
             {
-                Console.WriteLine($"[INIT] Database already seeded, skipping initialization");
+                Console.WriteLine($"[INIT] Database already seeded for {DatabaseName}, skipping initialization");
                 return;
             }
         }
@@ -80,13 +80,13 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         using var scope = Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureCreatedAsync();
-        Console.WriteLine($"[INIT] Database created successfully");
+        Console.WriteLine($"[INIT] Database {DatabaseName} created successfully");
         
         var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
         await seeder.SeedTestDataAsync();
         
         var userCount = await context.Users.CountAsync();
-        Console.WriteLine($"[INIT] Initialization completed. Users in DB: {userCount}");
+        Console.WriteLine($"[INIT] Initialization completed for {DatabaseName}. Users in DB: {userCount}");
         
         lock (DatabaseLock)
         {
@@ -175,19 +175,27 @@ public class TestDataSeeder : ITestDataSeeder
     {
         Console.WriteLine($"[TEST SEEDING] Starting test data seeding at {DateTime.UtcNow}");
         
-        if (await _context.Users.AnyAsync())
+        try
         {
-            _context.Users.RemoveRange(await _context.Users.ToListAsync());
+            if (await _context.Users.AnyAsync())
+            {
+                _context.Users.RemoveRange(await _context.Users.ToListAsync());
+            }
+            if (await _context.Organizations.AnyAsync())
+            {
+                _context.Organizations.RemoveRange(await _context.Organizations.ToListAsync());
+            }
+            if (await _context.Projects.AnyAsync())
+            {
+                _context.Projects.RemoveRange(await _context.Projects.ToListAsync());
+            }
+            await _context.SaveChangesAsync();
+            Console.WriteLine($"[TEST SEEDING] Cleared existing data successfully");
         }
-        if (await _context.Organizations.AnyAsync())
+        catch (Exception ex)
         {
-            _context.Organizations.RemoveRange(await _context.Organizations.ToListAsync());
+            Console.WriteLine($"[TEST SEEDING] Error clearing existing data: {ex.Message}");
         }
-        if (await _context.Projects.AnyAsync())
-        {
-            _context.Projects.RemoveRange(await _context.Projects.ToListAsync());
-        }
-        await _context.SaveChangesAsync();
         
 
         var acmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
@@ -279,14 +287,30 @@ public class TestDataSeeder : ITestDataSeeder
 
         _context.Projects.AddRange(acmeProject, betaProject);
 
-        await _context.SaveChangesAsync();
-        
-        var userCount = await _context.Users.CountAsync();
-        var orgCount = await _context.Organizations.CountAsync();
-        Console.WriteLine($"[TEST SEEDING] Seeding completed. Users: {userCount}, Organizations: {orgCount}");
-        
-        var testUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@acme.com");
-        Console.WriteLine($"[TEST SEEDING] Test user found: {testUser != null}, Email: {testUser?.Email}, TenantId: {testUser?.TenantId}");
+        try
+        {
+            await _context.SaveChangesAsync();
+            
+            var userCount = await _context.Users.CountAsync();
+            var orgCount = await _context.Organizations.CountAsync();
+            Console.WriteLine($"[TEST SEEDING] Seeding completed. Users: {userCount}, Organizations: {orgCount}");
+            
+            var testUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == "test@acme.com");
+            Console.WriteLine($"[TEST SEEDING] Test user found: {testUser != null}, Email: {testUser?.Email}, TenantId: {testUser?.TenantId}");
+            
+            if (testUser == null)
+            {
+                Console.WriteLine($"[TEST SEEDING] ERROR: Test user not found after seeding!");
+                var allUsers = await _context.Users.ToListAsync();
+                Console.WriteLine($"[TEST SEEDING] All users in DB: {string.Join(", ", allUsers.Select(u => u.Email))}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[TEST SEEDING] Error during final save: {ex.Message}");
+            Console.WriteLine($"[TEST SEEDING] Stack trace: {ex.StackTrace}");
+            throw;
+        }
     }
 }
 
