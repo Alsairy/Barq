@@ -15,7 +15,7 @@ public class OpenApiContractTests : IClassFixture<StandaloneTestFramework>
     public OpenApiContractTests(StandaloneTestFramework factory)
     {
         _factory = factory;
-        _contractFramework = new ContractTestFramework(new HttpClient());
+        _contractFramework = new ContractTestFramework(_factory.CreateClient());
     }
 
     [Fact]
@@ -53,28 +53,19 @@ public class OpenApiContractTests : IClassFixture<StandaloneTestFramework>
     [Fact]
     public async Task UserEndpoints_ShouldHaveCorrectSchemas()
     {
-        var client = new HttpClient();
-        
-        var contractFramework = new ContractTestFramework(client);
-        await contractFramework.ValidateResponseSchemaAsync<object>("/api/users/profile", HttpMethod.Get);
+        await _contractFramework.ValidateResponseSchemaAsync<object>("/api/users/profile", HttpMethod.Get);
     }
 
     [Fact]
     public async Task OrganizationEndpoints_ShouldHaveCorrectSchemas()
     {
-        var client = new HttpClient();
-        
-        var contractFramework = new ContractTestFramework(client);
-        await contractFramework.ValidateResponseSchemaAsync<object>("/api/organizations", HttpMethod.Get);
+        await _contractFramework.ValidateResponseSchemaAsync<object>("/api/organizations", HttpMethod.Get);
     }
 
     [Fact]
     public async Task ProjectEndpoints_ShouldHaveCorrectSchemas()
     {
-        var client = new HttpClient();
-        
-        var contractFramework = new ContractTestFramework(client);
-        await contractFramework.ValidateResponseSchemaAsync<object>("/api/projects", HttpMethod.Get);
+        await _contractFramework.ValidateResponseSchemaAsync<object>("/api/projects", HttpMethod.Get);
     }
 
     [Fact]
@@ -112,7 +103,7 @@ public class OpenApiContractTests : IClassFixture<StandaloneTestFramework>
 
         foreach (var endpoint in secureEndpoints)
         {
-            var client = new HttpClient();
+            var client = _factory.CreateClient();
             var response = await client.GetAsync(endpoint);
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Unauthorized, 
                 $"Endpoint {endpoint} should require authentication");
