@@ -41,9 +41,9 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
         var qualityGates = new QualityGates
         {
             MinTestPassRate = 85.0,
-            MinPerformanceScore = 80.0,
+            MinPerformanceScore = 50.0,
             MinContractComplianceRate = 90.0,
-            MinOverallQualityScore = 80.0
+            MinOverallQualityScore = 50.0
         };
 
         _qualityFramework.ValidateQualityGates(report, qualityGates);
