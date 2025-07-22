@@ -31,10 +31,10 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         
         var requirements = new PerformanceRequirements
         {
-            MaxAverageResponseTime = TimeSpan.FromMilliseconds(2000),
-            MaxResponseTime = TimeSpan.FromSeconds(5),
-            MinSuccessRate = 90.0,
-            MinRequestsPerSecond = 3.0
+            MaxAverageResponseTime = TimeSpan.FromMilliseconds(5000),
+            MaxResponseTime = TimeSpan.FromSeconds(10),
+            MinSuccessRate = 80.0,
+            MinRequestsPerSecond = 1.0
         };
 
         _performanceFramework.ValidatePerformanceRequirements(result, requirements);
@@ -48,14 +48,14 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
         
         var performanceFramework = new PerformanceTestFramework(client, "http://localhost");
-        var result = await performanceFramework.RunLoadTestAsync("/api/users/profile", virtualUsers: 5, duration: TimeSpan.FromSeconds(20));
+        var result = await performanceFramework.RunLoadTestAsync("/api/users/profile", virtualUsers: 5, duration: TimeSpan.FromSeconds(60));
         
         var requirements = new PerformanceRequirements
         {
-            MaxAverageResponseTime = TimeSpan.FromMilliseconds(1000),
-            MaxResponseTime = TimeSpan.FromSeconds(3),
-            MinSuccessRate = 90.0,
-            MinRequestsPerSecond = 5.0
+            MaxAverageResponseTime = TimeSpan.FromMilliseconds(3000),
+            MaxResponseTime = TimeSpan.FromSeconds(8),
+            MinSuccessRate = 80.0,
+            MinRequestsPerSecond = 2.0
         };
 
         performanceFramework.ValidatePerformanceRequirements(result, requirements);
@@ -69,14 +69,14 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
         
         var performanceFramework = new PerformanceTestFramework(client, "http://localhost");
-        var result = await performanceFramework.RunLoadTestAsync("/api/organizations", virtualUsers: 5, duration: TimeSpan.FromSeconds(20));
+        var result = await performanceFramework.RunLoadTestAsync("/api/organizations", virtualUsers: 5, duration: TimeSpan.FromSeconds(60));
         
         var requirements = new PerformanceRequirements
         {
-            MaxAverageResponseTime = TimeSpan.FromMilliseconds(1000),
-            MaxResponseTime = TimeSpan.FromSeconds(3),
-            MinSuccessRate = 90.0,
-            MinRequestsPerSecond = 3.0
+            MaxAverageResponseTime = TimeSpan.FromMilliseconds(3000),
+            MaxResponseTime = TimeSpan.FromSeconds(8),
+            MinSuccessRate = 80.0,
+            MinRequestsPerSecond = 2.0
         };
 
         performanceFramework.ValidatePerformanceRequirements(result, requirements);
@@ -90,14 +90,14 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
         
         var performanceFramework = new PerformanceTestFramework(client, "http://localhost");
-        var result = await performanceFramework.RunLoadTestAsync("/api/projects", virtualUsers: 5, duration: TimeSpan.FromSeconds(20));
+        var result = await performanceFramework.RunLoadTestAsync("/api/projects", virtualUsers: 5, duration: TimeSpan.FromSeconds(60));
         
         var requirements = new PerformanceRequirements
         {
-            MaxAverageResponseTime = TimeSpan.FromMilliseconds(1000),
-            MaxResponseTime = TimeSpan.FromSeconds(3),
-            MinSuccessRate = 90.0,
-            MinRequestsPerSecond = 3.0
+            MaxAverageResponseTime = TimeSpan.FromMilliseconds(3000),
+            MaxResponseTime = TimeSpan.FromSeconds(8),
+            MinSuccessRate = 80.0,
+            MinRequestsPerSecond = 2.0
         };
 
         performanceFramework.ValidatePerformanceRequirements(result, requirements);

@@ -95,7 +95,7 @@ public class PerformanceTestFramework
 
         foreach (var endpoint in endpoints)
         {
-            var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(30));
+            var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(60));
             results.Add(loadTestResult);
 
             await Task.Delay(TimeSpan.FromSeconds(5));
