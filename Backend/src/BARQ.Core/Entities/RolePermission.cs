@@ -4,7 +4,7 @@ namespace BARQ.Core.Entities;
 
 /// <summary>
 /// </summary>
-public class RolePermission : BaseEntity
+public class RolePermission : TenantEntity
 {
     /// <summary>
     /// </summary>
