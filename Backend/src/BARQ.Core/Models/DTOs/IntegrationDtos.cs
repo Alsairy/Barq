@@ -214,21 +214,51 @@ public class IntegrationLog
     public Guid TenantId { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class IntegrationMessage
 {
+    /// <summary>
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// </summary>
     public string QueueName { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string MessageType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Content { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    /// <summary>
+    /// </summary>
     public MessagePriority Priority { get; set; } = MessagePriority.Normal;
+    /// <summary>
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// </summary>
     public DateTime? ProcessedAt { get; set; }
+    /// <summary>
+    /// </summary>
     public int RetryCount { get; set; } = 0;
+    /// <summary>
+    /// </summary>
     public int MaxRetries { get; set; } = 3;
+    /// <summary>
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// </summary>
     public MessageStatus Status { get; set; } = MessageStatus.Pending;
+    /// <summary>
+    /// </summary>
     public Guid TenantId { get; set; }
+    /// <summary>
+    /// </summary>
     public string? CorrelationId { get; set; }
 }
 
