@@ -72,7 +72,7 @@ jobs:
     - name: Create Database and Run Migrations
       run: |
         cd Backend
-        dotnet ef database update --project src/BARQ.Infrastructure --startup-project src/BARQ.API --configuration Release
+        dotnet ef database update --project src/BARQ.Infrastructure --startup-project src/BARQ.API --context BarqDbContext --configuration Release
       env:
         ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
         ASPNETCORE_ENVIRONMENT: "Testing"
@@ -84,6 +84,9 @@ jobs:
       env:
         ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
         ASPNETCORE_ENVIRONMENT: "Testing"
+        POSTGRES_USER: "postgres"
+        POSTGRES_PASSWORD: "postgres"
+        POSTGRES_DB: "barq_test"
 
     - name: Debug Database Connection
       run: |
