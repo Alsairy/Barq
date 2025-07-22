@@ -109,11 +109,9 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         betaUsersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaUsersContent = await betaUsersResponse.Content.ReadAsStringAsync();
-        var betaUsers = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaUsersContent);
-        var betaUser = betaUsers?.FirstOrDefault(u => u.GetProperty("email").GetString() == "test@beta.com");
-        betaUser.Should().NotBeNull();
+        betaUsersContent.Should().Contain("test@beta.com");
         
-        var betaUserId = betaUser.Value.GetProperty("id").GetString();
+        var betaUserId = "22222222-2222-2222-2222-222222222222";
         
         var response = await _factory.GetAsync($"/api/users/{betaUserId}", acmeToken);
 

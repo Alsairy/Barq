@@ -107,7 +107,21 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    options.CustomSchemaIds(type => 
+    {
+        var name = type.FullName?.Replace("+", ".");
+        if (name != null)
+        {
+            name = name.Replace("<", "_")
+                      .Replace(">", "_")
+                      .Replace(",", "_")
+                      .Replace(" ", "")
+                      .Replace("[", "_")
+                      .Replace("]", "_")
+                      .Replace("`", "_");
+        }
+        return name;
+    });
 });
 
 var environment = builder.Environment.EnvironmentName;
