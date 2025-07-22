@@ -294,7 +294,7 @@ public class DataProcessingAuditDto
 }
 
 /// <summary>
-/// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity.
+/// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity. Updated to force CI cache invalidation.
 /// </summary>
 public class PrivacyImpactAssessmentDto
 {
@@ -340,7 +340,7 @@ public class PrivacyImpactAssessmentDto
 }
 
 /// <summary>
-/// Represents the validation of a lawful basis for processing personal data.
+/// Represents the validation of a lawful basis for processing personal data. Updated to force CI cache invalidation.
 /// </summary>
 public class LawfulBasisValidationDto
 {
