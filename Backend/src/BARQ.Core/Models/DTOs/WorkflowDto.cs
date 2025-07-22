@@ -10,6 +10,7 @@ public class WorkflowDto
     public Guid Id { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the workflow instance.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
@@ -33,10 +34,12 @@ public class WorkflowDto
     public Guid TemplateId { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the workflow template this instance is based on.
     /// </summary>
     public string TemplateName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the workflow data and variables used during execution.
     /// </summary>
     public Dictionary<string, object> Data { get; set; } = new();
 
@@ -56,6 +59,7 @@ public class WorkflowDto
     public DateTime? CompletedAt { get; set; }
 
     /// <summary>
+    /// Gets or sets the due date for the workflow completion, if applicable.
     /// </summary>
     public DateTime? DueDate { get; set; }
 
@@ -74,14 +78,17 @@ public class WorkflowDto
     public Guid? AssignedTo { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the user assigned to execute the workflow, if any.
     /// </summary>
     public string? AssignedToName { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the current step being executed in the workflow.
     /// </summary>
     public string? CurrentStep { get; set; }
 
     /// <summary>
+    /// Gets or sets the completion progress of the workflow as a percentage (0-100).
     /// </summary>
     public int Progress { get; set; }
 }
@@ -101,6 +108,7 @@ public class WorkflowApprovalDto
     public Guid WorkflowId { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the workflow requiring approval.
     /// </summary>
     public string WorkflowName { get; set; } = string.Empty;
 
@@ -115,6 +123,7 @@ public class WorkflowApprovalDto
     public Guid RequestedBy { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the user who requested the approval.
     /// </summary>
     public string RequestedByName { get; set; } = string.Empty;
 
@@ -129,6 +138,7 @@ public class WorkflowApprovalDto
     public Guid? ApprovedBy { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the user who approved or rejected the request, if applicable.
     /// </summary>
     public string? ApprovedByName { get; set; }
 
@@ -138,6 +148,7 @@ public class WorkflowApprovalDto
     public DateTime? ApprovedAt { get; set; }
 
     /// <summary>
+    /// Gets or sets additional comments or notes about the approval request.
     /// </summary>
     public string? Comments { get; set; }
 
@@ -157,6 +168,7 @@ public class WorkflowTemplateDto
     public Guid Id { get; set; }
 
     /// <summary>
+    /// Gets or sets the name of the workflow template.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 

@@ -15,10 +15,12 @@ public class AITaskDto
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the detailed description of the AI task and its purpose.
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the type of AI task (e.g., TextGeneration, ImageAnalysis, DataProcessing).
     /// </summary>
     public string TaskType { get; set; } = string.Empty;
 
