@@ -10,6 +10,7 @@ using StackExchange.Redis;
 using MediatR;
 using FluentValidation;
 using AutoMapper;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using BARQ.Infrastructure.Data;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.Repositories;
@@ -128,22 +129,25 @@ var environment = builder.Environment.EnvironmentName;
 var isTestingEnvironment = environment.Equals("Testing", StringComparison.OrdinalIgnoreCase) || 
                           Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.Equals("Testing", StringComparison.OrdinalIgnoreCase) == true;
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-
-if (!string.IsNullOrEmpty(connectionString))
+if (!isTestingEnvironment)
 {
-    builder.Services.AddDbContext<BarqDbContext>(options =>
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+        ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
+    if (!string.IsNullOrEmpty(connectionString))
     {
-        if (connectionString.Contains("Host=") || (connectionString.Contains("Server=") && connectionString.Contains("Database=")))
+        builder.Services.AddDbContext<BarqDbContext>(options =>
         {
-            options.UseNpgsql(connectionString);
-        }
-        else
-        {
-            options.UseSqlServer(connectionString);
-        }
-    });
+            if (connectionString.Contains("Host=") || (connectionString.Contains("Server=") && connectionString.Contains("Database=")))
+            {
+                options.UseNpgsql(connectionString);
+            }
+            else
+            {
+                options.UseSqlServer(connectionString);
+            }
+        });
+    }
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();

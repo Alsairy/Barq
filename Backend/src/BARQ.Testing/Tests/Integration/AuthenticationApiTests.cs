@@ -6,11 +6,11 @@ using Xunit;
 namespace BARQ.Testing.Tests.Integration
 {
 [Collection("AuthenticationApiTestCollection")]
-public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
+public class AuthenticationApiTests : IClassFixture<StandaloneTestFramework>
 {
-    private readonly ApiTestFramework _factory;
+    private readonly StandaloneTestFramework _factory;
 
-    public AuthenticationApiTests(ApiTestFramework factory)
+    public AuthenticationApiTests(StandaloneTestFramework factory)
     {
         _factory = factory;
     }
