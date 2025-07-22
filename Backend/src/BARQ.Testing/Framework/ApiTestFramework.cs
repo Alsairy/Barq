@@ -48,6 +48,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             services.RemoveAll<ITenantProvider>();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
+            
+            services.AddScoped<BARQ.Core.Services.IAuthenticationService, BARQ.Application.Services.Authentication.AuthenticationService>();
+            services.AddScoped<BARQ.Core.Services.IPasswordService, BARQ.Application.Services.Authentication.PasswordService>();
+            services.AddScoped<BARQ.Core.Services.IMultiFactorAuthService, BARQ.Application.Services.Authentication.MultiFactorAuthService>();
         });
     }
 
