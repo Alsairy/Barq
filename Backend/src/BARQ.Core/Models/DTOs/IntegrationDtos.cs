@@ -86,23 +86,65 @@ public class IntegrationResponse
     public string? EndpointId { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class IntegrationEndpoint
 {
+    /// <summary>
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    
+    /// <summary>
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public IntegrationProtocol Protocol { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
+    
+    /// <summary>
+    /// </summary>
     public string? AuthenticationType { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public Dictionary<string, string> AuthenticationConfig { get; set; } = new();
+    
+    /// <summary>
+    /// </summary>
     public bool IsActive { get; set; } = true;
+    /// <summary>
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
+    /// <summary>
+    /// </summary>
     public int RetryAttempts { get; set; } = 3;
+    /// <summary>
+    /// </summary>
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
+    /// <summary>
+    /// </summary>
     public Guid TenantId { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// </summary>
     public DateTime? LastHealthCheck { get; set; }
+    /// <summary>
+    /// </summary>
     public bool IsHealthy { get; set; } = true;
 }
 
