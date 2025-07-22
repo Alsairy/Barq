@@ -53,4 +53,22 @@ public class DesignTimeTenantProvider : ITenantProvider
     public void SetTenantId(Guid tenantId)
     {
     }
+
+    public void SetTenantName(string tenantName)
+    {
+    }
+
+    public bool IsMultiTenant()
+    {
+        return true;
+    }
+
+    public void ClearTenantContext()
+    {
+    }
+
+    public Guid GetCurrentUserId()
+    {
+        return Guid.Parse("00000000-0000-0000-0000-000000000001");
+    }
 }
