@@ -9,34 +9,42 @@ public class ComplianceAssessmentDto
     public string Framework { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the unique identifier of the organization being assessed.
     /// </summary>
     public Guid? OrganizationId { get; set; }
 
     /// <summary>
+    /// Gets or sets the date when the compliance assessment was conducted.
     /// </summary>
     public DateTime AssessmentDate { get; set; }
 
     /// <summary>
+    /// Gets or sets the current compliance status (e.g., Compliant, Non-Compliant, Partially Compliant).
     /// </summary>
     public string ComplianceStatus { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the numerical compliance score (0-100).
     /// </summary>
     public decimal ComplianceScore { get; set; }
 
     /// <summary>
+    /// Gets or sets the collection of identified compliance gaps or deficiencies.
     /// </summary>
     public IEnumerable<string> ComplianceGaps { get; set; } = new List<string>();
 
     /// <summary>
+    /// Gets or sets the collection of recommended actions to address compliance issues.
     /// </summary>
     public IEnumerable<string> Recommendations { get; set; } = new List<string>();
 
     /// <summary>
+    /// Gets or sets the name of the person who conducted the assessment.
     /// </summary>
     public string AssessedBy { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the date when the next compliance assessment is due.
     /// </summary>
     public DateTime NextAssessmentDue { get; set; }
 }
@@ -58,6 +66,7 @@ public class ComplianceReportDto
     public DateTime ToDate { get; set; }
 
     /// <summary>
+    /// Gets or sets the unique identifier of the organization being assessed.
     /// </summary>
     public Guid? OrganizationId { get; set; }
 
@@ -152,6 +161,7 @@ public class ComplianceViolationDto
     public DateTime? ResolvedAt { get; set; }
 
     /// <summary>
+    /// Gets or sets the unique identifier of the organization being assessed.
     /// </summary>
     public Guid? OrganizationId { get; set; }
 }
@@ -234,6 +244,7 @@ public class ComplianceAuditTrailDto
     public string UserAgent { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the unique identifier of the organization being assessed.
     /// </summary>
     public Guid? OrganizationId { get; set; }
 }
