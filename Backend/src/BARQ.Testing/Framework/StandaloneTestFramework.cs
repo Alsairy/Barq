@@ -12,6 +12,9 @@ using FluentAssertions;
 using Xunit;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Hosting;
 
 namespace BARQ.Testing.Framework;
 
@@ -21,6 +24,8 @@ public class StandaloneTestFramework : IAsyncLifetime
     private readonly object DatabaseLock = new object();
     private bool DatabaseSeeded = false;
     private ServiceProvider _serviceProvider = null!;
+    private TestServer _testServer = null!;
+    private HttpClient _httpClient = null!;
     
     private void ConfigureServices()
     {
@@ -63,6 +68,7 @@ public class StandaloneTestFramework : IAsyncLifetime
         }
         
         ConfigureServices();
+        CreateTestServer();
         
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
@@ -87,6 +93,8 @@ public class StandaloneTestFramework : IAsyncLifetime
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureDeletedAsync();
         
+        _httpClient?.Dispose();
+        _testServer?.Dispose();
         _serviceProvider?.Dispose();
     }
 
@@ -102,9 +110,33 @@ public class StandaloneTestFramework : IAsyncLifetime
         return scope.ServiceProvider.GetRequiredService<BarqDbContext>();
     }
 
+    private void CreateTestServer()
+    {
+        var hostBuilder = new HostBuilder()
+            .ConfigureWebHost(webHost =>
+            {
+                webHost.UseTestServer();
+                webHost.UseStartup<TestStartup>();
+                webHost.ConfigureServices(services =>
+                {
+                    services.AddDbContext<BarqDbContext>(options =>
+                    {
+                        options.UseInMemoryDatabase(DatabaseName);
+                        options.EnableSensitiveDataLogging();
+                        options.EnableDetailedErrors();
+                    });
+                    services.AddScoped<ITenantProvider, TestTenantProvider>();
+                });
+            });
+
+        var host = hostBuilder.Start();
+        _testServer = host.GetTestServer();
+        _httpClient = _testServer.CreateClient();
+    }
+
     public HttpClient CreateClient()
     {
-        return new HttpClient { BaseAddress = new Uri("http://localhost:5000") };
+        return _httpClient;
     }
 
     public async Task<HttpResponseMessage> PostJsonAsync(string endpoint, object data, string? authToken = null)
