@@ -77,13 +77,16 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "newuser@test.com",
-            FirstName = "New",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization",
-            AcceptTerms = true
+            Request = new
+            {
+                Email = "newuser@test.com",
+                FirstName = "New",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization",
+                AcceptTerms = true
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
@@ -96,13 +99,16 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "test@acme.com",
-            FirstName = "Duplicate",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization",
-            AcceptTerms = true
+            Request = new
+            {
+                Email = "test@acme.com",
+                FirstName = "Duplicate",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization",
+                AcceptTerms = true
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);

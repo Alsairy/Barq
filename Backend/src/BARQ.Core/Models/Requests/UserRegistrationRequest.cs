@@ -13,6 +13,9 @@ public class UserRegistrationRequest
     public string Password { get; set; } = string.Empty;
 
     [Required]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    [Required]
     [MaxLength(100)]
     public string FirstName { get; set; } = string.Empty;
 
@@ -24,6 +27,7 @@ public class UserRegistrationRequest
     public string? PhoneNumber { get; set; }
 
     public Guid? OrganizationId { get; set; }
+    public string? OrganizationName { get; set; }
     public string? InvitationToken { get; set; }
     public bool AcceptTerms { get; set; }
 }
