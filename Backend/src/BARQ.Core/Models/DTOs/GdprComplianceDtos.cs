@@ -294,7 +294,7 @@ public class DataProcessingAuditDto
 }
 
 /// <summary>
-/// Represents the results of a privacy impact assessment, including risks and mitigations for a process.
+/// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity.
 /// </summary>
 public class PrivacyImpactAssessmentDto
 {
