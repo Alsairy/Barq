@@ -71,7 +71,6 @@ public class Project : TenantEntity
     /// Project progress percentage (0-100)
     /// </summary>
     public decimal? ProgressPercentage { get; set; }
-
     /// <summary>
     /// Project end date (alias for TargetEndDate for compatibility)
     /// </summary>
@@ -80,6 +79,8 @@ public class Project : TenantEntity
         get => TargetEndDate; 
         set => TargetEndDate = value; 
     }
+
+
 
     /// <summary>
     /// Technology stack configuration as JSON

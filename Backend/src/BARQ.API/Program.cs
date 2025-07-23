@@ -129,25 +129,28 @@ var environment = builder.Environment.EnvironmentName;
 var isTestingEnvironment = environment.Equals("Testing", StringComparison.OrdinalIgnoreCase) || 
                           Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.Equals("Testing", StringComparison.OrdinalIgnoreCase) == true;
 
-if (!isTestingEnvironment)
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-        ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-    if (!string.IsNullOrEmpty(connectionString))
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddDbContext<BarqDbContext>(options =>
     {
-        builder.Services.AddDbContext<BarqDbContext>(options =>
+        if (connectionString.Contains("Host=") || (connectionString.Contains("Server=") && connectionString.Contains("Database=")))
         {
-            if (connectionString.Contains("Host=") || (connectionString.Contains("Server=") && connectionString.Contains("Database=")))
-            {
-                options.UseNpgsql(connectionString);
-            }
-            else
-            {
-                options.UseSqlServer(connectionString);
-            }
-        });
-    }
+            options.UseNpgsql(connectionString);
+        }
+        else
+        {
+            options.UseSqlServer(connectionString);
+        }
+        
+        if (isTestingEnvironment)
+        {
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
+        }
+    });
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();

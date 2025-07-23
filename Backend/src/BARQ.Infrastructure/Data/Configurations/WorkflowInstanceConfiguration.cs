@@ -80,6 +80,11 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
             .HasForeignKey(w => w.InitiatorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Ignore(w => w.CreatedBy);
+        builder.Ignore(w => w.StartedBy);
+        builder.Ignore(w => w.WorkflowType);
+        builder.Ignore(w => w.Data);
+
         builder.HasMany(w => w.AITasks)
             .WithOne(at => at.WorkflowInstance)
             .HasForeignKey(at => at.WorkflowInstanceId)

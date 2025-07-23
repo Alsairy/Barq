@@ -73,6 +73,8 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 
         builder.Property(p => p.UpdatedAt);
 
+        builder.Ignore(p => p.EndDate);
+
         builder.HasOne(p => p.ProjectOwner)
             .WithMany()
             .HasForeignKey(p => p.ProjectOwnerId)
