@@ -11,6 +11,7 @@ public class AITaskRequirements
     public long? MaxResponseTime { get; set; }
 
     /// <summary>
+    /// Gets or sets the list of capabilities required by the AI provider to execute this task.
     /// </summary>
     public List<string> RequiredCapabilities { get; set; } = new();
 

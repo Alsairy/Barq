@@ -71,7 +71,6 @@ public class Project : TenantEntity
     /// Project progress percentage (0-100)
     /// </summary>
     public decimal? ProgressPercentage { get; set; }
-
     /// <summary>
     /// Project end date (alias for TargetEndDate for compatibility)
     /// </summary>
@@ -80,6 +79,8 @@ public class Project : TenantEntity
         get => TargetEndDate; 
         set => TargetEndDate = value; 
     }
+
+
 
     /// <summary>
     /// Technology stack configuration as JSON
@@ -130,23 +131,6 @@ public class Project : TenantEntity
     /// </summary>
     public virtual User ProjectOwner { get; set; } = null!;
 
-    /// <summary>
-    /// Project manager ID (alias for ProjectOwnerId for compatibility)
-    /// </summary>
-    public Guid ProjectManagerId 
-    { 
-        get => ProjectOwnerId; 
-        set => ProjectOwnerId = value; 
-    }
-
-    /// <summary>
-    /// Organization ID (from TenantEntity.TenantId for compatibility)
-    /// </summary>
-    public Guid OrganizationId 
-    { 
-        get => TenantId; 
-        set => TenantId = value; 
-    }
 
     /// <summary>
     /// Organization this project belongs to
@@ -162,11 +146,6 @@ public class Project : TenantEntity
     /// Sprints in this project
     /// </summary>
     public virtual ICollection<Sprint> Sprints { get; set; } = new List<Sprint>();
-
-    /// <summary>
-    /// Business requirements documents for this project
-    /// </summary>
-    public virtual ICollection<BusinessRequirementDocument> BusinessRequirements { get; set; } = new List<BusinessRequirementDocument>();
 
     /// <summary>
     /// User stories for this project
@@ -187,5 +166,15 @@ public class Project : TenantEntity
     /// ITSM tickets related to this project
     /// </summary>
     public virtual ICollection<ITSMTicket> ITSMTickets { get; set; } = new List<ITSMTicket>();
+
+    /// <summary>
+    /// Workflow instances for this project
+    /// </summary>
+    public virtual ICollection<WorkflowInstance> WorkflowInstances { get; set; } = new List<WorkflowInstance>();
+
+    /// <summary>
+    /// Business requirement documents for this project
+    /// </summary>
+    public virtual ICollection<BusinessRequirementDocument> BusinessRequirementDocuments { get; set; } = new List<BusinessRequirementDocument>();
 }
 

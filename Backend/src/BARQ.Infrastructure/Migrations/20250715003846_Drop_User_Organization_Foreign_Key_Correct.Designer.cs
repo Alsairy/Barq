@@ -4,6 +4,7 @@ using BARQ.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    partial class BarqDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250715003846_Drop_User_Organization_Foreign_Key_Correct")]
+    partial class Drop_User_Organization_Foreign_Key_Correct
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1923,8 +1926,6 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.HasIndex("TenantId");
-
                     b.ToTable("Users");
                 });
 
@@ -2254,16 +2255,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ErrorDetails")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("ExecutionContext")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid>("InitiatorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2274,9 +2265,6 @@ namespace BARQ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PerformanceMetrics")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
@@ -2328,17 +2316,11 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("InitiatorId");
 
-                    b.HasIndex("Priority");
-
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("SprintId");
 
                     b.HasIndex("SprintId1");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserStoryId");
 
@@ -2346,13 +2328,7 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("WorkflowTemplateId");
 
-                    b.HasIndex("ProjectId", "Status");
-
-                    b.HasIndex("TenantId", "Status");
-
-                    b.HasIndex("WorkflowTemplateId", "Status");
-
-                    b.ToTable("WorkflowInstances", (string)null);
+                    b.ToTable("WorkflowInstances");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowStep", b =>
@@ -2627,7 +2603,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<string>("NotificationSettings")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("OrganizationId")
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -2664,15 +2640,7 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsDefault");
-
                     b.HasIndex("OrganizationId");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("WorkflowType");
 
                     b.ToTable("WorkflowTemplates");
                 });
@@ -3153,9 +3121,13 @@ namespace BARQ.Infrastructure.Migrations
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", null)
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
                         .WithMany("WorkflowTemplates")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.AIProviderConfiguration", b =>

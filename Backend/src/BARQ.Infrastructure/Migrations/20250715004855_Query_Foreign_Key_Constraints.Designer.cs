@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    [Migration("20250715090230_Add_WorkflowInstance_Execution_Properties")]
-    partial class Add_WorkflowInstance_Execution_Properties
+    [Migration("20250715004855_Query_Foreign_Key_Constraints")]
+    partial class Query_Foreign_Key_Constraints
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1926,8 +1926,6 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.HasIndex("TenantId");
-
                     b.ToTable("Users");
                 });
 
@@ -2257,16 +2255,6 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ErrorDetails")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("ExecutionContext")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid>("InitiatorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -2277,9 +2265,6 @@ namespace BARQ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PerformanceMetrics")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
@@ -2331,17 +2316,11 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("InitiatorId");
 
-                    b.HasIndex("Priority");
-
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("SprintId");
 
                     b.HasIndex("SprintId1");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("TenantId");
 
                     b.HasIndex("UserStoryId");
 
@@ -2349,13 +2328,7 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("WorkflowTemplateId");
 
-                    b.HasIndex("ProjectId", "Status");
-
-                    b.HasIndex("TenantId", "Status");
-
-                    b.HasIndex("WorkflowTemplateId", "Status");
-
-                    b.ToTable("WorkflowInstances", (string)null);
+                    b.ToTable("WorkflowInstances");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowStep", b =>
@@ -2630,7 +2603,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.Property<string>("NotificationSettings")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("OrganizationId")
+                    b.Property<Guid>("OrganizationId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<byte[]>("RowVersion")
@@ -2667,15 +2640,7 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("IsDefault");
-
                     b.HasIndex("OrganizationId");
-
-                    b.HasIndex("TenantId");
-
-                    b.HasIndex("WorkflowType");
 
                     b.ToTable("WorkflowTemplates");
                 });
@@ -3156,9 +3121,13 @@ namespace BARQ.Infrastructure.Migrations
 
             modelBuilder.Entity("BARQ.Core.Entities.WorkflowTemplate", b =>
                 {
-                    b.HasOne("BARQ.Core.Entities.Organization", null)
+                    b.HasOne("BARQ.Core.Entities.Organization", "Organization")
                         .WithMany("WorkflowTemplates")
-                        .HasForeignKey("OrganizationId");
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("BARQ.Core.Entities.AIProviderConfiguration", b =>

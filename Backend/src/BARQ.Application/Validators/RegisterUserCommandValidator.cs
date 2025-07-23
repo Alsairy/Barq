@@ -15,8 +15,12 @@ public class RegisterUserCommandValidator : AbstractValidator<RegisterUserComman
         RuleFor(x => x.Request.Password)
             .NotEmpty().WithMessage("Password is required")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters")
-            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]")
+            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$")
             .WithMessage("Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character");
+
+        RuleFor(x => x.Request.ConfirmPassword)
+            .NotEmpty().WithMessage("Password confirmation is required")
+            .Equal(x => x.Request.Password).WithMessage("Password and confirmation password do not match");
 
         RuleFor(x => x.Request.FirstName)
             .NotEmpty().WithMessage("First name is required")

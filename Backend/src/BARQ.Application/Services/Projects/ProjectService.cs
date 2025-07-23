@@ -231,7 +231,7 @@ public class ProjectService : IProjectService
                         Message = "New project manager not found"
                     };
                 }
-                project.ProjectManagerId = request.ProjectManagerId.Value;
+                project.ProjectOwnerId = request.ProjectManagerId.Value;
             }
 
             if (request.AIConfiguration != null)
@@ -406,7 +406,7 @@ public class ProjectService : IProjectService
     {
         try
         {
-            var projects = await _projectRepository.FindAsync(p => p.OrganizationId == organizationId);
+            var projects = await _projectRepository.FindAsync(p => p.TenantId == organizationId);
             var projectDtos = _mapper.Map<List<ProjectDto>>(projects);
 
             foreach (var projectDto in projectDtos)

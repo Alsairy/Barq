@@ -96,18 +96,9 @@ public class WorkflowInstance : TenantEntity
     /// Sprint this workflow belongs to
     /// </summary>
     public Guid? SprintId { get; set; }
-    /// <summary>
-    /// The sprint this workflow instance belongs to
-    /// </summary>
     public virtual Sprint? Sprint { get; set; }
 
-    /// <summary>
-    /// User story this workflow is related to
-    /// </summary>
     public Guid? UserStoryId { get; set; }
-    /// <summary>
-    /// The user story this workflow instance is related to
-    /// </summary>
     public virtual UserStory? UserStory { get; set; }
 
     /// <summary>

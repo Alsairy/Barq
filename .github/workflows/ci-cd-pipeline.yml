@@ -56,13 +56,53 @@ jobs:
       run: dotnet restore Backend/BARQ.sln
 
     - name: Build Backend
-      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
+      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release --verbosity normal --property:TreatWarningsAsErrors=false
+
+    - name: Install EF Core Tools
+      run: dotnet tool install --global dotnet-ef
+
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+        echo "PostgreSQL is ready!"
+
+    - name: Create Database and Run Migrations
+      run: |
+        cd Backend
+        dotnet ef database update --project src/BARQ.Infrastructure --startup-project src/BARQ.API --context BarqDbContext --configuration Release
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
+        ASPNETCORE_ENVIRONMENT: "Testing"
+
+    - name: Seed Test Data
+      run: |
+        cd Backend/src/BARQ.API
+        dotnet run --configuration Release --no-build -- --seed-data
+      env:
+        ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
+        ASPNETCORE_ENVIRONMENT: "Testing"
+        POSTGRES_USER: "postgres"
+        POSTGRES_PASSWORD: "postgres"
+        POSTGRES_DB: "barq_test"
+
+    - name: Debug Database Connection
+      run: |
+        echo "Testing PostgreSQL connection..."
+        PGPASSWORD=postgres psql -h localhost -U postgres -d barq_test -c "SELECT version();"
+        echo "Listing tables..."
+        PGPASSWORD=postgres psql -h localhost -U postgres -d barq_test -c "\dt"
+        echo "Checking users table..."
+        PGPASSWORD=postgres psql -h localhost -U postgres -d barq_test -c "SELECT COUNT(*) FROM \"Users\";" || echo "Users table not found"
 
     - name: Run Backend Tests
       run: dotnet test Backend/BARQ.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
       env:
         ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
         Redis__ConnectionString: "localhost:6379"
+        ASPNETCORE_ENVIRONMENT: "Testing"
 
     - name: Install Frontend dependencies
       run: npm ci

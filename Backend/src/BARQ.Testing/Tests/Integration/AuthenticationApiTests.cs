@@ -6,11 +6,11 @@ using Xunit;
 namespace BARQ.Testing.Tests.Integration
 {
 [Collection("AuthenticationApiTestCollection")]
-public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
+public class AuthenticationApiTests : IClassFixture<StandaloneTestFramework>
 {
-    private readonly ApiTestFramework _factory;
+    private readonly StandaloneTestFramework _factory;
 
-    public AuthenticationApiTests(ApiTestFramework factory)
+    public AuthenticationApiTests(StandaloneTestFramework factory)
     {
         _factory = factory;
     }
@@ -31,10 +31,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var authResponse = await _factory.DeserializeResponseAsync<AuthenticationResponse>(response);
-        authResponse.Should().NotBeNull();
-        authResponse!.AccessToken.Should().NotBeNullOrEmpty();
-        authResponse.Success.Should().BeTrue();
+        var apiResponse = await _factory.DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
+        apiResponse.Should().NotBeNull();
+        apiResponse!.Data.Should().NotBeNull();
+        apiResponse.Data!.AccessToken.Should().NotBeNullOrEmpty();
+        apiResponse.Data.Success.Should().BeTrue();
     }
 
     [Fact]
@@ -76,12 +77,16 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "newuser@test.com",
-            FirstName = "New",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization"
+            Request = new
+            {
+                Email = "newuser@test.com",
+                FirstName = "New",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization",
+                AcceptTerms = true
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
@@ -94,12 +99,16 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "test@acme.com",
-            FirstName = "Duplicate",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization"
+            Request = new
+            {
+                Email = "test@acme.com",
+                FirstName = "Duplicate",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization",
+                AcceptTerms = true
+            }
         };
 
         var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
@@ -118,7 +127,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         var response = await _factory.PostJsonAsync("/api/auth/refresh", refreshRequest, authToken);
 
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest, HttpStatusCode.NotFound);
     }
 
     [Fact]

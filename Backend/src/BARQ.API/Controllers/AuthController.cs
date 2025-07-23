@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using BARQ.Application.Commands.Authentication;
+using BARQ.Application.Commands.Users;
 using BARQ.Core.Services;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
@@ -35,6 +36,17 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _mediator.Send(command);
+            
+            if (!result.Success)
+            {
+                return Unauthorized(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,
@@ -45,6 +57,40 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("register")]
+    public async Task<ActionResult<ApiResponse<UserRegistrationResponse>>> Register([FromBody] RegisterUserCommand command)
+    {
+        try
+        {
+            var result = await _mediator.Send(command);
+            
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
+            return Created("", new ApiResponse<UserRegistrationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<UserRegistrationResponse>
             {
                 Success = false,
                 Message = ex.Message
@@ -81,6 +127,17 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authenticationService.RefreshTokenAsync(request.RefreshToken);
+            
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,

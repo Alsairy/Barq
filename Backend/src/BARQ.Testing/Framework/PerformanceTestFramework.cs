@@ -95,7 +95,7 @@ public class PerformanceTestFramework
 
         foreach (var endpoint in endpoints)
         {
-            var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(30));
+            var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(60));
             results.Add(loadTestResult);
 
             await Task.Delay(TimeSpan.FromSeconds(5));
@@ -109,9 +109,11 @@ public class PerformanceTestFramework
         var startTime = DateTime.UtcNow;
         var tasks = new List<Task<(bool Success, TimeSpan ResponseTime)>>();
 
+        var semaphore = new SemaphoreSlim(5, 5);
+        
         for (int i = 0; i < concurrentRequests; i++)
         {
-            tasks.Add(ExecuteRequestAsync(endpoint, requestData));
+            tasks.Add(ExecuteRequestWithThrottlingAsync(endpoint, requestData, semaphore));
         }
 
         var results = await Task.WhenAll(tasks);
@@ -119,6 +121,7 @@ public class PerformanceTestFramework
 
         var successfulRequests = results.Count(r => r.Success);
         var responseTimes = results.Where(r => r.Success).Select(r => r.ResponseTime).ToList();
+        var allResponseTimes = results.Select(r => r.ResponseTime).ToList();
 
         return new PerformanceTestResult
         {
@@ -128,9 +131,9 @@ public class PerformanceTestFramework
             TotalRequests = concurrentRequests,
             SuccessfulRequests = successfulRequests,
             FailedRequests = concurrentRequests - successfulRequests,
-            AverageResponseTime = responseTimes.Any() ? TimeSpan.FromMilliseconds(responseTimes.Average(t => t.TotalMilliseconds)) : TimeSpan.Zero,
-            MinResponseTime = responseTimes.Any() ? responseTimes.Min() : TimeSpan.Zero,
-            MaxResponseTime = responseTimes.Any() ? responseTimes.Max() : TimeSpan.Zero,
+            AverageResponseTime = allResponseTimes.Any() ? TimeSpan.FromMilliseconds(allResponseTimes.Average(t => t.TotalMilliseconds)) : TimeSpan.Zero,
+            MinResponseTime = allResponseTimes.Any() ? allResponseTimes.Min() : TimeSpan.Zero,
+            MaxResponseTime = allResponseTimes.Any() ? allResponseTimes.Max() : TimeSpan.Zero,
             RequestsPerSecond = concurrentRequests / (endTime - startTime).TotalSeconds,
             SuccessRate = (double)successfulRequests / concurrentRequests * 100
         };
@@ -153,6 +156,20 @@ public class PerformanceTestFramework
         {
             var endTime = DateTime.UtcNow;
             return (false, endTime - startTime);
+        }
+    }
+
+    private async Task<(bool Success, TimeSpan ResponseTime)> ExecuteRequestWithThrottlingAsync<T>(string endpoint, T requestData, SemaphoreSlim semaphore)
+    {
+        await semaphore.WaitAsync();
+        try
+        {
+            await Task.Delay(50);
+            return await ExecuteRequestAsync(endpoint, requestData);
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 

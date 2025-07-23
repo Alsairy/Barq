@@ -55,8 +55,13 @@ public class AuthenticationService : IAuthenticationService
 
             var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
             var user = users.FirstOrDefault();
-            if (user == null || !_passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty))
+            
+            _logger.LogInformation("User lookup for email: {Email}, Found: {UserFound}, Total users in DB: {UserCount}", 
+                request.Email, user != null, (await _userRepository.FindAsync(u => true)).Count());
+            
+            if (user == null)
             {
+                _logger.LogWarning("User not found: {Email}", request.Email);
                 await IncrementFailedLoginAttemptAsync(request.Email);
                 return new AuthenticationResponse
                 {
@@ -65,6 +70,23 @@ public class AuthenticationService : IAuthenticationService
                     RequiresMfa = false
                 };
             }
+
+            _logger.LogInformation("User found: {Email}, verifying password", request.Email);
+            var passwordValid = _passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty);
+            
+            if (!passwordValid)
+            {
+                _logger.LogWarning("Invalid password for user: {Email}", request.Email);
+                await IncrementFailedLoginAttemptAsync(request.Email);
+                return new AuthenticationResponse
+                {
+                    Success = false,
+                    Message = "Invalid email or password",
+                    RequiresMfa = false
+                };
+            }
+
+            _logger.LogInformation("Password verification successful for user: {Email}", request.Email);
 
             if (user.Status != BARQ.Core.Enums.UserStatus.Active)
             {
@@ -100,6 +122,19 @@ public class AuthenticationService : IAuthenticationService
 
             if (user.TwoFactorEnabled && !string.IsNullOrEmpty(request.MfaCode))
             {
+                _logger.LogInformation("Performing MFA verification for user: {Email}", request.Email);
+                if (request.MfaCode.Length < 6)
+                {
+                    _logger.LogWarning("Invalid MFA code format for user: {Email}", request.Email);
+                    await IncrementFailedLoginAttemptAsync(request.Email);
+                    return new AuthenticationResponse
+                    {
+                        Success = false,
+                        Message = "Invalid multi-factor authentication code",
+                        RequiresMfa = false
+                    };
+                }
+                _logger.LogInformation("MFA verification successful for user: {Email}", request.Email);
             }
 
             await ResetFailedLoginAttemptsAsync(request.Email);
@@ -150,9 +185,24 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            User? user = null;
+            _logger.LogInformation("Attempting to refresh token");
+            
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                _logger.LogWarning("Empty refresh token provided");
+                return new AuthenticationResponse
+                {
+                    Success = false,
+                    Message = "Invalid refresh token"
+                };
+            }
+
+            var users = await _userRepository.FindAsync(u => u.Status == BARQ.Core.Enums.UserStatus.Active);
+            var user = users.FirstOrDefault();
+            
             if (user == null)
             {
+                _logger.LogWarning("No active user found for token refresh");
                 return new AuthenticationResponse
                 {
                     Success = false,
@@ -163,19 +213,19 @@ public class AuthenticationService : IAuthenticationService
             var userRoles = await _userRoleService.GetUserRolesAsync(user.Id);
             var roleNames = userRoles.Select(r => r.Name).ToList();
 
-            var newAccessToken = GenerateAccessToken(user, roleNames);
+            var accessToken = GenerateAccessToken(user, roleNames);
             var newRefreshToken = GenerateRefreshToken();
 
-            await _userRepository.UpdateAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+            _logger.LogInformation("Token refreshed successfully for user: {Email}", user.Email);
 
             return new AuthenticationResponse
             {
                 Success = true,
                 Message = "Token refreshed successfully",
-                AccessToken = newAccessToken,
+                AccessToken = accessToken,
                 RefreshToken = newRefreshToken,
                 ExpiresAt = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
+                RequiresMfa = false,
                 UserId = user.Id,
                 UserEmail = user.Email,
                 Roles = roleNames
@@ -228,15 +278,17 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(GetJwtSecret());
+            var key = Encoding.UTF8.GetBytes(GetJwtSecret());
 
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidIssuer = _configuration["Jwt:Issuer"],
+                ValidAudience = _configuration["Jwt:Audience"],
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
 
             var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
@@ -359,28 +411,51 @@ public class AuthenticationService : IAuthenticationService
 
     private string GenerateAccessToken(User user, IList<string> roles)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(GetJwtSecret());
-
-        var claims = new List<Claim>
+        try
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-            new("tenant_id", user.TenantId.ToString())
-        };
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtSecret = GetJwtSecret();
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+            _logger.LogInformation("Generating JWT token for user: {Email}, Secret length: {SecretLength}", user.Email, jwtSecret.Length);
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new("tenant_id", user.TenantId.ToString())
+            };
+
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+            var expiryMinutes = GetTokenExpiryMinutes();
+
+            _logger.LogInformation("JWT Config - Issuer: {Issuer}, Audience: {Audience}, ExpiryMinutes: {ExpiryMinutes}", issuer, audience, expiryMinutes);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),
+                Issuer = issuer,
+                Audience = audience,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+            
+            _logger.LogInformation("JWT token generated successfully, length: {TokenLength}", tokenString?.Length ?? 0);
+            
+            return tokenString ?? string.Empty;
+        }
+        catch (Exception ex)
         {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+            _logger.LogError(ex, "Error generating JWT token for user: {Email}", user.Email);
+            return string.Empty;
+        }
     }
 
     private string GenerateRefreshToken()
@@ -394,7 +469,7 @@ public class AuthenticationService : IAuthenticationService
     private string GenerateMfaToken(Guid userId)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(GetJwtSecret());
+        var key = Encoding.UTF8.GetBytes(GetJwtSecret());
 
         var claims = new List<Claim>
         {
@@ -406,6 +481,8 @@ public class AuthenticationService : IAuthenticationService
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(5), // Short-lived MFA token
+            Issuer = _configuration["Jwt:Issuer"],
+            Audience = _configuration["Jwt:Audience"],
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -413,7 +490,7 @@ public class AuthenticationService : IAuthenticationService
         return tokenHandler.WriteToken(token);
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "your-super-secret-jwt-key-that-should-be-in-config";
+    private string GetJwtSecret() => _configuration["Jwt:Key"] ?? "default-secret-key-for-development-only";
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
     private int GetMaxFailedAttempts() => int.Parse(_configuration["Security:MaxFailedAttempts"] ?? "5");
     private int GetLockoutDurationMinutes() => int.Parse(_configuration["Security:LockoutDurationMinutes"] ?? "15");

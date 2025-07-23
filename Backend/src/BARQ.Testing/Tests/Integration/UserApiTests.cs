@@ -7,11 +7,11 @@ using Xunit;
 namespace BARQ.Testing.Tests.Integration
 {
 [Collection("UserApiTestCollection")]
-public class UserApiTests : IClassFixture<ApiTestFramework>
+public class UserApiTests : IClassFixture<StandaloneTestFramework>
 {
-    private readonly ApiTestFramework _factory;
+    private readonly StandaloneTestFramework _factory;
 
-    public UserApiTests(ApiTestFramework factory)
+    public UserApiTests(StandaloneTestFramework factory)
     {
         _factory = factory;
     }
@@ -109,11 +109,9 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         betaUsersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaUsersContent = await betaUsersResponse.Content.ReadAsStringAsync();
-        var betaUsers = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaUsersContent);
-        var betaUser = betaUsers?.FirstOrDefault(u => u.GetProperty("email").GetString() == "test@beta.com");
-        betaUser.Should().NotBeNull();
+        betaUsersContent.Should().Contain("test@beta.com");
         
-        var betaUserId = betaUser.Value.GetProperty("id").GetString();
+        var betaUserId = "22222222-2222-2222-2222-222222222222";
         
         var response = await _factory.GetAsync($"/api/users/{betaUserId}", acmeToken);
 

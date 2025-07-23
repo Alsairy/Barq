@@ -26,17 +26,17 @@ namespace BARQ.API.Controllers
             }
         };
 
-        private static readonly List<OrganizationDto> Organizations = new List<OrganizationDto>
+        private static readonly List<OrganizationSummaryDto> Organizations = new List<OrganizationSummaryDto>
         {
-            new OrganizationDto
+            new OrganizationSummaryDto
             {
                 Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Name = "Acme Corporation"
             },
-            new OrganizationDto
+            new OrganizationSummaryDto
             {
                 Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Name = "Beta LLC"
+                Name = "Beta Industries"
             }
         };
 
@@ -53,7 +53,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<OrganizationDto>> GetOrganizations()
+        public ActionResult<IEnumerable<OrganizationSummaryDto>> GetOrganizations()
         {
             var orgId = GetCurrentOrganizationId();
             var list = Organizations.Where(o => o.Id == orgId).ToList();
@@ -61,7 +61,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<OrganizationDto> GetOrganization(Guid id)
+        public ActionResult<OrganizationSummaryDto> GetOrganization(Guid id)
         {
             var orgId = GetCurrentOrganizationId();
             var org = Organizations.FirstOrDefault(o => o.Id == id && o.Id == orgId);
@@ -70,18 +70,18 @@ namespace BARQ.API.Controllers
             return Ok(org);
         }
 
-        public class CreateOrganizationRequest
+        public class CreateOrganizationRequestDto
         {
             public string Name { get; set; }
         }
 
         [HttpPost]
-        public ActionResult<OrganizationDto> CreateOrganization([FromBody] CreateOrganizationRequest request)
+        public ActionResult<OrganizationSummaryDto> CreateOrganization([FromBody] CreateOrganizationRequestDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest();
             var orgId = GetCurrentOrganizationId();
-            var newOrg = new OrganizationDto
+            var newOrg = new OrganizationSummaryDto
             {
                 Id = Guid.NewGuid(),
                 Name = request.Name
@@ -90,13 +90,13 @@ namespace BARQ.API.Controllers
             return CreatedAtAction(nameof(GetOrganization), new { id = newOrg.Id }, newOrg);
         }
 
-        public class UpdateOrganizationRequest
+        public class UpdateOrganizationRequestDto
         {
             public string Name { get; set; }
         }
 
         [HttpPost("{id:guid}")]
-        public IActionResult UpdateOrganization(Guid id, [FromBody] UpdateOrganizationRequest request)
+        public IActionResult UpdateOrganization(Guid id, [FromBody] UpdateOrganizationRequestDto request)
         {
             var orgId = GetCurrentOrganizationId();
             var org = Organizations.FirstOrDefault(o => o.Id == id && o.Id == orgId);
@@ -114,7 +114,7 @@ namespace BARQ.API.Controllers
             public Guid OrganizationId { get; set; }
         }
 
-        public class OrganizationDto
+        public class OrganizationSummaryDto
         {
             public Guid Id { get; set; }
             public string Name { get; set; }

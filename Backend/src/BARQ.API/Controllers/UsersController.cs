@@ -12,28 +12,32 @@ namespace BARQ.API.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
-        private static readonly List<UserDto> Users = new List<UserDto>
+        private static readonly List<UserSummaryDto> Users = new List<UserSummaryDto>
         {
-            new UserDto
+            new UserSummaryDto
             {
                 Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
                 OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Email = "test@acme.com",
                 FirstName = "Acme",
+                PhoneNumber = "1234567890",
                 LastName = "User"
             },
-            new UserDto
+            new UserSummaryDto
             {
                 Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+                                
                 OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
                 Email = "test@beta.com",
-                FirstName = "Beta",
-                LastName = "User"
+                FirstName = "Jane",
+                PhoneNumber = "0987654321",
+                LastName = "Smith"
             }
         };
 
-        private UserDto GetCurrentUser()
+        private UserSummaryDto GetCurrentUser()
         {
+                
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             if (Guid.TryParse(userIdStr, out var userId))
             {
@@ -43,7 +47,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet("profile")]
-        public ActionResult<UserDto> GetProfile()
+        public ActionResult<UserSummaryDto> GetProfile()
         {
             var user = GetCurrentUser();
             if (user == null) return Unauthorized();
@@ -51,7 +55,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpPost("profile")]
-        public IActionResult UpdateProfile([FromBody] UpdateProfileRequest request)
+        public IActionResult UpdateProfile([FromBody] UpdateProfileRequestDto request)
         {
             var user = GetCurrentUser();
             if (user == null) return Unauthorized();
@@ -59,11 +63,14 @@ namespace BARQ.API.Controllers
                 user.FirstName = request.FirstName;
             if (!string.IsNullOrEmpty(request.LastName))
                 user.LastName = request.LastName;
+            
+                        if (!string.IsNullOrEmpty(request.PhoneNumber))
+                user.PhoneNumber = request.PhoneNumber;
             return Ok(user);
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<UserDto>> GetUsers()
+        public ActionResult<IEnumerable<UserSummaryDto>> GetUsers()
         {
             var user = GetCurrentUser();
             if (user == null) return Unauthorized();
@@ -72,7 +79,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<UserDto> GetUser(Guid id)
+        public ActionResult<UserSummaryDto> GetUser(Guid id)
         {
             var current = GetCurrentUser();
             if (current == null) return Unauthorized();
@@ -81,7 +88,7 @@ namespace BARQ.API.Controllers
             return Ok(user);
         }
 
-        public class CreateUserRequest
+        public class CreateUserRequestDto
         {
             public string Email { get; set; }
             public string FirstName { get; set; }
@@ -90,13 +97,13 @@ namespace BARQ.API.Controllers
         }
 
         [HttpPost]
-        public ActionResult<UserDto> CreateUser([FromBody] CreateUserRequest request)
+        public ActionResult<UserSummaryDto> CreateUser([FromBody] CreateUserRequestDto request)
         {
             var current = GetCurrentUser();
             if (current == null) return Unauthorized();
             if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
                 return BadRequest();
-            var newUser = new UserDto
+            var newUser = new UserSummaryDto
             {
                 Id = Guid.NewGuid(),
                 OrganizationId = current.OrganizationId,
@@ -109,29 +116,34 @@ namespace BARQ.API.Controllers
         }
 
         [HttpPost("change-password")]
-        public IActionResult ChangePassword([FromBody] ChangePasswordRequest request)
+        public IActionResult ChangePassword([FromBody] ChangePasswordRequestDto request)
         {
             var current = GetCurrentUser();
             if (current == null) return Unauthorized();
             return Ok();
         }
 
-        public class UpdateProfileRequest
+        public class UpdateProfileRequestDto
         {
             public string FirstName { get; set; }
             public string LastName { get; set; }
+            public string PhoneNumber { get; set; }
         }
 
-        public class ChangePasswordRequest
+        public class ChangePasswordRequestDto
         {
             public string OldPassword { get; set; }
             public string NewPassword { get; set; }
+            public string CurrentPassword { get; set; }
+            public string ConfirmPassword { get; set; }
         }
 
-        public class UserDto
+        public class UserSummaryDto
         {
             public Guid Id { get; set; }
             public Guid OrganizationId { get; set; }
+                    public string PhoneNumber { get; set; }
+
             public string Email { get; set; }
             public string FirstName { get; set; }
             public string LastName { get; set; }
