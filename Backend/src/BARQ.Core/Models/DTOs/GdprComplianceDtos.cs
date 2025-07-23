@@ -296,9 +296,6 @@ public class DataProcessingAuditDto
 /// <summary>
 /// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity under GDPR compliance requirements.
 /// </summary>
-/// <summary>
-/// Represents the results of a privacy impact assessment, including identified risks and mitigation strategies for a data processing activity under GDPR compliance requirements.
-/// </summary>
 public class PrivacyImpactAssessmentDto
 {
     /// <summary>

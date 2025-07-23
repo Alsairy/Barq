@@ -12,21 +12,21 @@ namespace BARQ.API.Controllers
     [Authorize]
     public class ProjectsController : ControllerBase
     {
-        private static readonly List<UserDto> Users = new List<UserDto>
+        private static readonly List<UserSummaryDto> Users = new List<UserSummaryDto>
         {
-            new UserDto { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111") },
-            new UserDto { Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222") }
+            new UserSummaryDto { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111") },
+            new UserSummaryDto { Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222") }
         };
 
-        private static readonly List<ProjectDto> Projects = new List<ProjectDto>
+        private static readonly List<ProjectSummaryDto> Projects = new List<ProjectSummaryDto>
         {
-            new ProjectDto
+            new ProjectSummaryDto
             {
                 Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
                 OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
                 Name = "Acme Project"
             },
-            new ProjectDto
+            new ProjectSummaryDto
             {
                 Id = Guid.Parse("66666666-6666-6666-6666-666666666666"),
                 OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
@@ -46,7 +46,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<ProjectDto>> GetProjects()
+        public ActionResult<IEnumerable<ProjectSummaryDto>> GetProjects()
         {
             var orgId = GetCurrentOrganizationId();
             var list = Projects.Where(p => p.OrganizationId == orgId).ToList();
@@ -54,7 +54,7 @@ namespace BARQ.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<ProjectDto> GetProject(Guid id)
+        public ActionResult<ProjectSummaryDto> GetProject(Guid id)
         {
             var orgId = GetCurrentOrganizationId();
             var project = Projects.FirstOrDefault(p => p.Id == id && p.OrganizationId == orgId);
@@ -62,18 +62,18 @@ namespace BARQ.API.Controllers
             return Ok(project);
         }
 
-        public class CreateProjectRequest
+        public class CreateProjectRequestDto
         {
             public string Name { get; set; }
         }
 
         [HttpPost]
-        public ActionResult<ProjectDto> CreateProject([FromBody] CreateProjectRequest request)
+        public ActionResult<ProjectSummaryDto> CreateProject([FromBody] CreateProjectRequestDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest();
             var orgId = GetCurrentOrganizationId();
-            var project = new ProjectDto
+            var project = new ProjectSummaryDto
             {
                 Id = Guid.NewGuid(),
                 OrganizationId = orgId,
@@ -83,13 +83,13 @@ namespace BARQ.API.Controllers
             return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
         }
 
-        public class UpdateProjectRequest
+        public class UpdateProjectRequestDto
         {
             public string Name { get; set; }
         }
 
         [HttpPost("{id:guid}")]
-        public IActionResult UpdateProject(Guid id, [FromBody] UpdateProjectRequest request)
+        public IActionResult UpdateProject(Guid id, [FromBody] UpdateProjectRequestDto request)
         {
             var orgId = GetCurrentOrganizationId();
             var project = Projects.FirstOrDefault(p => p.Id == id && p.OrganizationId == orgId);
@@ -110,13 +110,13 @@ namespace BARQ.API.Controllers
             return NoContent();
         }
 
-        public class UserDto
+        public class UserSummaryDto
         {
             public Guid Id { get; set; }
             public Guid OrganizationId { get; set; }
         }
 
-        public class ProjectDto
+        public class ProjectSummaryDto
         {
             public Guid Id { get; set; }
             public Guid OrganizationId { get; set; }

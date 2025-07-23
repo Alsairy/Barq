@@ -164,11 +164,6 @@ public class Project : TenantEntity
     public virtual ICollection<Sprint> Sprints { get; set; } = new List<Sprint>();
 
     /// <summary>
-    /// Business requirements documents for this project
-    /// </summary>
-    public virtual ICollection<BusinessRequirementDocument> BusinessRequirements { get; set; } = new List<BusinessRequirementDocument>();
-
-    /// <summary>
     /// User stories for this project
     /// </summary>
     public virtual ICollection<UserStory> UserStories { get; set; } = new List<UserStory>();
