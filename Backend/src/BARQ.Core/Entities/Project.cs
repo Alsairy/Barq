@@ -130,23 +130,6 @@ public class Project : TenantEntity
     /// </summary>
     public virtual User ProjectOwner { get; set; } = null!;
 
-    /// <summary>
-    /// Project manager ID (alias for ProjectOwnerId for compatibility)
-    /// </summary>
-    public Guid ProjectManagerId 
-    { 
-        get => ProjectOwnerId; 
-        set => ProjectOwnerId = value; 
-    }
-
-    /// <summary>
-    /// Organization ID (from TenantEntity.TenantId for compatibility)
-    /// </summary>
-    public Guid OrganizationId 
-    { 
-        get => TenantId; 
-        set => TenantId = value; 
-    }
 
     /// <summary>
     /// Organization this project belongs to

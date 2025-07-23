@@ -80,14 +80,13 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 
 
         builder.HasOne(p => p.Organization)
-            .WithMany()
+            .WithMany(o => o.Projects)
             .HasForeignKey(p => p.TenantId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(p => p.ProjectKey)
             .IsUnique();
         builder.HasIndex(p => p.ProjectOwnerId);
-        builder.HasIndex(p => p.OrganizationId);
         builder.HasIndex(p => p.TenantId);
         builder.HasIndex(p => p.Status);
         builder.HasIndex(p => p.Priority);
