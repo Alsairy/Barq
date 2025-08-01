@@ -21,6 +21,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
+        Environment.SetEnvironmentVariable("Jwt__Secret", "test-jwt-secret-key-that-is-at-least-32-characters-long-for-security");
+        Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
+        Environment.SetEnvironmentVariable("Security__MaxFailedAttempts", "5");
+        Environment.SetEnvironmentVariable("Security__LockoutDurationMinutes", "15");
         builder.UseEnvironment("Testing");
         
         builder.ConfigureServices(services =>
@@ -101,8 +105,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
-        var loginRequest = new { Request = new { Email = email, Password = password } };
-        var response = await PostJsonAsync("/api/auth/login", loginRequest);
+        var loginCommand = new { Request = new { Email = email, Password = password } };
+        var response = await PostJsonAsync("/api/auth/login", loginCommand);
         
         response.Should().BeSuccessful();
         var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
