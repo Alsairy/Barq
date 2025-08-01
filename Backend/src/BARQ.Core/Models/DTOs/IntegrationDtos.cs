@@ -3,19 +3,56 @@ using BARQ.Core.Enums;
 
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// </summary>
 public class IntegrationRequest
 {
+    /// <summary>
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    
+    /// <summary>
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public string Method { get; set; } = "POST";
+    
+    /// <summary>
+    /// </summary>
     public string Path { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    
+    /// <summary>
+    /// </summary>
     public string? Body { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
+    
+    /// <summary>
+    /// </summary>
     public IntegrationProtocol Protocol { get; set; } = IntegrationProtocol.REST;
+    
+    /// <summary>
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// </summary>
     public Guid TenantId { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public string? CorrelationId { get; set; }
+    
+    /// <summary>
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
 }
 
