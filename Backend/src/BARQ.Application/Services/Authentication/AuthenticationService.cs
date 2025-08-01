@@ -413,7 +413,23 @@ public class AuthenticationService : IAuthenticationService
         return tokenHandler.WriteToken(token);
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "your-super-secret-jwt-key-that-should-be-in-config";
+    private string GetJwtSecret() 
+    {
+        var secret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            _logger.LogCritical("JWT Secret is not configured. Application cannot start without a valid JWT secret.");
+            throw new InvalidOperationException("JWT Secret must be configured in application settings. Set the 'Jwt:Secret' configuration value.");
+        }
+        
+        if (secret.Length < 32)
+        {
+            _logger.LogCritical("JWT Secret is too short. Must be at least 32 characters for security.");
+            throw new InvalidOperationException("JWT Secret must be at least 32 characters long for security.");
+        }
+        
+        return secret;
+    }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
     private int GetMaxFailedAttempts() => int.Parse(_configuration["Security:MaxFailedAttempts"] ?? "5");
     private int GetLockoutDurationMinutes() => int.Parse(_configuration["Security:LockoutDurationMinutes"] ?? "15");
