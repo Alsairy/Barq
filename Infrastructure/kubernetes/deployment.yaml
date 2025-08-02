@@ -202,15 +202,13 @@ spec:
         - containerPort: 1433
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
-          runAsNonRoot: false
-          runAsUser: 0
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
           capabilities:
             drop:
             - ALL
-            add:
-            - SETUID
-            - SETGID
           seccompProfile:
             type: RuntimeDefault
         env:
@@ -221,6 +219,10 @@ spec:
         volumeMounts:
         - name: sqlserver-storage
           mountPath: /var/opt/mssql
+        - name: sqlserver-data
+          mountPath: /var/opt/mssql/data
+        - name: sqlserver-log
+          mountPath: /var/opt/mssql/log
         - name: tmp
           mountPath: /tmp
         - name: database-secrets
@@ -268,6 +270,10 @@ spec:
       - name: sqlserver-storage
         persistentVolumeClaim:
           claimName: barq-database-pvc
+      - name: sqlserver-data
+        emptyDir: {}
+      - name: sqlserver-log
+        emptyDir: {}
       - name: tmp
         emptyDir: {}
       - name: database-secrets
