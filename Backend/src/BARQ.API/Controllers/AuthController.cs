@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using BARQ.Application.Commands.Authentication;
+using BARQ.Application.Commands.Users;
 using BARQ.Core.Services;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
@@ -27,6 +28,30 @@ public class AuthController : ControllerBase
         _authenticationService = authenticationService;
         _mfaService = mfaService;
         _passwordService = passwordService;
+    }
+
+    [HttpPost("register")]
+    public async Task<ActionResult<ApiResponse<UserRegistrationResponse>>> Register([FromBody] UserRegistrationRequest request)
+    {
+        try
+        {
+            var command = new RegisterUserCommand(request);
+            var result = await _mediator.Send(command);
+            return Created($"/api/v1/users/{result.UserId}", new ApiResponse<UserRegistrationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<UserRegistrationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
     }
 
     [HttpPost("login")]
