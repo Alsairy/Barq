@@ -32,16 +32,16 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         
         builder.ConfigureServices(services =>
         {
-            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
-            if (descriptor != null)
+            foreach (var dbContextOption in services.Where(
+                d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>)).ToList())
             {
-                services.Remove(descriptor);
+                services.Remove(dbContextOption);
             }
-
-            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(BarqDbContext));
-            if (dbContextDescriptor != null)
+            
+            foreach (var dbContext in services.Where(
+                d => d.ServiceType == typeof(BarqDbContext)).ToList())
             {
-                services.Remove(dbContextDescriptor);
+                services.Remove(dbContext);
             }
 
             var dbName = Guid.NewGuid().ToString();

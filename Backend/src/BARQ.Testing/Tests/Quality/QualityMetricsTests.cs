@@ -135,7 +135,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
         _qualityFramework.AddTestResult(new TestResult
         {
             TestName = "Login_WithValidCredentials_ReturnsSuccess",
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             Passed = true,
             Duration = TimeSpan.FromMilliseconds(150)
         });
@@ -198,7 +198,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
     {
         _qualityFramework.AddPerformanceResult(new PerformanceTestResult
         {
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             VirtualUsers = 10,
             Duration = TimeSpan.FromMinutes(1),
             TotalRequests = 600,
@@ -227,7 +227,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
     {
         _qualityFramework.AddContractResult(new ContractValidationResult
         {
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             Method = "POST",
             OperationId = "login",
             IsValid = true,

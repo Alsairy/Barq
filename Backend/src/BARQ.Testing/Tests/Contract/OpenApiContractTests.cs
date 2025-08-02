@@ -27,8 +27,8 @@ public class OpenApiContractTests : IClassFixture<ApiTestFramework>
     {
         var criticalEndpoints = new[]
         {
-            "/api/auth/login",
-            "/api/auth/register",
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
             "/api/users/profile",
             "/api/organizations",
             "/api/projects",
@@ -45,7 +45,7 @@ public class OpenApiContractTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task AuthenticationEndpoints_ShouldHaveCorrectSchemas()
     {
-        await _contractFramework.ValidateResponseSchemaAsync<AuthenticationResponse>("/api/auth/login", HttpMethod.Post);
+        await _contractFramework.ValidateResponseSchemaAsync<AuthenticationResponse>("/api/v1/auth/login", HttpMethod.Post);
     }
 
     [Fact]

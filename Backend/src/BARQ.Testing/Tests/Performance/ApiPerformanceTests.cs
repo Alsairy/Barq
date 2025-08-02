@@ -27,7 +27,7 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
             }
         };
 
-        var result = await _performanceFramework.RunConcurrencyTestAsync("/api/auth/login", loginRequest, 20);
+        var result = await _performanceFramework.RunConcurrencyTestAsync("/api/v1/auth/login", loginRequest, 20);
         
         var requirements = new PerformanceRequirements
         {
