@@ -18,6 +18,20 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    public ApiTestFramework()
+    {
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", "Host=localhost;Database=barq_test;Username=postgres;Password=postgres");
+        Environment.SetEnvironmentVariable("Jwt__Secret", "test-jwt-secret-key-that-is-at-least-32-characters-long-for-security");
+        Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
+        Environment.SetEnvironmentVariable("Security__MaxFailedAttempts", "5");
+        Environment.SetEnvironmentVariable("Security__LockoutDurationMinutes", "15");
+        Environment.SetEnvironmentVariable("DatabasePerformance__CpuUtilizationScore", "90");
+        Environment.SetEnvironmentVariable("DatabasePerformance__MemoryUtilizationScore", "85");
+        Environment.SetEnvironmentVariable("DatabasePerformance__DbLatencyScore", "80");
+        
+        Console.WriteLine(">> EffectiveConnStr=" + Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
