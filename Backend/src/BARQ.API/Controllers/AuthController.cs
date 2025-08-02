@@ -9,7 +9,7 @@ using BARQ.Shared.DTOs;
 namespace BARQ.API.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
