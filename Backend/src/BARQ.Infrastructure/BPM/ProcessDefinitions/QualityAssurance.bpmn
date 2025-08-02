@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:flowable="http://flowable.org/bpmn"
+                  id="Definitions_QualityAssurance"
+                  targetNamespace="http://barq.app/bpmn"
+                  exporter="Barq BPM Designer"
+                  exporterVersion="1.0">
+
+  <bpmn:process id="quality-assurance-process" name="Quality Assurance Process" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="start-qa" name="Quality Assessment Required">
+      <bpmn:outgoing>flow-to-assessment-type</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Determine Assessment Type -->
+    <bpmn:serviceTask id="determine-assessment-type" name="Determine Assessment Type" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.DetermineAssessmentTypeDelegate">
+      <bpmn:incoming>flow-to-assessment-type</bpmn:incoming>
+      <bpmn:outgoing>flow-to-assessment-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Assessment Type Gateway -->
+    <bpmn:exclusiveGateway id="assessment-type-gateway" name="Assessment Type?">
+      <bpmn:incoming>flow-to-assessment-gateway</bpmn:incoming>
+      <bpmn:outgoing>flow-to-automated</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-manual</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-peer</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-expert</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Automated Assessment -->
+    <bpmn:serviceTask id="automated-assessment" name="Automated Quality Assessment" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.AutomatedQualityAssessmentDelegate">
+      <bpmn:incoming>flow-to-automated</bpmn:incoming>
+      <bpmn:outgoing>flow-from-automated</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Manual Assessment -->
+    <bpmn:userTask id="manual-assessment" name="Manual Quality Assessment" 
+                   flowable:assignee="${qualityAssessor}"
+                   flowable:dueDate="${now().plusDays(1)}">
+      <bpmn:incoming>flow-to-manual</bpmn:incoming>
+      <bpmn:outgoing>flow-from-manual</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Peer Review -->
+    <bpmn:userTask id="peer-review" name="Peer Review Assessment" 
+                   flowable:candidateGroups="peer-reviewers"
+                   flowable:dueDate="${now().plusDays(2)}">
+      <bpmn:incoming>flow-to-peer</bpmn:incoming>
+      <bpmn:outgoing>flow-from-peer</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Expert Review -->
+    <bpmn:userTask id="expert-review" name="Expert Quality Review" 
+                   flowable:candidateGroups="quality-experts"
+                   flowable:dueDate="${now().plusDays(3)}">
+      <bpmn:incoming>flow-to-expert</bpmn:incoming>
+      <bpmn:outgoing>flow-from-expert</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Quality Score Evaluation -->
+    <bpmn:serviceTask id="evaluate-quality-score" name="Evaluate Quality Score" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.EvaluateQualityScoreDelegate">
+      <bpmn:incoming>flow-from-automated</bpmn:incoming>
+      <bpmn:incoming>flow-from-manual</bpmn:incoming>
+      <bpmn:incoming>flow-from-peer</bpmn:incoming>
+      <bpmn:incoming>flow-from-expert</bpmn:incoming>
+      <bpmn:outgoing>flow-to-score-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Quality Score Gateway -->
+    <bpmn:exclusiveGateway id="quality-score-gateway" name="Quality Score Acceptable?">
+      <bpmn:incoming>flow-to-score-gateway</bpmn:incoming>
+      <bpmn:outgoing>flow-to-passed</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-failed</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-review-required</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Additional Review Required -->
+    <bpmn:userTask id="additional-review" name="Additional Quality Review Required" 
+                   flowable:candidateGroups="senior-quality-reviewers"
+                   flowable:dueDate="${now().plusDays(1)}">
+      <bpmn:incoming>flow-to-review-required</bpmn:incoming>
+      <bpmn:outgoing>flow-from-additional-review</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Final Quality Decision -->
+    <bpmn:exclusiveGateway id="final-quality-gateway" name="Final Quality Decision">
+      <bpmn:incoming>flow-from-additional-review</bpmn:incoming>
+      <bpmn:outgoing>flow-to-final-passed</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-final-failed</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Quality Metrics Collection -->
+    <bpmn:serviceTask id="collect-quality-metrics" name="Collect Quality Metrics" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.CollectQualityMetricsDelegate">
+      <bpmn:incoming>flow-to-passed</bpmn:incoming>
+      <bpmn:incoming>flow-to-final-passed</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-passed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Quality Failure Handling -->
+    <bpmn:serviceTask id="handle-quality-failure" name="Handle Quality Failure" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.HandleQualityFailureDelegate">
+      <bpmn:incoming>flow-to-failed</bpmn:incoming>
+      <bpmn:incoming>flow-to-final-failed</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-failed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- SLA Monitoring -->
+    <bpmn:boundaryEvent id="qa-sla-timer" name="QA SLA Timer" attachedToRef="manual-assessment">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-qa-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <bpmn:boundaryEvent id="peer-sla-timer" name="Peer Review SLA Timer" attachedToRef="peer-review">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT48H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-qa-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <bpmn:boundaryEvent id="expert-sla-timer" name="Expert Review SLA Timer" attachedToRef="expert-review">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT72H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-qa-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <!-- QA Escalation -->
+    <bpmn:serviceTask id="escalate-qa" name="Escalate Quality Assessment" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.EscalateQualityAssessmentDelegate">
+      <bpmn:incoming>flow-to-qa-escalation</bpmn:incoming>
+      <bpmn:outgoing>flow-from-qa-escalation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="end-passed" name="Quality Assessment Passed">
+      <bpmn:incoming>flow-to-end-passed</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="end-failed" name="Quality Assessment Failed">
+      <bpmn:incoming>flow-to-end-failed</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow-to-assessment-type" sourceRef="start-qa" targetRef="determine-assessment-type"/>
+    <bpmn:sequenceFlow id="flow-to-assessment-gateway" sourceRef="determine-assessment-type" targetRef="assessment-type-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-automated" sourceRef="assessment-type-gateway" targetRef="automated-assessment">
+      <bpmn:conditionExpression>${assessmentType == 'Automated'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-manual" sourceRef="assessment-type-gateway" targetRef="manual-assessment">
+      <bpmn:conditionExpression>${assessmentType == 'Manual'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-peer" sourceRef="assessment-type-gateway" targetRef="peer-review">
+      <bpmn:conditionExpression>${assessmentType == 'Peer'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-expert" sourceRef="assessment-type-gateway" targetRef="expert-review">
+      <bpmn:conditionExpression>${assessmentType == 'Expert'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-automated" sourceRef="automated-assessment" targetRef="evaluate-quality-score"/>
+    <bpmn:sequenceFlow id="flow-from-manual" sourceRef="manual-assessment" targetRef="evaluate-quality-score"/>
+    <bpmn:sequenceFlow id="flow-from-peer" sourceRef="peer-review" targetRef="evaluate-quality-score"/>
+    <bpmn:sequenceFlow id="flow-from-expert" sourceRef="expert-review" targetRef="evaluate-quality-score"/>
+    <bpmn:sequenceFlow id="flow-to-score-gateway" sourceRef="evaluate-quality-score" targetRef="quality-score-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-passed" sourceRef="quality-score-gateway" targetRef="collect-quality-metrics">
+      <bpmn:conditionExpression>${qualityScore >= 80}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-failed" sourceRef="quality-score-gateway" targetRef="handle-quality-failure">
+      <bpmn:conditionExpression>${qualityScore < 60}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-review-required" sourceRef="quality-score-gateway" targetRef="additional-review">
+      <bpmn:conditionExpression>${qualityScore >= 60 and qualityScore < 80}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-additional-review" sourceRef="additional-review" targetRef="final-quality-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-final-passed" sourceRef="final-quality-gateway" targetRef="collect-quality-metrics">
+      <bpmn:conditionExpression>${finalApproved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-final-failed" sourceRef="final-quality-gateway" targetRef="handle-quality-failure">
+      <bpmn:conditionExpression>${finalApproved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-qa-escalation" sourceRef="qa-sla-timer" targetRef="escalate-qa"/>
+    <bpmn:sequenceFlow id="flow-to-qa-escalation" sourceRef="peer-sla-timer" targetRef="escalate-qa"/>
+    <bpmn:sequenceFlow id="flow-to-qa-escalation" sourceRef="expert-sla-timer" targetRef="escalate-qa"/>
+    <bpmn:sequenceFlow id="flow-from-qa-escalation" sourceRef="escalate-qa" targetRef="collect-quality-metrics"/>
+    <bpmn:sequenceFlow id="flow-to-end-passed" sourceRef="collect-quality-metrics" targetRef="end-passed"/>
+    <bpmn:sequenceFlow id="flow-to-end-failed" sourceRef="handle-quality-failure" targetRef="end-failed"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

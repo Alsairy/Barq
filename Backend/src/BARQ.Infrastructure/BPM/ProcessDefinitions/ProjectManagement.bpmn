@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:flowable="http://flowable.org/bpmn"
+                  id="Definitions_ProjectManagement"
+                  targetNamespace="http://barq.app/bpmn"
+                  exporter="Barq BPM Designer"
+                  exporterVersion="1.0">
+
+  <bpmn:process id="project-management-process" name="Project Management Workflow" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="start-project" name="Project Initiated">
+      <bpmn:outgoing>flow-to-project-setup</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Project Setup -->
+    <bpmn:serviceTask id="setup-project" name="Setup Project Structure" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.SetupProjectDelegate">
+      <bpmn:incoming>flow-to-project-setup</bpmn:incoming>
+      <bpmn:outgoing>flow-to-team-assignment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Team Assignment -->
+    <bpmn:userTask id="assign-team" name="Assign Project Team" 
+                   flowable:assignee="${projectManager}"
+                   flowable:dueDate="${now().plusDays(1)}">
+      <bpmn:incoming>flow-to-team-assignment</bpmn:incoming>
+      <bpmn:outgoing>flow-to-planning</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Project Planning -->
+    <bpmn:callActivity id="project-planning" name="Project Planning Process" 
+                       calledElement="project-planning-subprocess">
+      <bpmn:incoming>flow-to-planning</bpmn:incoming>
+      <bpmn:outgoing>flow-to-execution</bpmn:outgoing>
+    </bpmn:callActivity>
+    
+    <!-- Project Execution -->
+    <bpmn:subProcess id="project-execution" name="Project Execution">
+      <bpmn:incoming>flow-to-execution</bpmn:incoming>
+      <bpmn:outgoing>flow-to-monitoring</bpmn:outgoing>
+      
+      <!-- Sprint Planning -->
+      <bpmn:startEvent id="start-execution" name="Start Execution">
+        <bpmn:outgoing>flow-to-sprint-planning</bpmn:outgoing>
+      </bpmn:startEvent>
+      
+      <bpmn:userTask id="sprint-planning" name="Sprint Planning" 
+                     flowable:candidateGroups="development-team"
+                     flowable:dueDate="${now().plusDays(1)}">
+        <bpmn:incoming>flow-to-sprint-planning</bpmn:incoming>
+        <bpmn:outgoing>flow-to-development</bpmn:outgoing>
+      </bpmn:userTask>
+      
+      <!-- Development Tasks -->
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:loopCardinality>${taskCount}</bpmn:loopCardinality>
+      </bpmn:multiInstanceLoopCharacteristics>
+      
+      <bpmn:userTask id="development-task" name="Development Task" 
+                     flowable:assignee="${developer}"
+                     flowable:dueDate="${taskDueDate}">
+        <bpmn:incoming>flow-to-development</bpmn:incoming>
+        <bpmn:outgoing>flow-to-code-review</bpmn:outgoing>
+      </bpmn:userTask>
+      
+      <!-- Code Review -->
+      <bpmn:userTask id="code-review" name="Code Review" 
+                     flowable:candidateGroups="senior-developers"
+                     flowable:dueDate="${now().plusDays(1)}">
+        <bpmn:incoming>flow-to-code-review</bpmn:incoming>
+        <bpmn:outgoing>flow-to-testing</bpmn:outgoing>
+      </bpmn:userTask>
+      
+      <!-- Testing -->
+      <bpmn:userTask id="testing" name="Testing" 
+                     flowable:candidateGroups="qa-team"
+                     flowable:dueDate="${now().plusDays(2)}">
+        <bpmn:incoming>flow-to-testing</bpmn:incoming>
+        <bpmn:outgoing>flow-to-end-execution</bpmn:outgoing>
+      </bpmn:userTask>
+      
+      <bpmn:endEvent id="end-execution" name="End Execution">
+        <bpmn:incoming>flow-to-end-execution</bpmn:incoming>
+      </bpmn:endEvent>
+      
+      <!-- Execution Flows -->
+      <bpmn:sequenceFlow id="flow-to-sprint-planning" sourceRef="start-execution" targetRef="sprint-planning"/>
+      <bpmn:sequenceFlow id="flow-to-development" sourceRef="sprint-planning" targetRef="development-task"/>
+      <bpmn:sequenceFlow id="flow-to-code-review" sourceRef="development-task" targetRef="code-review"/>
+      <bpmn:sequenceFlow id="flow-to-testing" sourceRef="code-review" targetRef="testing"/>
+      <bpmn:sequenceFlow id="flow-to-end-execution" sourceRef="testing" targetRef="end-execution"/>
+    </bpmn:subProcess>
+    
+    <!-- Project Monitoring -->
+    <bpmn:serviceTask id="monitor-project" name="Monitor Project Progress" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.MonitorProjectDelegate">
+      <bpmn:incoming>flow-to-monitoring</bpmn:incoming>
+      <bpmn:outgoing>flow-to-status-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Project Status Gateway -->
+    <bpmn:exclusiveGateway id="project-status-gateway" name="Project Status?">
+      <bpmn:incoming>flow-to-status-gateway</bpmn:incoming>
+      <bpmn:outgoing>flow-to-completion</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-issue-resolution</bpmn:outgoing>
+      <bpmn:outgoing>flow-back-to-execution</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Issue Resolution -->
+    <bpmn:userTask id="resolve-issues" name="Resolve Project Issues" 
+                   flowable:assignee="${projectManager}"
+                   flowable:dueDate="${now().plusDays(1)}">
+      <bpmn:incoming>flow-to-issue-resolution</bpmn:incoming>
+      <bpmn:outgoing>flow-back-to-monitoring</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Project Completion -->
+    <bpmn:serviceTask id="complete-project" name="Complete Project" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.CompleteProjectDelegate">
+      <bpmn:incoming>flow-to-completion</bpmn:incoming>
+      <bpmn:outgoing>flow-to-closure</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Project Closure -->
+    <bpmn:userTask id="project-closure" name="Project Closure Activities" 
+                   flowable:assignee="${projectManager}"
+                   flowable:dueDate="${now().plusDays(3)}">
+      <bpmn:incoming>flow-to-closure</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- SLA Monitoring -->
+    <bpmn:boundaryEvent id="project-sla-timer" name="Project SLA Timer" attachedToRef="project-execution">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>${projectSlaHours}H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-project-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <!-- Project Escalation -->
+    <bpmn:serviceTask id="escalate-project" name="Escalate Project Issues" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.EscalateProjectDelegate">
+      <bpmn:incoming>flow-to-project-escalation</bpmn:incoming>
+      <bpmn:outgoing>flow-from-project-escalation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Event -->
+    <bpmn:endEvent id="end-project" name="Project Completed">
+      <bpmn:incoming>flow-to-end</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow-to-project-setup" sourceRef="start-project" targetRef="setup-project"/>
+    <bpmn:sequenceFlow id="flow-to-team-assignment" sourceRef="setup-project" targetRef="assign-team"/>
+    <bpmn:sequenceFlow id="flow-to-planning" sourceRef="assign-team" targetRef="project-planning"/>
+    <bpmn:sequenceFlow id="flow-to-execution" sourceRef="project-planning" targetRef="project-execution"/>
+    <bpmn:sequenceFlow id="flow-to-monitoring" sourceRef="project-execution" targetRef="monitor-project"/>
+    <bpmn:sequenceFlow id="flow-to-status-gateway" sourceRef="monitor-project" targetRef="project-status-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-completion" sourceRef="project-status-gateway" targetRef="complete-project">
+      <bpmn:conditionExpression>${projectStatus == 'Completed'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-issue-resolution" sourceRef="project-status-gateway" targetRef="resolve-issues">
+      <bpmn:conditionExpression>${projectStatus == 'Issues'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-back-to-execution" sourceRef="project-status-gateway" targetRef="project-execution">
+      <bpmn:conditionExpression>${projectStatus == 'InProgress'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-back-to-monitoring" sourceRef="resolve-issues" targetRef="monitor-project"/>
+    <bpmn:sequenceFlow id="flow-to-closure" sourceRef="complete-project" targetRef="project-closure"/>
+    <bpmn:sequenceFlow id="flow-to-project-escalation" sourceRef="project-sla-timer" targetRef="escalate-project"/>
+    <bpmn:sequenceFlow id="flow-from-project-escalation" sourceRef="escalate-project" targetRef="complete-project"/>
+    <bpmn:sequenceFlow id="flow-to-end" sourceRef="project-closure" targetRef="end-project"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>
