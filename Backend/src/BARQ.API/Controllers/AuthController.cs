@@ -37,6 +37,27 @@ public class AuthController : ControllerBase
         {
             var command = new RegisterUserCommand(request);
             var result = await _mediator.Send(command);
+            
+            if (!result.Success)
+            {
+                if (result.Message?.Contains("already registered") == true || result.Message?.Contains("already exists") == true || result.Message?.Contains("conflict") == true)
+                {
+                    return Conflict(new ApiResponse<UserRegistrationResponse>
+                    {
+                        Success = false,
+                        Data = result,
+                        Message = result.Message
+                    });
+                }
+                
+                return BadRequest(new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
             return Created($"/api/v1/users/{result.UserId}", new ApiResponse<UserRegistrationResponse>
             {
                 Success = result.Success,
@@ -59,7 +80,20 @@ public class AuthController : ControllerBase
     {
         try
         {
+            Console.WriteLine($">>> AuthController.Login called with email: {command?.Request?.Email}");
             var result = await _mediator.Send(command);
+            Console.WriteLine($">>> AuthController.Login result: Success={result?.Success}, AccessToken length={result?.AccessToken?.Length ?? 0}");
+            
+            if (!result.Success)
+            {
+                return Unauthorized(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message ?? "Authentication failed"
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,
@@ -69,6 +103,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($">>> AuthController.Login exception: {ex.Message}");
             return BadRequest(new ApiResponse<AuthenticationResponse>
             {
                 Success = false,
@@ -100,12 +135,23 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("refresh-token")]
+    [HttpPost("refresh")]
     public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         try
         {
             var result = await _authenticationService.RefreshTokenAsync(request.RefreshToken);
+            
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message ?? "Token refresh failed"
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,

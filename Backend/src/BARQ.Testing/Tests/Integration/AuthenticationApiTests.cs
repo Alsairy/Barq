@@ -1,4 +1,6 @@
 using BARQ.Testing.Framework;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using FluentAssertions;
 using System.Net;
 using Xunit;
@@ -31,10 +33,11 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var authResponse = await _factory.DeserializeResponseAsync<AuthenticationResponse>(response);
-        authResponse.Should().NotBeNull();
-        authResponse!.AccessToken.Should().NotBeNullOrEmpty();
-        authResponse.Success.Should().BeTrue();
+        var apiResponse = await _factory.DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        apiResponse.Should().NotBeNull();
+        apiResponse!.Data.Should().NotBeNull();
+        apiResponse.Data!.AccessToken.Should().NotBeNullOrEmpty();
+        apiResponse.Data.Success.Should().BeTrue();
     }
 
     [Fact]

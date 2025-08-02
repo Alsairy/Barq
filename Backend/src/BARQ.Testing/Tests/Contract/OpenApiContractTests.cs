@@ -1,4 +1,5 @@
 using BARQ.Testing.Framework;
+using BARQ.Core.Models.Responses;
 using FluentAssertions;
 using Microsoft.OpenApi.Models;
 using Xunit;

@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
 using BARQ.Core.Services;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -119,8 +121,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var response = await PostJsonAsync("/api/v1/auth/login", loginCommand);
         
         response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        var apiResponse = await DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
 }
 
@@ -145,7 +147,7 @@ public class TestDataSeeder : ITestDataSeeder
             return;
         }
 
-        var acmeOrgId = Guid.NewGuid();
+        var acmeOrgId = new Guid("12345678-1234-1234-1234-123456789012"); // Fixed GUID for consistent tenant context
         var betaOrgId = Guid.NewGuid();
         var acmeUserId = Guid.NewGuid();
         var betaUserId = Guid.NewGuid();
@@ -238,10 +240,11 @@ public class TestTenantProvider : ITenantProvider
     private Guid _tenantId;
     private string _tenantName = "Test Tenant";
     private Guid _currentUserId;
+    private static readonly Guid AcmeOrgId = new Guid("12345678-1234-1234-1234-123456789012");
 
     public TestTenantProvider()
     {
-        _tenantId = Guid.NewGuid();
+        _tenantId = AcmeOrgId; // Use the same tenant ID as the seeded test user
         _currentUserId = Guid.NewGuid();
     }
 
@@ -306,13 +309,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }
