@@ -12,6 +12,7 @@ using FluentValidation;
 using AutoMapper;
 using BARQ.Infrastructure.Data;
 using BARQ.Infrastructure.MultiTenancy;
+using BARQ.Infrastructure.BPM;
 using BARQ.Infrastructure.Repositories;
 using BARQ.Core.Repositories;
 using BARQ.Core.Services;
@@ -161,8 +162,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IAIOrchestrationService, AIOrchestrationService>();
-builder.Services.AddScoped<IWorkflowService, WorkflowService>();
-builder.Services.AddScoped<IWorkflowEngine, WorkflowEngine>();
+
+builder.Services.AddFlowableBpmServices(builder.Configuration);
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
