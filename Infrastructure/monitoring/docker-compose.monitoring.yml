@@ -53,13 +53,16 @@ services:
     networks:
       - barq-monitoring
 
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: barq-postgres-exporter
+  sqlserver-exporter:
+    image: awaragi/prometheus-mssql-exporter:latest
+    container_name: barq-sqlserver-exporter
     ports:
       - "9187:9187"
     environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER:-barq_user}:${DB_PASSWORD:-changeme}@barq-database:5432/BarqDB?sslmode=disable
+      - SERVER=${DB_HOST:-barq-database}
+      - USERNAME=${DB_USER:-barq_user}
+      - PASSWORD=${DB_PASSWORD:-changeme}
+      - DATABASE=${DB_NAME:-BarqDB}
     networks:
       - barq-monitoring
     depends_on:

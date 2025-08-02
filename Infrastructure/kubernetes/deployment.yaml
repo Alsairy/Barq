@@ -193,32 +193,36 @@ spec:
       serviceAccountName: barq-database
       automountServiceAccountToken: false
       containers:
-      - name: postgres
-        image: postgres:15-alpine@sha256:placeholder
+      - name: sqlserver
+        image: mcr.microsoft.com/mssql/server:2022-latest
         ports:
-        - containerPort: 5432
+        - containerPort: 1433
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 65534
-          runAsGroup: 65534
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
           capabilities:
             drop:
             - ALL
+            add:
+            - SETUID
+            - SETGID
           seccompProfile:
             type: RuntimeDefault
         env:
-        - name: POSTGRES_DB
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: barq-secrets
+              key: sa-password
+        - name: MSSQL_DB
           value: "BarqDB"
-        - name: POSTGRES_USER
-          value: "barq_user"
         volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        - name: postgres-config
-          mountPath: /etc/postgresql/postgresql.conf
-          subPath: database.conf
+        - name: sqlserver-storage
+          mountPath: /var/opt/mssql
         - name: tmp
           mountPath: /tmp
         - name: database-secrets
@@ -234,30 +238,35 @@ spec:
         livenessProbe:
           exec:
             command:
-            - pg_isready
+            - /opt/mssql-tools/bin/sqlcmd
+            - -S
+            - localhost
             - -U
-            - barq_user
-            - -d
-            - BarqDB
+            - sa
+            - -P
+            - $(SA_PASSWORD)
+            - -Q
+            - "SELECT 1"
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           exec:
             command:
-            - pg_isready
+            - /opt/mssql-tools/bin/sqlcmd
+            - -S
+            - localhost
             - -U
-            - barq_user
-            - -d
-            - BarqDB
+            - sa
+            - -P
+            - $(SA_PASSWORD)
+            - -Q
+            - "SELECT 1"
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
-      - name: postgres-storage
+      - name: sqlserver-storage
         persistentVolumeClaim:
           claimName: barq-database-pvc
-      - name: postgres-config
-        configMap:
-          name: barq-config
       - name: tmp
         emptyDir: {}
       - name: database-secrets

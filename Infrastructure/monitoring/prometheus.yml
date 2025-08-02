@@ -114,9 +114,9 @@ scrape_configs:
       - action: labelmap
         regex: __meta_kubernetes_node_label_(.+)
 
-  - job_name: 'postgres-exporter'
+  - job_name: 'sqlserver-exporter'
     static_configs:
-      - targets: ['postgres-exporter:9187']
+      - targets: ['sqlserver-exporter:9187']
     scrape_interval: 30s
 
   - job_name: 'redis-exporter'
