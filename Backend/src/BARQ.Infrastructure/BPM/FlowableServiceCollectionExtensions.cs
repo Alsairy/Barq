@@ -30,6 +30,7 @@ namespace BARQ.Infrastructure.BPM
             services.AddScoped<ISLAConfigurationService, SLAConfigurationService>();
             services.AddScoped<IEscalationService, EscalationService>();
             services.AddScoped<IDelegationService, DelegationService>();
+            services.AddScoped<IBpmnMigrationService, BpmnMigrationService>();
             
             return services;
         }

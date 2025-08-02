@@ -33,7 +33,7 @@ public class WorkflowTemplate : TenantEntity
     public string Version { get; set; } = "1.0";
 
     /// <summary>
-    /// Workflow definition as JSON
+    /// Workflow definition as BPMN 2.0 XML (migrated from JSON)
     /// </summary>
     public string WorkflowDefinition { get; set; } = string.Empty;
 
