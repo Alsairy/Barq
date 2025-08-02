@@ -20,7 +20,13 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
     public ApiTestFramework()
     {
-        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", "Host=localhost;Database=barq_test;Username=postgres;Password=postgres");
+        const string testConn =
+            "Host=localhost;Port=5432;Database=barq_test;Username=postgres;Password=postgres";
+
+        Environment.SetEnvironmentVariable(
+            "ConnectionStrings__DefaultConnection", testConn);
+        Console.WriteLine($">> BARQ‑TEST‑CONN={testConn}");
+        
         Environment.SetEnvironmentVariable("Jwt__Secret", "test-jwt-secret-key-that-is-at-least-32-characters-long-for-security");
         Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
         Environment.SetEnvironmentVariable("Security__MaxFailedAttempts", "5");
@@ -28,8 +34,6 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         Environment.SetEnvironmentVariable("DatabasePerformance__CpuUtilizationScore", "90");
         Environment.SetEnvironmentVariable("DatabasePerformance__MemoryUtilizationScore", "85");
         Environment.SetEnvironmentVariable("DatabasePerformance__DbLatencyScore", "80");
-        
-        Console.WriteLine(">> EffectiveConnStr=" + Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection"));
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -39,13 +43,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         
         builder.ConfigureServices(services =>
         {
-            foreach (var s in services
-                         .Where(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>)
-                                  || d.ServiceType == typeof(BarqDbContext))
-                         .ToList())
-            {
-                services.Remove(s);
-            }
+            services.RemoveAll(typeof(DbContextOptions<BarqDbContext>));
+            services.RemoveAll(typeof(BarqDbContext));
 
             var dbName = Guid.NewGuid().ToString();
             services.AddDbContext<BarqDbContext>(options =>
