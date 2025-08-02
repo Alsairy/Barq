@@ -35,6 +35,8 @@ namespace BARQ.Infrastructure.BPM
             services.AddScoped<IEscalationService, EscalationService>();
             services.AddScoped<IDelegationService, DelegationService>();
             services.AddScoped<IBpmnMigrationService, BpmnMigrationService>();
+            services.AddScoped<IAIRequestService, BARQ.Application.Services.AIRequests.AIRequestService>();
+            services.AddScoped<IQualityAssuranceService, BARQ.Application.Services.QualityAssurance.QualityAssuranceService>();
             
             return services;
         }

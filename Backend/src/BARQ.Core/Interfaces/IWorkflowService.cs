@@ -123,7 +123,7 @@ public interface IWorkflowService
     /// <param name="notificationType">Type of notification</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Notification result</returns>
-    Task<bool> SendWorkflowNotificationAsync(Guid instanceId, WorkflowNotificationType notificationType, CancellationToken cancellationToken = default);
+    Task<bool> SendWorkflowNotificationAsync(Guid instanceId, BARQ.Core.Enums.WorkflowNotificationType notificationType, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates a new workflow.
@@ -367,56 +367,5 @@ public class WorkflowHistoryEntry
     /// Additional details
     /// </summary>
     public string? Details { get; set; }
-}
-
-/// <summary>
-/// Workflow notification type
-/// </summary>
-public enum WorkflowNotificationType
-{
-    /// <summary>
-    /// Workflow started notification
-    /// </summary>
-    WorkflowStarted = 0,
-
-    /// <summary>
-    /// Approval required notification
-    /// </summary>
-    ApprovalRequired = 1,
-
-    /// <summary>
-    /// Workflow approved notification
-    /// </summary>
-    WorkflowApproved = 2,
-
-    /// <summary>
-    /// Workflow rejected notification
-    /// </summary>
-    WorkflowRejected = 3,
-
-    /// <summary>
-    /// Changes requested notification
-    /// </summary>
-    ChangesRequested = 4,
-
-    /// <summary>
-    /// Workflow completed notification
-    /// </summary>
-    WorkflowCompleted = 5,
-
-    /// <summary>
-    /// SLA breach warning
-    /// </summary>
-    SLAWarning = 6,
-
-    /// <summary>
-    /// Workflow escalated notification
-    /// </summary>
-    WorkflowEscalated = 7,
-
-    /// <summary>
-    /// Workflow cancelled notification
-    /// </summary>
-    WorkflowCancelled = 8
 }
 

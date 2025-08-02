@@ -668,7 +668,7 @@ public class WorkflowService : IWorkflowService
         }
     }
 
-    public async Task<bool> SendWorkflowNotificationAsync(Guid workflowInstanceId, WorkflowNotificationType notificationType, CancellationToken cancellationToken = default)
+    public async Task<bool> SendWorkflowNotificationAsync(Guid workflowInstanceId, BARQ.Core.Enums.WorkflowNotificationType notificationType, CancellationToken cancellationToken = default)
     {
         try
         {

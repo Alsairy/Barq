@@ -236,3 +236,127 @@ public enum WorkflowStatus
     Completed = 11
 }
 
+/// <summary>
+/// Workflow notification type enumeration
+/// </summary>
+public enum WorkflowNotificationType
+{
+    Started = 0,
+    Approved = 1,
+    Rejected = 2,
+    Completed = 3,
+    Escalated = 4,
+    Delegated = 5,
+    SLABreach = 6,
+    QualityIssue = 7
+}
+
+/// <summary>
+/// AI Request type enumeration
+/// </summary>
+public enum AIRequestType
+{
+    DocumentGeneration = 0,
+    DataAnalysis = 1,
+    CodeGeneration = 2,
+    BusinessAnalysis = 3,
+    QualityAssurance = 4,
+    Testing = 5,
+    Deployment = 6,
+    Other = 7
+}
+
+/// <summary>
+/// AI Request priority enumeration
+/// </summary>
+public enum AIRequestPriority
+{
+    Low = 0,
+    Normal = 1,
+    High = 2,
+    Critical = 3,
+    Emergency = 4
+}
+
+/// <summary>
+/// AI Request status enumeration
+/// </summary>
+public enum AIRequestStatus
+{
+    Draft = 0,
+    Submitted = 1,
+    UnderReview = 2,
+    Approved = 3,
+    InProgress = 4,
+    QualityReview = 5,
+    Completed = 6,
+    Rejected = 7,
+    Cancelled = 8,
+    RequiresChanges = 9
+}
+
+/// <summary>
+/// Approval level enumeration
+/// </summary>
+public enum ApprovalLevel
+{
+    L1_Supervisor = 1,
+    L2_Manager = 2,
+    L3_Director = 3,
+    L4_Executive = 4,
+    L5_CLevel = 5
+}
+
+/// <summary>
+/// Approval type enumeration
+/// </summary>
+public enum ApprovalType
+{
+    Business = 0,
+    Technical = 1,
+    Security = 2,
+    Compliance = 3,
+    Quality = 4,
+    Budget = 5
+}
+
+/// <summary>
+/// Approval status enumeration
+/// </summary>
+public enum ApprovalStatus
+{
+    Pending = 0,
+    Approved = 1,
+    Rejected = 2,
+    RequiresChanges = 3,
+    Delegated = 4,
+    Escalated = 5,
+    Expired = 6
+}
+
+/// <summary>
+/// Quality assessment type enumeration
+/// </summary>
+public enum QualityAssessmentType
+{
+    Automated = 0,
+    Manual = 1,
+    Peer = 2,
+    Expert = 3,
+    Compliance = 4
+}
+
+/// <summary>
+/// Quality assessment status enumeration
+/// </summary>
+public enum QualityAssessmentStatus
+{
+    Pending = 0,
+    InProgress = 1,
+    Completed = 2,
+    Failed = 3,
+    RequiresReview = 4,
+    Approved = 5,
+    Rejected = 6
+}
+
