@@ -27,6 +27,7 @@ spec:
       containers:
       - name: barq-backend
         image: ${BACKEND_IMAGE:-barq/backend:latest}@sha256:placeholder
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
           name: http
@@ -116,6 +117,7 @@ spec:
       containers:
       - name: barq-frontend
         image: ${FRONTEND_IMAGE:-barq/frontend:latest}@sha256:placeholder
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: http
@@ -194,7 +196,8 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: sqlserver
-        image: mcr.microsoft.com/mssql/server:2022-latest
+        image: mcr.microsoft.com/mssql/server:2022-latest@sha256:7c29dfbac885ad7519e219c7fe4aee0e67283e21a10e9c252d13b0fbde1866f8
+        imagePullPolicy: Always
         ports:
         - containerPort: 1433
         securityContext:
@@ -213,11 +216,6 @@ spec:
         env:
         - name: ACCEPT_EULA
           value: "Y"
-        - name: SA_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: barq-secrets
-              key: sa-password
         - name: MSSQL_DB
           value: "BarqDB"
         volumeMounts:
@@ -227,6 +225,9 @@ spec:
           mountPath: /tmp
         - name: database-secrets
           mountPath: /etc/secrets
+          readOnly: true
+        - name: sa-password-file
+          mountPath: /etc/sa-password
           readOnly: true
         resources:
           requests:
@@ -272,6 +273,12 @@ spec:
       - name: database-secrets
         secret:
           secretName: barq-secrets
+      - name: sa-password-file
+        secret:
+          secretName: barq-secrets
+          items:
+          - key: sa-password
+            path: sa-password
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -298,7 +305,8 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis:7-alpine@sha256:placeholder
+        image: redis:7-alpine@sha256:REDIS_DIGEST_PLACEHOLDER
+        imagePullPolicy: Always
         ports:
         - containerPort: 6379
         securityContext:
