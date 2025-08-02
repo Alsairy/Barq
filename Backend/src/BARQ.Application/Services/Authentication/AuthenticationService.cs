@@ -376,6 +376,8 @@ public class AuthenticationService : IAuthenticationService
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
+            Issuer = _configuration["Jwt:Issuer"] ?? "TestIssuer",
+            Audience = _configuration["Jwt:Audience"] ?? "TestAudience",
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
@@ -406,6 +408,8 @@ public class AuthenticationService : IAuthenticationService
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(5), // Short-lived MFA token
+            Issuer = _configuration["Jwt:Issuer"] ?? "TestIssuer",
+            Audience = _configuration["Jwt:Audience"] ?? "TestAudience",
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
