@@ -8,6 +8,10 @@ public class NoRootUserGuardTests
     [Fact]
     public void DefaultConnection_ShouldNotUseRoot()
     {
+        const string testConn = "Host=localhost;Database=barq_test;Username=postgres;Password=postgres";
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", testConn);
+        Console.WriteLine($">>> BARQ-TEST-CONN={testConn}");
+        
         var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
         var cs =
             cfg.GetConnectionString("DefaultConnection") ??

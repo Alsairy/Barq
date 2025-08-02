@@ -53,6 +53,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
+            
+            services.AddLogging(b => b
+                .AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Information)
+                .AddConsole());
 
             services.RemoveAll<ITenantProvider>();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
