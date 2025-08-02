@@ -14,7 +14,7 @@ namespace BARQ.Infrastructure.BPM
     {
         /// <summary>
         /// </summary>
-        Task<SLAConfiguration> GetSLAConfigurationAsync(string requestType, Priority priority);
+        Task<SLAConfiguration> GetSLAConfigurationAsync(string requestType, WorkflowPriority priority);
         
         /// <summary>
         /// </summary>
@@ -26,7 +26,7 @@ namespace BARQ.Infrastructure.BPM
         
         /// <summary>
         /// </summary>
-        Task<DateTime> CalculateSLATargetDateAsync(DateTime startDate, TimeSpan slaTarget, Priority priority);
+        Task<DateTime> CalculateSLATargetDateAsync(DateTime startDate, TimeSpan slaTarget, WorkflowPriority priority);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ namespace BARQ.Infrastructure.BPM
     {
         private readonly ILogger<SLAConfigurationService> _logger;
         private readonly IConfiguration _configuration;
-        private readonly Dictionary<Priority, TimeSpan> _defaultSLATargets;
+        private readonly Dictionary<WorkflowPriority, TimeSpan> _defaultSLATargets;
 
         /// <summary>
         /// </summary>
@@ -46,16 +46,16 @@ namespace BARQ.Infrastructure.BPM
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             
-            _defaultSLATargets = new Dictionary<Priority, TimeSpan>
+            _defaultSLATargets = new Dictionary<WorkflowPriority, TimeSpan>
             {
-                { Priority.Critical, TimeSpan.FromHours(4) },
-                { Priority.High, TimeSpan.FromHours(24) },
-                { Priority.Medium, TimeSpan.FromDays(3) },
-                { Priority.Low, TimeSpan.FromDays(7) }
+                { WorkflowPriority.Critical, TimeSpan.FromHours(4) },
+                { WorkflowPriority.High, TimeSpan.FromHours(24) },
+                { WorkflowPriority.Medium, TimeSpan.FromDays(3) },
+                { WorkflowPriority.Low, TimeSpan.FromDays(7) }
             };
         }
 
-        public async Task<SLAConfiguration> GetSLAConfigurationAsync(string requestType, Priority priority)
+        public async Task<SLAConfiguration> GetSLAConfigurationAsync(string requestType, WorkflowPriority priority)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace BARQ.Infrastructure.BPM
                     Priority = priority,
                     TargetDuration = slaTarget,
                     EscalationThreshold = TimeSpan.FromMinutes(slaTarget.TotalMinutes * 0.8), // 80% of SLA
-                    BusinessHoursOnly = priority != Priority.Critical,
+                    BusinessHoursOnly = priority != WorkflowPriority.Critical,
                     CreatedAt = DateTime.UtcNow,
                     IsActive = true
                 };
@@ -135,7 +135,7 @@ namespace BARQ.Infrastructure.BPM
             }
         }
 
-        public async Task<DateTime> CalculateSLATargetDateAsync(DateTime startDate, TimeSpan slaTarget, Priority priority)
+        public async Task<DateTime> CalculateSLATargetDateAsync(DateTime startDate, TimeSpan slaTarget, WorkflowPriority priority)
         {
             try
             {
@@ -144,7 +144,7 @@ namespace BARQ.Infrastructure.BPM
 
                 var targetDate = startDate;
 
-                if (priority == Priority.Critical)
+                if (priority == WorkflowPriority.Critical)
                 {
                     targetDate = startDate.Add(slaTarget);
                 }
@@ -207,7 +207,7 @@ namespace BARQ.Infrastructure.BPM
     {
         public string Id { get; set; } = string.Empty;
         public string RequestType { get; set; } = string.Empty;
-        public Priority Priority { get; set; }
+        public WorkflowPriority Priority { get; set; }
         public TimeSpan TargetDuration { get; set; }
         public TimeSpan EscalationThreshold { get; set; }
         public bool BusinessHoursOnly { get; set; }
@@ -223,7 +223,7 @@ namespace BARQ.Infrastructure.BPM
         public string Id { get; set; } = string.Empty;
         public string WorkflowInstanceId { get; set; } = string.Empty;
         public string RequestType { get; set; } = string.Empty;
-        public Priority Priority { get; set; }
+        public WorkflowPriority Priority { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime TargetDate { get; set; }
         public DateTime ViolationDate { get; set; }

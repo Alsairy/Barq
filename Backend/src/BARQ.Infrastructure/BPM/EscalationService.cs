@@ -18,7 +18,7 @@ namespace BARQ.Infrastructure.BPM
         
         /// <summary>
         /// </summary>
-        Task<List<EscalationRule>> GetEscalationRulesAsync(string requestType, Priority priority);
+        Task<List<EscalationRule>> GetEscalationRulesAsync(string requestType, WorkflowPriority priority);
         
         /// <summary>
         /// </summary>
@@ -50,7 +50,7 @@ namespace BARQ.Infrastructure.BPM
         {
             try
             {
-                _logger.LogInformation("Creating escalation rule for request type {RequestType} and priority {Priority}", 
+                _logger.LogInformation("Creating escalation rule for request type {RequestType} and priority {WorkflowPriority}", 
                     rule.RequestType, rule.Priority);
 
                 if (rule.EscalationLevels == null || rule.EscalationLevels.Count == 0)
@@ -81,11 +81,11 @@ namespace BARQ.Infrastructure.BPM
             }
         }
 
-        public async Task<List<EscalationRule>> GetEscalationRulesAsync(string requestType, Priority priority)
+        public async Task<List<EscalationRule>> GetEscalationRulesAsync(string requestType, WorkflowPriority priority)
         {
             try
             {
-                _logger.LogInformation("Getting escalation rules for request type {RequestType} and priority {Priority}", 
+                _logger.LogInformation("Getting escalation rules for request type {RequestType} and priority {WorkflowPriority}", 
                     requestType, priority);
 
                 var rules = new List<EscalationRule>();
@@ -106,7 +106,7 @@ namespace BARQ.Infrastructure.BPM
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting escalation rules for request type {RequestType} and priority {Priority}", 
+                _logger.LogError(ex, "Error getting escalation rules for request type {RequestType} and priority {WorkflowPriority}", 
                     requestType, priority);
                 throw;
             }
@@ -158,26 +158,26 @@ namespace BARQ.Infrastructure.BPM
 
         /// <summary>
         /// </summary>
-        private List<EscalationLevel> GetDefaultEscalationLevels(Priority priority)
+        private List<EscalationLevel> GetDefaultEscalationLevels(WorkflowPriority priority)
         {
             return priority switch
             {
-                Priority.Critical => new List<EscalationLevel>
+                WorkflowPriority.Critical => new List<EscalationLevel>
                 {
                     new EscalationLevel { Level = 1, TriggerAfter = TimeSpan.FromMinutes(30), TargetRole = "Team Lead" },
                     new EscalationLevel { Level = 2, TriggerAfter = TimeSpan.FromHours(1), TargetRole = "Department Manager" },
                     new EscalationLevel { Level = 3, TriggerAfter = TimeSpan.FromHours(2), TargetRole = "Director" }
                 },
-                Priority.High => new List<EscalationLevel>
+                WorkflowPriority.High => new List<EscalationLevel>
                 {
                     new EscalationLevel { Level = 1, TriggerAfter = TimeSpan.FromHours(4), TargetRole = "Team Lead" },
                     new EscalationLevel { Level = 2, TriggerAfter = TimeSpan.FromHours(12), TargetRole = "Department Manager" }
                 },
-                Priority.Medium => new List<EscalationLevel>
+                WorkflowPriority.Medium => new List<EscalationLevel>
                 {
                     new EscalationLevel { Level = 1, TriggerAfter = TimeSpan.FromDays(1), TargetRole = "Team Lead" }
                 },
-                Priority.Low => new List<EscalationLevel>
+                WorkflowPriority.Low => new List<EscalationLevel>
                 {
                     new EscalationLevel { Level = 1, TriggerAfter = TimeSpan.FromDays(3), TargetRole = "Team Lead" }
                 },
@@ -192,7 +192,7 @@ namespace BARQ.Infrastructure.BPM
     {
         public string Id { get; set; } = string.Empty;
         public string RequestType { get; set; } = string.Empty;
-        public Priority Priority { get; set; }
+        public WorkflowPriority Priority { get; set; }
         public List<EscalationLevel> EscalationLevels { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

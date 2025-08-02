@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Extensions.Http;
 using System.Net.Http;
-using Flowable.Sdk;
+using BARQ.Core.Interfaces;
 
 namespace BARQ.Infrastructure.BPM
 {
@@ -25,6 +25,10 @@ namespace BARQ.Infrastructure.BPM
             
             services.AddFlowableHttpClients(configuration);
             services.AddFlowableExternalWorkerHttpClient(configuration);
+            
+            services.AddScoped<IFlowableProcessHttpClient, FlowableProcessHttpClient>();
+            services.AddScoped<IFlowableCaseHttpClient, FlowableCaseHttpClient>();
+            services.AddScoped<IFlowableExternalWorkerHttpClient, FlowableExternalWorkerHttpClient>();
             
             services.AddScoped<IWorkflowService, FlowableWorkflowService>();
             services.AddScoped<ISLAConfigurationService, SLAConfigurationService>();
@@ -48,14 +52,12 @@ namespace BARQ.Infrastructure.BPM
             services.AddHttpClient<IFlowableProcessHttpClient, FlowableProcessHttpClient>(options =>
             {
                 options.BaseAddress = new Uri(httpClientOptions.BaseUrlProcessApi);
-            }).AddPolicyHandler(GetRetryPolicy(httpClientOptions))
-              .AddPolicyHandler(GetCircuitBreakerPolicy(httpClientOptions));
+            });
             
             services.AddHttpClient<IFlowableCaseHttpClient, FlowableCaseHttpClient>(options =>
             {
                 options.BaseAddress = new Uri(httpClientOptions.BaseUrlCmmnApi);
-            }).AddPolicyHandler(GetRetryPolicy(httpClientOptions))
-              .AddPolicyHandler(GetCircuitBreakerPolicy(httpClientOptions));
+            });
             
             return services;
         }
@@ -73,33 +75,17 @@ namespace BARQ.Infrastructure.BPM
             services.AddHttpClient<IFlowableExternalWorkerHttpClient, FlowableExternalWorkerHttpClient>(options =>
             {
                 options.BaseAddress = new Uri(httpClientOptions.BaseUrlExternalWorker);
-            }).AddPolicyHandler(GetRetryPolicy(httpClientOptions))
-              .AddPolicyHandler(GetCircuitBreakerPolicy(httpClientOptions));
+            });
             
             return services;
         }
         
-        /// <summary>
-        /// </summary>
-        private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(FlowableHttpClientOptions options)
+        private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
         {
             return HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                .WaitAndRetryAsync(options.MaxRetryAttempts, 
-                    retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
-        }
-        
-        /// <summary>
-        /// </summary>
-        private static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(FlowableHttpClientOptions options)
-        {
-            return HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .Or<HttpRequestException>()
-                .CircuitBreakerAsync(
-                    options.CircuitBreakerThreshold, 
-                    TimeSpan.FromSeconds(options.CircuitBreakerRecoverySeconds));
+                .WaitAndRetryAsync(3, retryAttempt => 
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
         }
     }
 }

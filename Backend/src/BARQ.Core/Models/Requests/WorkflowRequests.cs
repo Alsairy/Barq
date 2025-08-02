@@ -81,6 +81,7 @@ public class CreateWorkflowTemplateRequest
     public string Description { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public WorkflowType WorkflowType { get; set; }
+    public string Definition { get; set; } = string.Empty;
     public List<WorkflowStepTemplateRequest> Steps { get; set; } = new();
     public Dictionary<string, object> DefaultData { get; set; } = new();
     public int SlaHours { get; set; } = 24;

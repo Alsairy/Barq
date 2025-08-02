@@ -86,9 +86,9 @@ namespace BARQ.Infrastructure.BPM
         {
             return workflowType switch
             {
-                WorkflowType.AIRequest => GetAIRequestBpmnSample(),
-                WorkflowType.Approval => GetApprovalBpmnSample(),
-                WorkflowType.ProjectManagement => GetProjectManagementBpmnSample(),
+                WorkflowType.AITaskApproval => GetAIRequestBpmnSample(),
+                WorkflowType.BRDApproval => GetApprovalBpmnSample(),
+                WorkflowType.ProjectApproval => GetProjectManagementBpmnSample(),
                 _ => GetGenericBpmnSample()
             };
         }
