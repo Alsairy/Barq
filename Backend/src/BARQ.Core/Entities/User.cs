@@ -140,6 +140,10 @@ public class User : TenantEntity
     public string? Language { get; set; } = "en";
 
     /// <summary>
+    /// </summary>
+    public Guid? OrganizationId { get; set; }
+
+    /// <summary>
     /// Email verification token
     /// </summary>
     [MaxLength(500)]

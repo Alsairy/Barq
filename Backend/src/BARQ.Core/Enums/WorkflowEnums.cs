@@ -181,6 +181,11 @@ public enum WorkflowStatus
     InProgress = 1,
 
     /// <summary>
+    /// Workflow is running (alias for InProgress)
+    /// </summary>
+    Running = 1,
+
+    /// <summary>
     /// Workflow is waiting for approval
     /// </summary>
     WaitingForApproval = 2,

@@ -81,8 +81,8 @@ namespace BARQ.Infrastructure.BPM
                 {
                     Id = Guid.NewGuid(),
                     AIRequestId = Guid.Parse(delegation.Id),
-                    ApproverId = delegation.DelegateId,
-                    DelegatedFrom = delegation.DelegatorId,
+                    ApproverId = Guid.Parse(delegation.DelegateId),
+                    DelegatedFromId = Guid.Parse(delegation.DelegatorId),
                     DelegatedAt = DateTime.UtcNow,
                     DelegationReason = delegation.Reason,
                     Status = ApprovalStatus.Pending,
@@ -109,15 +109,15 @@ namespace BARQ.Infrastructure.BPM
                 _logger.LogInformation("Getting active delegations for user {UserId}", userId);
 
                 var approvals = await _approvalRepository.FindAsync(a => 
-                    a.DelegatedFrom == userId && 
+                    a.DelegatedFromId.ToString() == userId && 
                     a.Status == ApprovalStatus.Pending &&
                     a.DelegatedAt.HasValue);
 
                 var delegations = approvals.Select(a => new Delegation
                 {
                     Id = a.Id.ToString(),
-                    DelegatorId = a.DelegatedFrom ?? string.Empty,
-                    DelegateId = a.ApproverId,
+                    DelegatorId = a.DelegatedFromId?.ToString() ?? string.Empty,
+                    DelegateId = a.ApproverId.ToString(),
                     DelegationType = DelegationType.ApprovalAuthority,
                     Scope = "AI Request Approval",
                     StartDate = a.DelegatedAt ?? DateTime.UtcNow,
@@ -125,7 +125,7 @@ namespace BARQ.Infrastructure.BPM
                     Status = DelegationStatus.Active,
                     Reason = a.DelegationReason ?? string.Empty,
                     CreatedAt = a.CreatedAt,
-                    CreatedBy = a.DelegatedFrom ?? string.Empty
+                    CreatedBy = a.DelegatedFromId?.ToString() ?? string.Empty
                 }).ToList();
 
                 return delegations;
@@ -223,18 +223,18 @@ namespace BARQ.Infrastructure.BPM
 
 
                 var userApprovals = await _approvalRepository.FindAsync(a => 
-                    a.ApproverId == userId || a.DelegatedFrom == userId);
+                    a.ApproverId.ToString() == userId || a.DelegatedFromId.ToString() == userId);
 
                 var chains = new List<DelegationChain>();
                 
                 var delegationChain = new DelegationChain
                 {
                     UserId = userId,
-                    DelegationPath = userApprovals.Where(a => a.DelegatedFrom != null)
-                                                 .Select(a => a.DelegatedFrom!)
+                    DelegationPath = userApprovals.Where(a => a.DelegatedFromId != null)
+                                                 .Select(a => a.DelegatedFromId!.ToString())
                                                  .Distinct()
                                                  .ToList(),
-                    ChainLength = userApprovals.Count(a => a.DelegatedFrom != null),
+                    ChainLength = userApprovals.Count(a => a.DelegatedFromId != null),
                     HasCycle = false,
                     EffectiveAuthority = "Approval Authority"
                 };

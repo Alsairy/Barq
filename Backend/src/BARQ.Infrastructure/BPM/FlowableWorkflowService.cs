@@ -6,6 +6,7 @@ using BARQ.Core.Entities;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
+using BARQ.Core.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Linq;
@@ -19,6 +20,9 @@ namespace BARQ.Infrastructure.BPM
         private readonly IFlowableProcessHttpClient _processClient;
         private readonly IFlowableCaseHttpClient _caseClient;
         private readonly IFlowableExternalWorkerHttpClient _externalWorkerClient;
+        private readonly IRepository<WorkflowInstance> _workflowInstanceRepository;
+        private readonly IRepository<WorkflowTemplate> _workflowTemplateRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<FlowableWorkflowService> _logger;
         private readonly FlowableHttpClientOptions _options;
 
@@ -28,12 +32,18 @@ namespace BARQ.Infrastructure.BPM
             IFlowableProcessHttpClient processClient,
             IFlowableCaseHttpClient caseClient,
             IFlowableExternalWorkerHttpClient externalWorkerClient,
+            IRepository<WorkflowInstance> workflowInstanceRepository,
+            IRepository<WorkflowTemplate> workflowTemplateRepository,
+            IUnitOfWork unitOfWork,
             IOptions<FlowableHttpClientOptions> options,
             ILogger<FlowableWorkflowService> logger)
         {
             _processClient = processClient ?? throw new ArgumentNullException(nameof(processClient));
             _caseClient = caseClient ?? throw new ArgumentNullException(nameof(caseClient));
             _externalWorkerClient = externalWorkerClient ?? throw new ArgumentNullException(nameof(externalWorkerClient));
+            _workflowInstanceRepository = workflowInstanceRepository ?? throw new ArgumentNullException(nameof(workflowInstanceRepository));
+            _workflowTemplateRepository = workflowTemplateRepository ?? throw new ArgumentNullException(nameof(workflowTemplateRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -333,17 +343,54 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 var instance = await GetWorkflowInstanceAsync(instanceId.ToString());
+                var currentStepName = "Workflow Started";
+                var progressPercentage = 0;
+                var totalSteps = 1;
+                var completedSteps = 0;
+                
+                if (instance != null)
+                {
+                    currentStepName = instance.Status switch
+                    {
+                        WorkflowStatus.Pending => "Pending Approval",
+                        WorkflowStatus.InProgress => "In Progress",
+                        WorkflowStatus.WaitingForApproval => "Waiting for Approval",
+                        WorkflowStatus.Approved => "Approved",
+                        WorkflowStatus.Rejected => "Rejected",
+                        WorkflowStatus.Completed => "Completed",
+                        WorkflowStatus.Cancelled => "Cancelled",
+                        WorkflowStatus.Escalated => "Escalated",
+                        _ => "Unknown Status"
+                    };
+                    
+                    progressPercentage = instance.Status switch
+                    {
+                        WorkflowStatus.Pending => 10,
+                        WorkflowStatus.InProgress => 50,
+                        WorkflowStatus.WaitingForApproval => 75,
+                        WorkflowStatus.Approved => 90,
+                        WorkflowStatus.Completed => 100,
+                        WorkflowStatus.Rejected => 0,
+                        WorkflowStatus.Cancelled => 0,
+                        WorkflowStatus.Escalated => 60,
+                        _ => 0
+                    };
+                    
+                    totalSteps = instance.CurrentStepIndex + 1;
+                    completedSteps = instance.Status == WorkflowStatus.Completed ? totalSteps : instance.CurrentStepIndex;
+                }
+                
                 return new WorkflowInstanceStatus
                 {
                     InstanceId = instanceId,
                     Status = instance?.Status ?? WorkflowStatus.Unknown,
-                    CurrentStepIndex = 0,
-                    CurrentStepName = "Mock Step",
-                    ProgressPercentage = 50,
-                    TotalSteps = 3,
-                    CompletedSteps = 1,
-                    CreatedAt = DateTime.UtcNow.AddDays(-1),
-                    LastUpdated = DateTime.UtcNow
+                    CurrentStepIndex = instance?.CurrentStepIndex ?? 0,
+                    CurrentStepName = currentStepName,
+                    ProgressPercentage = progressPercentage,
+                    TotalSteps = totalSteps,
+                    CompletedSteps = completedSteps,
+                    CreatedAt = instance?.CreatedAt ?? DateTime.UtcNow,
+                    LastUpdated = instance?.UpdatedAt ?? DateTime.UtcNow
                 };
             }
             catch (Exception ex)
@@ -532,8 +579,18 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 _logger.LogInformation("Getting workflow analytics");
-                await Task.Delay(100);
-                return new { TotalWorkflows = 0, ActiveWorkflows = 0, CompletedWorkflows = 0 };
+                
+                var totalWorkflows = await _workflowInstanceRepository.CountAsync();
+                var activeWorkflows = await _workflowInstanceRepository.CountAsync(w => 
+                    w.Status == WorkflowStatus.InProgress || w.Status == WorkflowStatus.WaitingForApproval);
+                var completedWorkflows = await _workflowInstanceRepository.CountAsync(w => 
+                    w.Status == WorkflowStatus.Completed || w.Status == WorkflowStatus.Approved);
+                
+                return new { 
+                    TotalWorkflows = totalWorkflows, 
+                    ActiveWorkflows = activeWorkflows, 
+                    CompletedWorkflows = completedWorkflows 
+                };
             }
             catch (Exception ex)
             {
@@ -547,8 +604,10 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 _logger.LogInformation("Getting workflow templates");
-                await Task.Delay(100);
-                return new List<WorkflowTemplate>();
+                
+                var templates = await _workflowTemplateRepository.GetAllAsync();
+                
+                return templates;
             }
             catch (Exception ex)
             {
@@ -562,8 +621,8 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 _logger.LogInformation("Creating workflow template: {Name}", request.Name);
-                await Task.Delay(100);
-                return new WorkflowTemplate
+                
+                var template = new WorkflowTemplate
                 {
                     Id = Guid.NewGuid(),
                     Name = request.Name,
@@ -573,6 +632,13 @@ namespace BARQ.Infrastructure.BPM
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
+                
+                await _workflowTemplateRepository.AddAsync(template);
+                await _unitOfWork.SaveChangesAsync();
+                
+                _logger.LogInformation("Workflow template created with ID: {TemplateId}", template.Id);
+                
+                return template;
             }
             catch (Exception ex)
             {
@@ -586,8 +652,31 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 _logger.LogInformation("Checking SLA breaches");
-                await Task.Delay(100);
-                return new { BreachedWorkflows = 0, WarningWorkflows = 0 };
+                
+                var activeWorkflows = await _workflowInstanceRepository.FindAsync(w => 
+                    w.Status == WorkflowStatus.InProgress || w.Status == WorkflowStatus.WaitingForApproval);
+                
+                var breachedCount = 0;
+                var warningCount = 0;
+                
+                foreach (var workflow in activeWorkflows)
+                {
+                    if (workflow.StartedAt.HasValue)
+                    {
+                        var elapsed = DateTime.UtcNow - workflow.StartedAt.Value;
+                        
+                        if (elapsed.TotalHours > 24)
+                        {
+                            breachedCount++;
+                        }
+                        else if (elapsed.TotalHours > 20)
+                        {
+                            warningCount++;
+                        }
+                    }
+                }
+                
+                return new { BreachedWorkflows = breachedCount, WarningWorkflows = warningCount };
             }
             catch (Exception ex)
             {
@@ -601,8 +690,26 @@ namespace BARQ.Infrastructure.BPM
             try
             {
                 _logger.LogInformation("Getting workflow performance");
-                await Task.Delay(100);
-                return new { AverageCompletionTime = TimeSpan.Zero, TotalProcessed = 0 };
+                
+                var completedWorkflows = await _workflowInstanceRepository.FindAsync(w => 
+                    w.Status == WorkflowStatus.Completed || w.Status == WorkflowStatus.Approved);
+                
+                var totalProcessed = completedWorkflows.Count();
+                
+                var averageCompletionTime = TimeSpan.Zero;
+                if (totalProcessed > 0)
+                {
+                    var completedWithEndTime = completedWorkflows.Where(w => w.CompletedAt.HasValue && w.StartedAt.HasValue);
+                    if (completedWithEndTime.Any())
+                    {
+                        var totalDuration = completedWithEndTime
+                            .Sum(w => (w.CompletedAt!.Value - w.StartedAt!.Value).TotalMilliseconds);
+                        
+                        averageCompletionTime = TimeSpan.FromMilliseconds(totalDuration / completedWithEndTime.Count());
+                    }
+                }
+                
+                return new { AverageCompletionTime = averageCompletionTime, TotalProcessed = totalProcessed };
             }
             catch (Exception ex)
             {

@@ -59,7 +59,12 @@ public enum ProjectStatus
     /// <summary>
     /// Project is archived
     /// </summary>
-    Archived = 5
+    Archived = 5,
+
+    /// <summary>
+    /// Project is in progress
+    /// </summary>
+    InProgress = 6
 }
 
 /// <summary>

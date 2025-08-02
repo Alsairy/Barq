@@ -214,7 +214,7 @@ namespace BARQ.Infrastructure.BPM
                     hierarchy = userHierarchy.Select((u, index) => new OrganizationalLevel
                     {
                         Level = index + 1,
-                        Title = u.Role?.Name ?? "Employee",
+                        Title = u.JobTitle ?? "Employee",
                         Description = $"User: {u.FirstName} {u.LastName}"
                     }).ToList();
                 }

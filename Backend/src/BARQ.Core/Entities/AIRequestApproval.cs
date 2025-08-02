@@ -34,6 +34,9 @@ public class AIRequestApproval : BaseEntity
     public Guid? DelegatedToId { get; set; }
     public virtual User? DelegatedTo { get; set; }
 
+    public Guid? DelegatedFromId { get; set; }
+    public virtual User? DelegatedFrom { get; set; }
+
     public DateTime? DelegatedAt { get; set; }
 
     [MaxLength(500)]

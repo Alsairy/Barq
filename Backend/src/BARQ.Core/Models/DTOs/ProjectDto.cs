@@ -41,9 +41,11 @@ public class ProjectMemberDto
 public class ProjectResourceDto
 {
     public Guid Id { get; set; }
+    public Guid ProjectId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public decimal Cost { get; set; }
+    public int Allocation { get; set; }
     public DateTime AllocatedAt { get; set; }
     public DateTime? DeallocatedAt { get; set; }
     public bool IsActive { get; set; }
@@ -52,9 +54,10 @@ public class ProjectResourceDto
 public class ProjectRiskDto
 {
     public Guid Id { get; set; }
+    public Guid ProjectId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public RiskLevel Level { get; set; }
+    public string RiskLevel { get; set; } = string.Empty;
     public RiskStatus Status { get; set; }
     public decimal Impact { get; set; }
     public decimal Probability { get; set; }
