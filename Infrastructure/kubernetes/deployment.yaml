@@ -202,13 +202,18 @@ spec:
         - containerPort: 1433
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 0
           capabilities:
             drop:
             - ALL
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - SETGID
+            - SETUID
           seccompProfile:
             type: RuntimeDefault
         env:
