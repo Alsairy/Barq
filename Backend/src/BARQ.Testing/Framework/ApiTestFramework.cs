@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
 using BARQ.Core.Services;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -18,6 +21,24 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    public ApiTestFramework()
+    {
+        const string testConn =
+            "Host=localhost;Port=5432;Database=barq_test;Username=postgres;Password=postgres";
+
+        Environment.SetEnvironmentVariable(
+            "ConnectionStrings__DefaultConnection", testConn);
+        Console.WriteLine($">> BARQ‑TEST‑CONN={testConn}");
+        
+        Environment.SetEnvironmentVariable("Jwt__Secret", "test-jwt-secret-key-that-is-at-least-32-characters-long-for-security");
+        Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
+        Environment.SetEnvironmentVariable("Security__MaxFailedAttempts", "5");
+        Environment.SetEnvironmentVariable("Security__LockoutDurationMinutes", "15");
+        Environment.SetEnvironmentVariable("DatabasePerformance__CpuUtilizationScore", "90");
+        Environment.SetEnvironmentVariable("DatabasePerformance__MemoryUtilizationScore", "85");
+        Environment.SetEnvironmentVariable("DatabasePerformance__DbLatencyScore", "80");
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
@@ -25,17 +46,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         
         builder.ConfigureServices(services =>
         {
-            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<BarqDbContext>));
-            if (descriptor != null)
-            {
-                services.Remove(descriptor);
-            }
-
-            var dbContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(BarqDbContext));
-            if (dbContextDescriptor != null)
-            {
-                services.Remove(dbContextDescriptor);
-            }
+            services.RemoveAll(typeof(DbContextOptions<BarqDbContext>));
+            services.RemoveAll(typeof(BarqDbContext));
 
             var dbName = Guid.NewGuid().ToString();
             services.AddDbContext<BarqDbContext>(options =>
@@ -44,6 +56,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
+            
+            services.AddLogging(b => b
+                .AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Information)
+                .AddConsole());
 
             services.RemoveAll<ITenantProvider>();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
@@ -101,12 +117,12 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task<string> GetAuthTokenAsync(string email = "test@acme.com", string password = "TestPassword123!")
     {
-        var loginRequest = new { Request = new { Email = email, Password = password } };
-        var response = await PostJsonAsync("/api/auth/login", loginRequest);
+        var loginCommand = new { Request = new { Email = email, Password = password } };
+        var response = await PostJsonAsync("/api/v1/auth/login", loginCommand);
         
         response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        var apiResponse = await DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
 }
 
@@ -131,7 +147,7 @@ public class TestDataSeeder : ITestDataSeeder
             return;
         }
 
-        var acmeOrgId = Guid.NewGuid();
+        var acmeOrgId = new Guid("12345678-1234-1234-1234-123456789012"); // Fixed GUID for consistent tenant context
         var betaOrgId = Guid.NewGuid();
         var acmeUserId = Guid.NewGuid();
         var betaUserId = Guid.NewGuid();
@@ -224,10 +240,11 @@ public class TestTenantProvider : ITenantProvider
     private Guid _tenantId;
     private string _tenantName = "Test Tenant";
     private Guid _currentUserId;
+    private static readonly Guid AcmeOrgId = new Guid("12345678-1234-1234-1234-123456789012");
 
     public TestTenantProvider()
     {
-        _tenantId = Guid.NewGuid();
+        _tenantId = AcmeOrgId; // Use the same tenant ID as the seeded test user
         _currentUserId = Guid.NewGuid();
     }
 
@@ -292,13 +309,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }

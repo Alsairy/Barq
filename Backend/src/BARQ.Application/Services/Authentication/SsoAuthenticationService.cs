@@ -28,6 +28,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
     private readonly ILogger<SsoAuthenticationService> _logger;
+    private readonly IEncryptionService _encryptionService;
 
     public SsoAuthenticationService(
         IRepository<SsoConfiguration> ssoConfigRepository,
@@ -39,7 +40,8 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         IUnitOfWork unitOfWork,
         IConfiguration configuration,
         ILogger<SsoAuthenticationService> logger,
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IEncryptionService encryptionService)
     {
         _ssoConfigRepository = ssoConfigRepository;
         _userRepository = userRepository;
@@ -51,6 +53,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         _configuration = configuration;
         _logger = logger;
         _httpClient = httpClient;
+        _encryptionService = encryptionService;
     }
 
     public async Task<SamlAuthenticationResponse> InitiateSamlAuthenticationAsync(SamlAuthenticationRequest request, CancellationToken cancellationToken = default)
@@ -552,7 +555,7 @@ public class SsoAuthenticationService : ISsoAuthenticationService
             ssoConfig.SsoUrl = request.SsoUrl;
             ssoConfig.LogoutUrl = request.LogoutUrl;
             ssoConfig.ClientId = request.ClientId;
-            ssoConfig.ClientSecret = request.ClientSecret; // Should be encrypted
+            ssoConfig.ClientSecret = await _encryptionService.EncryptAsync(request.ClientSecret ?? string.Empty);
             ssoConfig.Scopes = request.Scopes;
             ssoConfig.Authority = request.Authority;
             ssoConfig.CallbackUrl = request.CallbackUrl;
@@ -858,12 +861,14 @@ public class SsoAuthenticationService : ISsoAuthenticationService
                 return null;
             }
 
+            var decryptedClientSecret = await _encryptionService.DecryptAsync(ssoConfig.ClientSecret);
+            
             var tokenRequest = new Dictionary<string, string>
             {
                 {"grant_type", "authorization_code"},
                 {"code", code},
                 {"client_id", ssoConfig.ClientId},
-                {"client_secret", ssoConfig.ClientSecret},
+                {"client_secret", decryptedClientSecret},
                 {"redirect_uri", ssoConfig.CallbackUrl ?? ""}
             };
 
@@ -1013,12 +1018,14 @@ public class SsoAuthenticationService : ISsoAuthenticationService
                 return null;
             }
 
+            var decryptedClientSecret = await _encryptionService.DecryptAsync(ssoConfig.ClientSecret);
+            
             var tokenRequest = new Dictionary<string, string>
             {
                 {"grant_type", "authorization_code"},
                 {"code", code},
                 {"client_id", ssoConfig.ClientId},
-                {"client_secret", ssoConfig.ClientSecret},
+                {"client_secret", decryptedClientSecret},
                 {"redirect_uri", ssoConfig.CallbackUrl ?? ""}
             };
 
@@ -1260,12 +1267,11 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
     private async Task ValidateOAuthConfigurationAsync(SsoConfiguration ssoConfig, SsoConfigurationValidationResponse response)
     {
-        await Task.CompletedTask;
-
         if (string.IsNullOrEmpty(ssoConfig.ClientId))
             response.Errors.Add("Client ID is required for OAuth configuration");
 
-        if (string.IsNullOrEmpty(ssoConfig.ClientSecret))
+        var decryptedClientSecret = string.IsNullOrEmpty(ssoConfig.ClientSecret) ? "" : await _encryptionService.DecryptAsync(ssoConfig.ClientSecret);
+        if (string.IsNullOrEmpty(decryptedClientSecret))
             response.Errors.Add("Client Secret is required for OAuth configuration");
 
         if (string.IsNullOrEmpty(ssoConfig.SsoUrl))
@@ -1285,12 +1291,11 @@ public class SsoAuthenticationService : ISsoAuthenticationService
 
     private async Task ValidateOpenIdConnectConfigurationAsync(SsoConfiguration ssoConfig, SsoConfigurationValidationResponse response)
     {
-        await Task.CompletedTask;
-
         if (string.IsNullOrEmpty(ssoConfig.ClientId))
             response.Errors.Add("Client ID is required for OpenID Connect configuration");
 
-        if (string.IsNullOrEmpty(ssoConfig.ClientSecret))
+        var decryptedClientSecret = string.IsNullOrEmpty(ssoConfig.ClientSecret) ? "" : await _encryptionService.DecryptAsync(ssoConfig.ClientSecret);
+        if (string.IsNullOrEmpty(decryptedClientSecret))
             response.Errors.Add("Client Secret is required for OpenID Connect configuration");
 
         if (string.IsNullOrEmpty(ssoConfig.Authority))

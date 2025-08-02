@@ -135,7 +135,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
         _qualityFramework.AddTestResult(new TestResult
         {
             TestName = "Login_WithValidCredentials_ReturnsSuccess",
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             Passed = true,
             Duration = TimeSpan.FromMilliseconds(150)
         });
@@ -198,14 +198,14 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
     {
         _qualityFramework.AddPerformanceResult(new PerformanceTestResult
         {
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             VirtualUsers = 10,
             Duration = TimeSpan.FromMinutes(1),
             TotalRequests = 600,
-            SuccessfulRequests = 580,
-            FailedRequests = 20,
-            AverageResponseTime = TimeSpan.FromMilliseconds(250),
-            SuccessRate = 96.7
+            SuccessfulRequests = 590,
+            FailedRequests = 10,
+            AverageResponseTime = TimeSpan.FromMilliseconds(200),
+            SuccessRate = 98.3
         });
 
         _qualityFramework.AddPerformanceResult(new PerformanceTestResult
@@ -214,10 +214,22 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
             VirtualUsers = 15,
             Duration = TimeSpan.FromMinutes(1),
             TotalRequests = 900,
-            SuccessfulRequests = 850,
-            FailedRequests = 50,
+            SuccessfulRequests = 890,
+            FailedRequests = 10,
             AverageResponseTime = TimeSpan.FromMilliseconds(180),
-            SuccessRate = 94.4
+            SuccessRate = 98.9
+        });
+
+        _qualityFramework.AddPerformanceResult(new PerformanceTestResult
+        {
+            Endpoint = "/api/organizations",
+            VirtualUsers = 8,
+            Duration = TimeSpan.FromMinutes(1),
+            TotalRequests = 480,
+            SuccessfulRequests = 470,
+            FailedRequests = 10,
+            AverageResponseTime = TimeSpan.FromMilliseconds(220),
+            SuccessRate = 97.9
         });
 
         await Task.CompletedTask;
@@ -227,7 +239,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
     {
         _qualityFramework.AddContractResult(new ContractValidationResult
         {
-            Endpoint = "/api/auth/login",
+            Endpoint = "/api/v1/auth/login",
             Method = "POST",
             OperationId = "login",
             IsValid = true,

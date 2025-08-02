@@ -107,7 +107,47 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    options.CustomSchemaIds(type =>
+    {
+        return GenerateUniqueSchemaId(type);
+    });
+    
+    static string GenerateUniqueSchemaId(Type type)
+    {
+        if (type.IsGenericType)
+        {
+            var genericTypeName = type.GetGenericTypeDefinition().Name;
+            genericTypeName = genericTypeName.Contains('`')
+                ? genericTypeName.Substring(0, genericTypeName.IndexOf('`'))
+                : genericTypeName;
+            
+            var genericArgs = string.Join("And", type.GetGenericArguments()
+                .Select(t => GenerateUniqueSchemaId(t)));
+            return $"{genericTypeName}Of{genericArgs}";
+        }
+        
+        if (type.FullName?.Contains('+') == true)
+        {
+            var parts = type.FullName.Split('+');
+            if (parts.Length > 1)
+            {
+                var declaringTypeName = parts[0].Split('.').LastOrDefault()?.Replace("`", "");
+                var nestedTypeName = parts[1].Replace("`", "");
+                return $"{declaringTypeName}_{nestedTypeName}";
+            }
+        }
+        
+        var namespaceParts = type.Namespace?.Split('.') ?? Array.Empty<string>();
+        var relevantNamespace = namespaceParts.Length > 0 ? namespaceParts.Last() : "";
+        var typeName = type.Name.Replace("`", "").Replace("[", "").Replace("]", "");
+        
+        if (relevantNamespace.Contains("DTOs") || relevantNamespace.Contains("Controllers"))
+        {
+            return $"{relevantNamespace}_{typeName}";
+        }
+        
+        return typeName;
+    }
 });
 
 var environment = builder.Environment.EnvironmentName;
@@ -239,9 +279,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "TestIssuer",
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "TestAudience",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
             ClockSkew = TimeSpan.FromMinutes(5),
             RequireExpirationTime = true,
             ValidateActor = false,
@@ -325,7 +365,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseApiMonitoring();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "Testing")
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>

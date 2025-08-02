@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using BARQ.Application.Commands.Authentication;
+using BARQ.Application.Commands.Users;
 using BARQ.Core.Services;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
@@ -9,7 +10,7 @@ using BARQ.Shared.DTOs;
 namespace BARQ.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -29,12 +30,70 @@ public class AuthController : ControllerBase
         _passwordService = passwordService;
     }
 
+    [HttpPost("register")]
+    public async Task<ActionResult<ApiResponse<UserRegistrationResponse>>> Register([FromBody] UserRegistrationRequest request)
+    {
+        try
+        {
+            var command = new RegisterUserCommand(request);
+            var result = await _mediator.Send(command);
+            
+            if (!result.Success)
+            {
+                if (result.Message?.Contains("already registered") == true || result.Message?.Contains("already exists") == true || result.Message?.Contains("conflict") == true)
+                {
+                    return Conflict(new ApiResponse<UserRegistrationResponse>
+                    {
+                        Success = false,
+                        Data = result,
+                        Message = result.Message
+                    });
+                }
+                
+                return BadRequest(new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
+            return Created($"/api/v1/users/{result.UserId}", new ApiResponse<UserRegistrationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<UserRegistrationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> Login([FromBody] LoginCommand command)
     {
         try
         {
+            Console.WriteLine($">>> AuthController.Login called with email: {command?.Request?.Email}");
             var result = await _mediator.Send(command);
+            Console.WriteLine($">>> AuthController.Login result: Success={result?.Success}, AccessToken length={result?.AccessToken?.Length ?? 0}");
+            
+            if (!result.Success)
+            {
+                return Unauthorized(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message ?? "Authentication failed"
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,
@@ -44,6 +103,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($">>> AuthController.Login exception: {ex.Message}");
             return BadRequest(new ApiResponse<AuthenticationResponse>
             {
                 Success = false,
@@ -75,12 +135,23 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("refresh-token")]
+    [HttpPost("refresh")]
     public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         try
         {
             var result = await _authenticationService.RefreshTokenAsync(request.RefreshToken);
+            
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message ?? "Token refresh failed"
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,

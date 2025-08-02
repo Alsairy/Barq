@@ -2,6 +2,8 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Repositories;
+using BARQ.Core.Services;
+using BARQ.Core.Entities;
 
 namespace BARQ.Infrastructure.Repositories;
 
@@ -9,11 +11,13 @@ public class GenericRepository<T> : IRepository<T> where T : class
 {
     protected readonly BarqDbContext _context;
     protected readonly DbSet<T> _dbSet;
+    private readonly ITenantProvider _tenantProvider;
 
-    public GenericRepository(BarqDbContext context)
+    public GenericRepository(BarqDbContext context, ITenantProvider tenantProvider)
     {
         _context = context;
         _dbSet = context.Set<T>();
+        _tenantProvider = tenantProvider;
     }
 
     public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -23,7 +27,15 @@ public class GenericRepository<T> : IRepository<T> where T : class
 
     public virtual async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.ToListAsync(cancellationToken);
+        var query = _dbSet.AsQueryable();
+        
+        if (typeof(TenantEntity).IsAssignableFrom(typeof(T)))
+        {
+            var tenantId = _tenantProvider.GetTenantId();
+            query = query.Where(e => ((TenantEntity)(object)e).TenantId == tenantId);
+        }
+        
+        return await query.ToListAsync(cancellationToken);
     }
 
     public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)

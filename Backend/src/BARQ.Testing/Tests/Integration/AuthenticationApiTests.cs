@@ -1,4 +1,6 @@
 using BARQ.Testing.Framework;
+using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 using FluentAssertions;
 using System.Net;
 using Xunit;
@@ -27,14 +29,15 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             }
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/login", loginRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var authResponse = await _factory.DeserializeResponseAsync<AuthenticationResponse>(response);
-        authResponse.Should().NotBeNull();
-        authResponse!.AccessToken.Should().NotBeNullOrEmpty();
-        authResponse.Success.Should().BeTrue();
+        var apiResponse = await _factory.DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        apiResponse.Should().NotBeNull();
+        apiResponse!.Data.Should().NotBeNull();
+        apiResponse.Data!.AccessToken.Should().NotBeNullOrEmpty();
+        apiResponse.Data.Success.Should().BeTrue();
     }
 
     [Fact]
@@ -49,7 +52,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             }
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/login", loginRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -66,7 +69,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             }
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/login", loginRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/login", loginRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -84,7 +87,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             OrganizationName = "Test Organization"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/register", registerRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
@@ -102,7 +105,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             OrganizationName = "Test Organization"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/register", registerRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
@@ -116,7 +119,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             RefreshToken = "valid-refresh-token"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/refresh", refreshRequest, authToken);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/refresh", refreshRequest, authToken);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
     }
@@ -126,7 +129,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var authToken = await _factory.GetAuthTokenAsync();
         
-        var response = await _factory.PostJsonAsync("/api/auth/logout", new { }, authToken);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/logout", new { }, authToken);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
@@ -139,7 +142,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             Email = "test@acme.com"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/forgot-password", forgotPasswordRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/forgot-password", forgotPasswordRequest);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
@@ -154,7 +157,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             ConfirmPassword = "NewResetPassword123!"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/reset-password", resetPasswordRequest);
+        var response = await _factory.PostJsonAsync("/api/v1/auth/reset-password", resetPasswordRequest);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
     }

@@ -16,6 +16,20 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthenticationR
 
     public async Task<AuthenticationResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        return await _authenticationService.AuthenticateAsync(request.Request);
+        Console.WriteLine($">>> LoginCommandHandler.Handle called with email: {request.Request?.Email}");
+        
+        if (request.Request == null)
+        {
+            Console.WriteLine(">>> LoginCommandHandler.Handle: request.Request is null");
+            return new AuthenticationResponse
+            {
+                Success = false,
+                Message = "Invalid login request"
+            };
+        }
+        
+        var result = await _authenticationService.AuthenticateAsync(request.Request);
+        Console.WriteLine($">>> LoginCommandHandler.Handle result: Success={result.Success}, AccessToken length={result.AccessToken?.Length ?? 0}");
+        return result;
     }
 }
