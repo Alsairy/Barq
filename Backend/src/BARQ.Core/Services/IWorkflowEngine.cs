@@ -1,3 +1,4 @@
+
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
 using BARQ.Core.Models.Responses;
@@ -6,6 +7,7 @@ namespace BARQ.Core.Services;
 
 /// <summary>
 /// </summary>
+[Obsolete("This custom IWorkflowEngine has been replaced by Flowable BPM integration. Use IWorkflowService from BARQ.Core.Interfaces instead.")]
 public interface IWorkflowEngine
 {
     /// <summary>

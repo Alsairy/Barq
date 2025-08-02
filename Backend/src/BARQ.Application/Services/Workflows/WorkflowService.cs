@@ -22,7 +22,7 @@ public class WorkflowService : IWorkflowService
     private readonly IMapper _mapper;
     private readonly ILogger<WorkflowService> _logger;
     private readonly ITenantProvider _tenantProvider;
-    private readonly IWorkflowEngine _workflowEngine;
+    private readonly IWorkflowService _flowableWorkflowService;
 
     public WorkflowService(
         IRepository<WorkflowInstance> workflowInstanceRepository,
@@ -34,7 +34,7 @@ public class WorkflowService : IWorkflowService
         IMapper mapper,
         ILogger<WorkflowService> logger,
         ITenantProvider tenantProvider,
-        IWorkflowEngine workflowEngine)
+        IWorkflowService flowableWorkflowService)
     {
         _workflowInstanceRepository = workflowInstanceRepository;
         _workflowTemplateRepository = workflowTemplateRepository;
@@ -45,7 +45,7 @@ public class WorkflowService : IWorkflowService
         _mapper = mapper;
         _logger = logger;
         _tenantProvider = tenantProvider;
-        _workflowEngine = workflowEngine;
+        _flowableWorkflowService = flowableWorkflowService;
     }
 
     public async Task<WorkflowInstance> CreateWorkflowInstanceAsync(Guid templateId, Guid initiatorId, object? workflowData = null, CancellationToken cancellationToken = default)
@@ -774,7 +774,8 @@ public class WorkflowService : IWorkflowService
             
             if (result.IsSuccess && result.Status == WorkflowStepStatus.Running)
             {
-                return await _workflowEngine.ExecuteWorkflowAsync(request.WorkflowInstanceId);
+                var workflowResult = await _flowableWorkflowService.StartWorkflowAsync(request.WorkflowInstanceId, CancellationToken.None);
+                return workflowResult;
             }
 
             return result;
