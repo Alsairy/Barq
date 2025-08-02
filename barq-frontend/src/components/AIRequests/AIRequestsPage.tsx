@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -16,55 +16,12 @@ import {
   Trash2
 } from 'lucide-react'
 import { AIRequest, AIRequestType, AIRequestPriority, AIRequestStatus, CreateAIRequestRequest } from '@/types/api'
-
-const mockAIRequests: AIRequest[] = [
-  {
-    id: '1',
-    title: 'Content Generation for Marketing Campaign',
-    description: 'Generate marketing content for Q4 product launch',
-    requestType: AIRequestType.TextGeneration,
-    priority: AIRequestPriority.High,
-    status: AIRequestStatus.Approved,
-    requestData: '{"campaign": "Q4 Launch", "target_audience": "Enterprise"}',
-    requesterId: 'user1',
-    assignedToId: 'user2',
-    dueDate: '2024-08-15T00:00:00Z',
-    createdAt: '2024-08-01T10:00:00Z',
-    updatedAt: '2024-08-02T14:30:00Z',
-    workflowInstanceId: 'wf-001'
-  },
-  {
-    id: '2',
-    title: 'Data Analysis Report Generation',
-    description: 'Analyze sales data and generate insights report',
-    requestType: AIRequestType.DataAnalysis,
-    priority: AIRequestPriority.Normal,
-    status: AIRequestStatus.InProgress,
-    requestData: '{"data_source": "sales_db", "period": "Q3_2024"}',
-    requesterId: 'user3',
-    dueDate: '2024-08-20T00:00:00Z',
-    createdAt: '2024-08-01T15:00:00Z',
-    updatedAt: '2024-08-02T16:00:00Z',
-    workflowInstanceId: 'wf-002'
-  },
-  {
-    id: '3',
-    title: 'Code Review Assistant',
-    description: 'AI-powered code review for security vulnerabilities',
-    requestType: AIRequestType.CodeGeneration,
-    priority: AIRequestPriority.Critical,
-    status: AIRequestStatus.UnderReview,
-    requestData: '{"repository": "main-app", "branch": "feature/security-update"}',
-    requesterId: 'user4',
-    dueDate: '2024-08-10T00:00:00Z',
-    createdAt: '2024-08-02T09:00:00Z',
-    updatedAt: '2024-08-02T09:00:00Z',
-    workflowInstanceId: 'wf-003'
-  }
-]
+import { aiRequestApi } from '@/services/api'
 
 export default function AIRequestsPage() {
-  const [requests, setRequests] = useState<AIRequest[]>(mockAIRequests)
+  const [requests, setRequests] = useState<AIRequest[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
@@ -76,6 +33,24 @@ export default function AIRequestsPage() {
     priority: AIRequestPriority.Normal,
     requestData: ''
   })
+
+  useEffect(() => {
+    fetchRequests()
+  }, [])
+
+  const fetchRequests = async () => {
+    try {
+      setIsLoading(true)
+      const response = await aiRequestApi.getRequests()
+      setRequests(response.data || [])
+      setError(null)
+    } catch (err) {
+      console.error('Failed to fetch AI requests:', err)
+      setError('Failed to load AI requests')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredRequests = requests.filter(request => {
     const matchesSearch = request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,25 +90,30 @@ export default function AIRequestsPage() {
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
-  const handleCreateRequest = () => {
-    const request: AIRequest = {
-      id: Date.now().toString(),
-      ...newRequest,
-      status: AIRequestStatus.Draft,
-      requesterId: 'current-user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  const handleCreateRequest = async () => {
+    try {
+      await aiRequestApi.createRequest(newRequest)
+      await fetchRequests()
+      setIsCreateDialogOpen(false)
+      setNewRequest({
+        title: '',
+        description: '',
+        requestType: AIRequestType.TextGeneration,
+        priority: AIRequestPriority.Normal,
+        requestData: ''
+      })
+    } catch (err) {
+      console.error('Failed to create AI request:', err)
+      setError('Failed to create AI request')
     }
-    
-    setRequests([...requests, request])
-    setIsCreateDialogOpen(false)
-    setNewRequest({
-      title: '',
-      description: '',
-      requestType: AIRequestType.TextGeneration,
-      priority: AIRequestPriority.Normal,
-      requestData: ''
-    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
@@ -236,6 +216,12 @@ export default function AIRequestsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
 
       {/* Filters */}
       <Card>

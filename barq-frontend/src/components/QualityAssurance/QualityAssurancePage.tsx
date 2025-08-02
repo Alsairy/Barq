@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,54 +19,12 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { QualityAssessment, QualityAssessmentType, QualityAssessmentStatus, CompleteQualityAssessmentRequest } from '@/types/api'
-
-const mockAssessments: QualityAssessment[] = [
-  {
-    id: '1',
-    aiRequestId: '1',
-    assessorId: 'assessor1',
-    type: QualityAssessmentType.Manual,
-    status: QualityAssessmentStatus.Completed,
-    qualityScore: 92,
-    comments: 'Excellent quality output with minor formatting improvements needed',
-    recommendations: 'Consider standardizing the output format for consistency',
-    completedAt: '2024-08-02T14:30:00Z',
-    qualityCriteria: 'Accuracy, Relevance, Clarity, Completeness',
-    assessmentResults: 'High quality content that meets all requirements',
-    requiresReview: false,
-    createdAt: '2024-08-01T10:00:00Z',
-    updatedAt: '2024-08-02T14:30:00Z'
-  },
-  {
-    id: '2',
-    aiRequestId: '2',
-    assessorId: 'assessor2',
-    type: QualityAssessmentType.Automated,
-    status: QualityAssessmentStatus.InProgress,
-    qualityScore: 0,
-    qualityCriteria: 'Data accuracy, Statistical validity, Visualization quality',
-    assessmentResults: '',
-    requiresReview: true,
-    createdAt: '2024-08-01T15:00:00Z',
-    updatedAt: '2024-08-02T16:00:00Z'
-  },
-  {
-    id: '3',
-    aiRequestId: '3',
-    assessorId: 'assessor3',
-    type: QualityAssessmentType.Expert,
-    status: QualityAssessmentStatus.Pending,
-    qualityScore: 0,
-    qualityCriteria: 'Security compliance, Code quality, Performance impact',
-    assessmentResults: '',
-    requiresReview: false,
-    createdAt: '2024-08-02T09:00:00Z',
-    updatedAt: '2024-08-02T09:00:00Z'
-  }
-]
+import { qualityAssuranceApi } from '@/services/api'
 
 export default function QualityAssurancePage() {
-  const [assessments, setAssessments] = useState<QualityAssessment[]>(mockAssessments)
+  const [assessments, setAssessments] = useState<QualityAssessment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -80,6 +38,24 @@ export default function QualityAssurancePage() {
     requiresReview: false,
     status: QualityAssessmentStatus.Completed
   })
+
+  useEffect(() => {
+    fetchAssessments()
+  }, [])
+
+  const fetchAssessments = async () => {
+    try {
+      setIsLoading(true)
+      const response = await qualityAssuranceApi.getAssessments()
+      setAssessments(response.data || [])
+      setError(null)
+    } catch (err) {
+      console.error('Failed to fetch assessments:', err)
+      setError('Failed to load quality assessments')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredAssessments = assessments.filter(assessment => {
     const matchesSearch = assessment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,27 +99,26 @@ export default function QualityAssurancePage() {
     return 'text-red-600'
   }
 
-  const handleCompleteAssessment = () => {
+  const handleCompleteAssessment = async () => {
     if (!selectedAssessment) return
     
-    const updatedAssessment: QualityAssessment = {
-      ...selectedAssessment,
-      ...completionData,
-      completedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    try {
+      await qualityAssuranceApi.completeAssessment(selectedAssessment.id, completionData)
+      await fetchAssessments()
+      setIsCompleteDialogOpen(false)
+      setSelectedAssessment(null)
+      setCompletionData({
+        qualityScore: 0,
+        comments: '',
+        recommendations: '',
+        assessmentResults: '',
+        requiresReview: false,
+        status: QualityAssessmentStatus.Completed
+      })
+    } catch (err) {
+      console.error('Failed to complete assessment:', err)
+      setError('Failed to complete assessment')
     }
-    
-    setAssessments(assessments.map(a => a.id === selectedAssessment.id ? updatedAssessment : a))
-    setIsCompleteDialogOpen(false)
-    setSelectedAssessment(null)
-    setCompletionData({
-      qualityScore: 0,
-      comments: '',
-      recommendations: '',
-      assessmentResults: '',
-      requiresReview: false,
-      status: QualityAssessmentStatus.Completed
-    })
   }
 
   const openCompleteDialog = (assessment: QualityAssessment) => {
@@ -164,6 +139,14 @@ export default function QualityAssurancePage() {
     .reduce((sum, a) => sum + a.qualityScore, 0) / 
     assessments.filter(a => a.status === QualityAssessmentStatus.Completed && a.qualityScore > 0).length || 0
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -174,6 +157,12 @@ export default function QualityAssurancePage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

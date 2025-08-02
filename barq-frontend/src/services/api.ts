@@ -70,3 +70,31 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+
+export const workflowApi = {
+  getWorkflowTemplates: () => apiService.get<{ data: any[] }>('/api/workflows/templates'),
+  getWorkflowInstances: () => apiService.get<{ data: any[] }>('/api/workflows/instances'),
+  startWorkflow: (workflowId: string, data: any) => apiService.post(`/api/workflows/${workflowId}/start`, data),
+  getWorkflowById: (id: string) => apiService.get(`/api/workflows/${id}`),
+  updateWorkflow: (id: string, data: any) => apiService.put(`/api/workflows/${id}`, data),
+  deleteWorkflow: (id: string) => apiService.delete(`/api/workflows/${id}`)
+};
+
+export const aiRequestApi = {
+  getRequests: () => apiService.get<{ data: any[] }>('/api/ai-requests'),
+  createRequest: (data: any) => apiService.post('/api/ai-requests', data),
+  getRequestById: (id: string) => apiService.get(`/api/ai-requests/${id}`),
+  updateRequest: (id: string, data: any) => apiService.put(`/api/ai-requests/${id}`, data),
+  deleteRequest: (id: string) => apiService.delete(`/api/ai-requests/${id}`),
+  approveRequest: (id: string) => apiService.post(`/api/ai-requests/${id}/approve`),
+  rejectRequest: (id: string, reason: string) => apiService.post(`/api/ai-requests/${id}/reject`, { reason })
+};
+
+export const qualityAssuranceApi = {
+  getAssessments: () => apiService.get<{ data: any[] }>('/api/quality-assurance/assessments'),
+  createAssessment: (data: any) => apiService.post('/api/quality-assurance/assessments', data),
+  getAssessmentById: (id: string) => apiService.get(`/api/quality-assurance/assessments/${id}`),
+  completeAssessment: (id: string, data: any) => apiService.put(`/api/quality-assurance/assessments/${id}/complete`, data),
+  updateAssessment: (id: string, data: any) => apiService.put(`/api/quality-assurance/assessments/${id}`, data),
+  deleteAssessment: (id: string) => apiService.delete(`/api/quality-assurance/assessments/${id}`)
+};

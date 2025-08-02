@@ -47,15 +47,29 @@ export interface QualityAssessment {
 
 export interface WorkflowInstance {
   id: string;
+  workflowTemplateId: string;
   templateId: string;
-  status: WorkflowStatus;
+  workflowName?: string;
+  status: string;
   currentStepId?: string;
   initiatorId: string;
   workflowData?: string;
-  startedAt: string;
+  startedAt?: string;
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  version?: string;
+  category?: string;
+  isActive: boolean;
+  slaHours?: number;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export enum AIRequestType {
