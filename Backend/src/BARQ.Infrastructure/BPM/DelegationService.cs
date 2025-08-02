@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
+using BARQ.Core.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
@@ -39,15 +41,21 @@ namespace BARQ.Infrastructure.BPM
     {
         private readonly ILogger<DelegationService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IRepository<AIRequestApproval> _approvalRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
         /// <summary>
         /// </summary>
         public DelegationService(
             ILogger<DelegationService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IRepository<AIRequestApproval> approvalRepository,
+            IUnitOfWork unitOfWork)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _approvalRepository = approvalRepository ?? throw new ArgumentNullException(nameof(approvalRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
         public async Task<Delegation> CreateDelegationAsync(Delegation delegation)
@@ -69,7 +77,22 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("Delegation created with ID {DelegationId}", delegation.Id);
                 
-                return await Task.FromResult(delegation);
+                var approval = new AIRequestApproval
+                {
+                    Id = Guid.NewGuid(),
+                    AIRequestId = Guid.Parse(delegation.Id),
+                    ApproverId = delegation.DelegateId,
+                    DelegatedFrom = delegation.DelegatorId,
+                    DelegatedAt = DateTime.UtcNow,
+                    DelegationReason = delegation.Reason,
+                    Status = ApprovalStatus.Pending,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _approvalRepository.AddAsync(approval);
+                await _unitOfWork.SaveChangesAsync();
+
+                return delegation;
             }
             catch (Exception ex)
             {
@@ -85,9 +108,27 @@ namespace BARQ.Infrastructure.BPM
             {
                 _logger.LogInformation("Getting active delegations for user {UserId}", userId);
 
-                var delegations = new List<Delegation>();
+                var approvals = await _approvalRepository.FindAsync(a => 
+                    a.DelegatedFrom == userId && 
+                    a.Status == ApprovalStatus.Pending &&
+                    a.DelegatedAt.HasValue);
 
-                return await Task.FromResult(delegations);
+                var delegations = approvals.Select(a => new Delegation
+                {
+                    Id = a.Id.ToString(),
+                    DelegatorId = a.DelegatedFrom ?? string.Empty,
+                    DelegateId = a.ApproverId,
+                    DelegationType = DelegationType.ApprovalAuthority,
+                    Scope = "AI Request Approval",
+                    StartDate = a.DelegatedAt ?? DateTime.UtcNow,
+                    EndDate = a.DelegatedAt?.AddDays(30) ?? DateTime.UtcNow.AddDays(30),
+                    Status = DelegationStatus.Active,
+                    Reason = a.DelegationReason ?? string.Empty,
+                    CreatedAt = a.CreatedAt,
+                    CreatedBy = a.DelegatedFrom ?? string.Empty
+                }).ToList();
+
+                return delegations;
             }
             catch (Exception ex)
             {
@@ -137,7 +178,7 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("Delegation validation completed: {IsValid}", result.IsValid);
                 
-                return await Task.FromResult(result);
+                return result;
             }
             catch (Exception ex)
             {
@@ -156,7 +197,16 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("Delegation expired with ID {DelegationId}", delegationId);
                 
-                return await Task.FromResult(true);
+                var approval = await _approvalRepository.FirstOrDefaultAsync(a => a.Id.ToString() == delegationId);
+                if (approval != null)
+                {
+                    approval.Status = ApprovalStatus.Expired;
+                    approval.UpdatedAt = DateTime.UtcNow;
+                    await _approvalRepository.UpdateAsync(approval);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -172,9 +222,26 @@ namespace BARQ.Infrastructure.BPM
                 _logger.LogInformation("Getting delegation chain for user {UserId}", userId);
 
 
-                var chains = new List<DelegationChain>();
+                var userApprovals = await _approvalRepository.FindAsync(a => 
+                    a.ApproverId == userId || a.DelegatedFrom == userId);
 
-                return await Task.FromResult(chains);
+                var chains = new List<DelegationChain>();
+                
+                var delegationChain = new DelegationChain
+                {
+                    UserId = userId,
+                    DelegationPath = userApprovals.Where(a => a.DelegatedFrom != null)
+                                                 .Select(a => a.DelegatedFrom!)
+                                                 .Distinct()
+                                                 .ToList(),
+                    ChainLength = userApprovals.Count(a => a.DelegatedFrom != null),
+                    HasCycle = false,
+                    EffectiveAuthority = "Approval Authority"
+                };
+
+                chains.Add(delegationChain);
+
+                return chains;
             }
             catch (Exception ex)
             {

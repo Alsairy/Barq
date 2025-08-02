@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
+using BARQ.Core.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
@@ -35,15 +37,27 @@ namespace BARQ.Infrastructure.BPM
     {
         private readonly ILogger<EscalationService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IRepository<WorkflowTemplate> _workflowTemplateRepository;
+        private readonly IRepository<WorkflowInstance> _workflowInstanceRepository;
+        private readonly IRepository<User> _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
         /// <summary>
         /// </summary>
         public EscalationService(
             ILogger<EscalationService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IRepository<WorkflowTemplate> workflowTemplateRepository,
+            IRepository<WorkflowInstance> workflowInstanceRepository,
+            IRepository<User> userRepository,
+            IUnitOfWork unitOfWork)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _workflowTemplateRepository = workflowTemplateRepository ?? throw new ArgumentNullException(nameof(workflowTemplateRepository));
+            _workflowInstanceRepository = workflowInstanceRepository ?? throw new ArgumentNullException(nameof(workflowInstanceRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
         public async Task<EscalationRule> CreateEscalationRuleAsync(EscalationRule rule)
@@ -72,7 +86,19 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("Escalation rule created with ID {RuleId}", rule.Id);
                 
-                return await Task.FromResult(rule);
+                var template = await _workflowTemplateRepository.FirstOrDefaultAsync(wt => 
+                    wt.Name == rule.RequestType);
+
+                if (template != null)
+                {
+                    template.EscalationRules = System.Text.Json.JsonSerializer.Serialize(rule);
+                    template.UpdatedAt = DateTime.UtcNow;
+                    
+                    await _workflowTemplateRepository.UpdateAsync(template);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return rule;
             }
             catch (Exception ex)
             {
@@ -102,7 +128,27 @@ namespace BARQ.Infrastructure.BPM
 
                 rules.Add(defaultRule);
 
-                return await Task.FromResult(rules);
+                var template = await _workflowTemplateRepository.FirstOrDefaultAsync(wt => 
+                    wt.Name == requestType);
+
+                if (template?.EscalationRules != null)
+                {
+                    try
+                    {
+                        var existingRule = System.Text.Json.JsonSerializer.Deserialize<EscalationRule>(template.EscalationRules);
+                        if (existingRule != null)
+                        {
+                            rules.Clear();
+                            rules.Add(existingRule);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize escalation rules for template {TemplateId}", template.Id);
+                    }
+                }
+
+                return rules;
             }
             catch (Exception ex)
             {
@@ -123,7 +169,19 @@ namespace BARQ.Infrastructure.BPM
                 _logger.LogInformation("Escalation triggered for workflow {WorkflowInstanceId}: {Description}", 
                     workflowInstanceId, trigger.Description);
 
-                return await Task.FromResult(true);
+                var workflow = await _workflowInstanceRepository.FirstOrDefaultAsync(wi => 
+                    wi.Id.ToString() == workflowInstanceId);
+
+                if (workflow != null)
+                {
+                    workflow.Status = WorkflowStatus.Escalated;
+                    workflow.UpdatedAt = DateTime.UtcNow;
+                    
+                    await _workflowInstanceRepository.UpdateAsync(workflow);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -147,7 +205,21 @@ namespace BARQ.Infrastructure.BPM
                     new OrganizationalLevel { Level = 5, Title = "C-Level", Description = "Executive leadership" }
                 };
 
-                return await Task.FromResult(hierarchy);
+                var user = await _userRepository.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+                if (user != null)
+                {
+                    var userHierarchy = await _userRepository.FindAsync(u => 
+                        u.OrganizationId == user.OrganizationId);
+                    
+                    hierarchy = userHierarchy.Select((u, index) => new OrganizationalLevel
+                    {
+                        Level = index + 1,
+                        Title = u.Role?.Name ?? "Employee",
+                        Description = $"User: {u.FirstName} {u.LastName}"
+                    }).ToList();
+                }
+
+                return hierarchy;
             }
             catch (Exception ex)
             {

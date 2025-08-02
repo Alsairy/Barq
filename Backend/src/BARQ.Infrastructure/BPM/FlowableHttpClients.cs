@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace BARQ.Infrastructure.BPM
 {
@@ -62,19 +63,38 @@ namespace BARQ.Infrastructure.BPM
 
         public async Task<string> StartProcessInstanceAsync(string processDefinitionKey, object variables = null)
         {
-            await Task.Delay(100); // Simulate API call
-            return Guid.NewGuid().ToString();
+            var requestBody = new
+            {
+                processDefinitionKey,
+                variables = variables ?? new { }
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/runtime/process-instances", requestBody);
+            response.EnsureSuccessStatusCode();
+            
+            var result = await response.Content.ReadFromJsonAsync<dynamic>();
+            return result?.id?.ToString() ?? throw new InvalidOperationException("Failed to start process instance");
         }
 
         public async Task<object> GetProcessInstanceAsync(string processInstanceId)
         {
-            await Task.Delay(100); // Simulate API call
-            return new { id = processInstanceId, status = "active" };
+            var response = await _httpClient.GetAsync($"/runtime/process-instances/{processInstanceId}");
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<object>() ?? 
+                   throw new InvalidOperationException($"Process instance {processInstanceId} not found");
         }
 
         public async Task CompleteTaskAsync(string taskId, object variables = null)
         {
-            await Task.Delay(100); // Simulate API call
+            var requestBody = new
+            {
+                action = "complete",
+                variables = variables ?? new { }
+            };
+
+            var response = await _httpClient.PostAsJsonAsync($"/runtime/tasks/{taskId}", requestBody);
+            response.EnsureSuccessStatusCode();
         }
     }
 
@@ -93,14 +113,26 @@ namespace BARQ.Infrastructure.BPM
 
         public async Task<string> StartCaseInstanceAsync(string caseDefinitionKey, object variables = null)
         {
-            await Task.Delay(100); // Simulate API call
-            return Guid.NewGuid().ToString();
+            var requestBody = new
+            {
+                caseDefinitionKey,
+                variables = variables ?? new { }
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/cmmn-runtime/case-instances", requestBody);
+            response.EnsureSuccessStatusCode();
+            
+            var result = await response.Content.ReadFromJsonAsync<dynamic>();
+            return result?.id?.ToString() ?? throw new InvalidOperationException("Failed to start case instance");
         }
 
         public async Task<object> GetCaseInstanceAsync(string caseInstanceId)
         {
-            await Task.Delay(100); // Simulate API call
-            return new { id = caseInstanceId, status = "active" };
+            var response = await _httpClient.GetAsync($"/cmmn-runtime/case-instances/{caseInstanceId}");
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<object>() ?? 
+                   throw new InvalidOperationException($"Case instance {caseInstanceId} not found");
         }
     }
 
@@ -119,13 +151,30 @@ namespace BARQ.Infrastructure.BPM
 
         public async Task<object[]> FetchAndLockAsync(string workerId, int maxTasks)
         {
-            await Task.Delay(100); // Simulate API call
-            return Array.Empty<object>();
+            var requestBody = new
+            {
+                workerId,
+                maxTasks,
+                usePriority = true,
+                asyncResponseTimeout = 30000
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/external-job/jobs/fetch-and-lock", requestBody);
+            response.EnsureSuccessStatusCode();
+            
+            return await response.Content.ReadFromJsonAsync<object[]>() ?? Array.Empty<object>();
         }
 
         public async Task CompleteExternalTaskAsync(string taskId, object variables = null)
         {
-            await Task.Delay(100); // Simulate API call
+            var requestBody = new
+            {
+                workerId = "barq-worker",
+                variables = variables ?? new { }
+            };
+
+            var response = await _httpClient.PostAsJsonAsync($"/external-job/jobs/{taskId}/complete", requestBody);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

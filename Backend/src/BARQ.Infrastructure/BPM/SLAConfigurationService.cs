@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using BARQ.Core.Entities;
 using BARQ.Core.Enums;
+using BARQ.Core.Repositories;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
@@ -36,15 +38,24 @@ namespace BARQ.Infrastructure.BPM
         private readonly ILogger<SLAConfigurationService> _logger;
         private readonly IConfiguration _configuration;
         private readonly Dictionary<WorkflowPriority, TimeSpan> _defaultSLATargets;
+        private readonly IRepository<WorkflowTemplate> _workflowTemplateRepository;
+        private readonly IRepository<WorkflowInstance> _workflowInstanceRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
         /// <summary>
         /// </summary>
         public SLAConfigurationService(
             ILogger<SLAConfigurationService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IRepository<WorkflowTemplate> workflowTemplateRepository,
+            IRepository<WorkflowInstance> workflowInstanceRepository,
+            IUnitOfWork unitOfWork)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _workflowTemplateRepository = workflowTemplateRepository ?? throw new ArgumentNullException(nameof(workflowTemplateRepository));
+            _workflowInstanceRepository = workflowInstanceRepository ?? throw new ArgumentNullException(nameof(workflowInstanceRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             
             _defaultSLATargets = new Dictionary<WorkflowPriority, TimeSpan>
             {
@@ -76,7 +87,7 @@ namespace BARQ.Infrastructure.BPM
                     IsActive = true
                 };
 
-                return await Task.FromResult(configuration);
+                return configuration;
             }
             catch (Exception ex)
             {
@@ -107,7 +118,20 @@ namespace BARQ.Infrastructure.BPM
                 
                 _logger.LogInformation("SLA configuration saved for request type {RequestType}", configuration.RequestType);
                 
-                return await Task.FromResult(configuration);
+                var existingTemplate = await _workflowTemplateRepository.FirstOrDefaultAsync(wt => 
+                    wt.Name == configuration.RequestType);
+
+                if (existingTemplate != null)
+                {
+                    existingTemplate.SlaHours = (int)configuration.TargetDuration.TotalHours;
+                    existingTemplate.SLAConfiguration = System.Text.Json.JsonSerializer.Serialize(configuration);
+                    existingTemplate.UpdatedAt = DateTime.UtcNow;
+                    
+                    await _workflowTemplateRepository.UpdateAsync(existingTemplate);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return configuration;
             }
             catch (Exception ex)
             {
@@ -125,8 +149,36 @@ namespace BARQ.Infrastructure.BPM
 
                 var violations = new List<SLAViolation>();
 
+                var activeWorkflows = await _workflowInstanceRepository.FindAsync(wi => 
+                    wi.Status == WorkflowStatus.Running || wi.Status == WorkflowStatus.Pending);
 
-                return await Task.FromResult(violations);
+                foreach (var workflow in activeWorkflows)
+                {
+                    var template = await _workflowTemplateRepository.GetByIdAsync(workflow.WorkflowTemplateId);
+                    if (template?.SlaHours.HasValue == true)
+                    {
+                        var slaTarget = workflow.CreatedAt.AddHours(template.SlaHours.Value);
+                        if (DateTime.UtcNow > slaTarget)
+                        {
+                            var violation = new SLAViolation
+                            {
+                                Id = Guid.NewGuid().ToString(),
+                                WorkflowInstanceId = workflow.Id.ToString(),
+                                RequestType = template.Name,
+                                Priority = WorkflowPriority.Medium,
+                                StartDate = workflow.CreatedAt,
+                                TargetDate = slaTarget,
+                                ViolationDate = DateTime.UtcNow,
+                                Overdue = DateTime.UtcNow - slaTarget,
+                                EscalationTriggered = false,
+                                Description = $"Workflow {workflow.Id} has exceeded SLA target of {template.SlaHours} hours"
+                            };
+                            violations.Add(violation);
+                        }
+                    }
+                }
+
+                return violations;
             }
             catch (Exception ex)
             {
@@ -191,7 +243,7 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("SLA target date calculated: {TargetDate}", targetDate);
                 
-                return await Task.FromResult(targetDate);
+                return targetDate;
             }
             catch (Exception ex)
             {
