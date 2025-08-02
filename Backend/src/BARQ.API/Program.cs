@@ -325,7 +325,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseApiMonitoring();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName == "Testing")
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>

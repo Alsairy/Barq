@@ -20,7 +20,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         Environment.SetEnvironmentVariable("Jwt__Secret", "test-jwt-secret-key-that-is-at-least-32-characters-long-for-security");
         Environment.SetEnvironmentVariable("Jwt__ExpiryMinutes", "60");
         Environment.SetEnvironmentVariable("Security__MaxFailedAttempts", "5");
@@ -28,7 +28,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         Environment.SetEnvironmentVariable("DatabasePerformance__CpuUtilizationScore", "90");
         Environment.SetEnvironmentVariable("DatabasePerformance__MemoryUtilizationScore", "85");
         Environment.SetEnvironmentVariable("DatabasePerformance__DbLatencyScore", "80");
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Testing");
         
         builder.ConfigureServices(services =>
         {
