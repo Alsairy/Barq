@@ -296,7 +296,7 @@ public class PasswordService : IPasswordService
         response.StrengthScore = Math.Min(5, score);
         response.ValidationMessages = messages;
 
-        return response;
+        return Task.FromResult(response);
     }
 
     public async Task<bool> IsPasswordInHistoryAsync(Guid userId, string password)

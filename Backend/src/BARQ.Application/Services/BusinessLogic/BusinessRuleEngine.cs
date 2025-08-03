@@ -36,7 +36,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
 
             _logger.LogInformation("Business rule created: {RuleId} - {RuleName}", rule.Id, rule.Name);
 
-            return rule;
+            return Task.FromResult(rule);
         }
         catch (Exception ex)
         {
@@ -64,7 +64,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
 
             _logger.LogInformation("Business rule updated: {RuleId}", request.RuleId);
 
-            return rule;
+            return Task.FromResult(rule);
         }
         catch (Exception ex)
         {
@@ -79,20 +79,20 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         {
             _logger.LogInformation("Business rule deleted: {RuleId}", ruleId);
 
-            return new BusinessRuleResponse
+            return Task.FromResult(new BusinessRuleResponse
             {
                 Success = true,
                 Message = "Business rule deleted successfully"
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting business rule: {RuleId}", ruleId);
-            return new BusinessRuleResponse
+            return Task.FromResult(new BusinessRuleResponse
             {
                 Success = false,
                 Message = "Failed to delete business rule"
-            };
+            });
         }
     }
 
@@ -122,7 +122,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
                 TotalExecutionTime = TimeSpan.FromMilliseconds(25)
             };
 
-            return result;
+            return Task.FromResult(result);
         }
         catch (Exception ex)
         {
@@ -183,7 +183,7 @@ public class BusinessRuleEngine : IBusinessRuleEngine
                 ExecutedAt = DateTime.UtcNow.AddHours(-1)
             };
 
-            return result;
+            return Task.FromResult(result);
         }
         catch (Exception ex)
         {
@@ -214,12 +214,12 @@ public class BusinessRuleEngine : IBusinessRuleEngine
                 }
             };
 
-            return rules;
+            return Task.FromResult<IEnumerable<BusinessRuleDto>>(rules);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving business rules");
-            return new List<BusinessRuleDto>();
+            return Task.FromResult<IEnumerable<BusinessRuleDto>>(new List<BusinessRuleDto>());
         }
     }
 
@@ -229,22 +229,22 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         {
             _logger.LogInformation("Validating business rule: {RuleId}", request.RuleId);
 
-            return new BusinessRuleValidationResponse
+            return Task.FromResult(new BusinessRuleValidationResponse
             {
                 Success = true,
                 Message = "Business rule validation completed",
                 IsValid = true
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating business rule: {RuleId}", request.RuleId);
-            return new BusinessRuleValidationResponse
+            return Task.FromResult(new BusinessRuleValidationResponse
             {
                 Success = false,
                 Message = "Failed to validate business rule",
                 IsValid = false
-            };
+            });
         }
     }
 }
