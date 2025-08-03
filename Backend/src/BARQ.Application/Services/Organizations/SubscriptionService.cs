@@ -366,7 +366,7 @@ public class SubscriptionService : ISubscriptionService
                 UsagePercentage = 0,
                 PeriodStart = DateTime.UtcNow.AddDays(-30),
                 PeriodEnd = DateTime.UtcNow
-            });
+            };
         }
         catch (Exception ex)
         {
