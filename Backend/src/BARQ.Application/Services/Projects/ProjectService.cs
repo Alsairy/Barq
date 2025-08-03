@@ -951,7 +951,7 @@ public class ProjectService : IProjectService
                 return new List<ProjectResourceDto>();
             }
 
-            var projectResources = await _projectResourceRepository.FindAsync(pr => pr.ProjectId == projectId && pr.IsActive);
+            var projectResources = await _projectRepository.FindAsync(pr => pr.Id == projectId);
             var resources = _mapper.Map<List<ProjectResourceDto>>(projectResources);
 
             return resources;
@@ -1149,7 +1149,7 @@ public class ProjectService : IProjectService
                 return new List<ProjectRiskDto>();
             }
 
-            var projectRisks = await _projectRiskRepository.FindAsync(pr => pr.ProjectId == projectId && pr.IsActive);
+            var projectRisks = await _projectRepository.FindAsync(pr => pr.Id == projectId);
             var risks = _mapper.Map<List<ProjectRiskDto>>(projectRisks);
 
             return risks;

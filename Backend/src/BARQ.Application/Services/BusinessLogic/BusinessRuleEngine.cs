@@ -127,14 +127,14 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing business rules");
-            return new BusinessRuleExecutionResponse
+            return Task.FromResult(new BusinessRuleExecutionResponse
             {
                 Success = false,
                 Message = "Failed to execute business rules",
                 ExecutionResults = new List<RuleExecutionResultDto>(),
                 AllRulesPassed = false,
                 TotalExecutionTime = TimeSpan.FromMilliseconds(0)
-            };
+            });
         }
     }
 
@@ -144,26 +144,26 @@ public class BusinessRuleEngine : IBusinessRuleEngine
         {
             _logger.LogInformation("Testing business rule: {RuleId}", request.RuleId);
 
-            return new BusinessRuleTestResponse
+            return Task.FromResult(new BusinessRuleTestResponse
             {
                 Success = true,
                 Message = "Business rule test completed",
                 TestPassed = true,
                 TestResults = new List<string> { "All validations passed" },
                 ExecutionTime = TimeSpan.FromMilliseconds(50)
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error testing business rule: {RuleId}", request.RuleId);
-            return new BusinessRuleTestResponse
+            return Task.FromResult(new BusinessRuleTestResponse
             {
                 Success = false,
                 Message = "Failed to test business rule",
                 TestPassed = false,
                 TestResults = new List<string> { "Test execution failed" },
                 ExecutionTime = TimeSpan.FromMilliseconds(0)
-            };
+            });
         }
     }
 

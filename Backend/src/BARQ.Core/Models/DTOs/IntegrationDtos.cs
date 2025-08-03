@@ -82,6 +82,7 @@ public class IntegrationMessage
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string QueueName { get; set; } = string.Empty;
+    public DateTime? NextRetryAt { get; set; }
     public string MessageType { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public Dictionary<string, string> Headers { get; set; } = new();

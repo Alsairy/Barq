@@ -216,12 +216,12 @@ public class ThreatDetectionService : IThreatDetectionService
                     fileName, string.Join(", ", reasons));
             }
 
-            return isMalicious;
+            return Task.FromResult(isMalicious);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to detect malicious file upload: {FileName}", fileName);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -229,7 +229,7 @@ public class ThreatDetectionService : IThreatDetectionService
     {
         try
         {
-            return _threatIndicators.Where(ti => ti.IsActive && (!ti.ExpiresAt.HasValue || ti.ExpiresAt > DateTime.UtcNow));
+            return Task.FromResult(_threatIndicators.Where(ti => ti.IsActive && (!ti.ExpiresAt.HasValue || ti.ExpiresAt > DateTime.UtcNow)));
         }
         catch (Exception ex)
         {
@@ -243,12 +243,12 @@ public class ThreatDetectionService : IThreatDetectionService
         try
         {
             _logger.LogInformation("Updating threat signatures from external sources");
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update threat signatures");
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -287,12 +287,12 @@ public class ThreatDetectionService : IThreatDetectionService
     {
         try
         {
-            return _blacklistedIps.Contains(ipAddress);
+            return Task.FromResult(_blacklistedIps.Contains(ipAddress));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to check IP blacklist status: {IPAddress}", ipAddress);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -312,12 +312,12 @@ public class ThreatDetectionService : IThreatDetectionService
             }
 
             _logger.LogInformation("IP address added to blacklist: {IPAddress}. Reason: {Reason}", ipAddress, reason);
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to add IP to blacklist: {IPAddress}", ipAddress);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -330,12 +330,12 @@ public class ThreatDetectionService : IThreatDetectionService
             {
                 _logger.LogInformation("IP address removed from blacklist: {IPAddress}", ipAddress);
             }
-            return removed;
+            return Task.FromResult(removed);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove IP from blacklist: {IPAddress}", ipAddress);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -536,7 +536,7 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private Task<int> GetRecentLoginAttempts(string ipAddress, string? userId, TimeSpan timeWindow)
     {
-        return 0;
+        return Task.FromResult(0);
     }
 
     private bool IsAnomalousUserAgent(string userAgent)
@@ -553,17 +553,17 @@ public class ThreatDetectionService : IThreatDetectionService
     private Task<bool> IsUnusualLoginTime(string userId)
     {
         var currentHour = DateTime.UtcNow.Hour;
-        return currentHour < 6 || currentHour > 22;
+        return Task.FromResult(currentHour < 6 || currentHour > 22);
     }
 
     private Task<long> GetRecentDataAccess(string userId, TimeSpan timeWindow)
     {
-        return 0L;
+        return Task.FromResult(0L);
     }
 
     private Task<IEnumerable<string>> GetUserRoles(string userId)
     {
-        return new[] { "User" };
+        return Task.FromResult<IEnumerable<string>>(new[] { "User" });
     }
 
     private IEnumerable<string> GetRequiredPermissions(string action)
@@ -602,7 +602,7 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private Task<IEnumerable<object>> GetUserActivities(string userId, DateTime startTime, DateTime endTime)
     {
-        return new List<object>();
+        return Task.FromResult<IEnumerable<object>>(new List<object>());
     }
 
     private IEnumerable<UserActivityPatternDto> AnalyzeActivityPatterns(IEnumerable<object> activities)
@@ -622,7 +622,7 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private Task<GeolocationRiskDto> GetGeolocationData(string ipAddress)
     {
-        return new GeolocationRiskDto
+        return Task.FromResult(new GeolocationRiskDto
         {
             IPAddress = ipAddress,
             Country = "Unknown",
@@ -634,7 +634,7 @@ public class ThreatDetectionService : IThreatDetectionService
             IsProxyDetected = false,
             IsTorDetected = false,
             AssessedAt = DateTime.UtcNow
-        };
+        });
     }
 
     private bool IsHighRiskCountry(string country)
@@ -645,6 +645,6 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private Task<bool> IsUnusualLocation(string userId, string country)
     {
-        return false;
+        return Task.FromResult(false);
     }
 }

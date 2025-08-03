@@ -38,24 +38,24 @@ public class ValidationPipelineService : IValidationPipelineService
             _logger.LogInformation("Validation pipeline completed for operation: {OperationType}, IsValid: {IsValid}", 
                 request.OperationType, isValid);
 
-            return new ValidationPipelineResponse
+            return Task.FromResult(new ValidationPipelineResponse
             {
                 Success = true,
                 Message = "Validation pipeline completed",
                 IsValid = isValid,
                 ValidationResults = validationResults
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in validation pipeline for operation: {OperationType}", request.OperationType);
-            return new ValidationPipelineResponse
+            return Task.FromResult(new ValidationPipelineResponse
             {
                 Success = false,
                 Message = "Validation pipeline failed",
                 IsValid = false,
                 ValidationResults = new List<ValidationResultDto>()
-            };
+            });
         }
     }
 
@@ -65,7 +65,7 @@ public class ValidationPipelineService : IValidationPipelineService
         {
             _logger.LogInformation("Creating validation context for type: {ContextType}", request.ContextType);
 
-            return new ValidationContextResponse
+            return Task.FromResult(new ValidationContextResponse
             {
                 Success = true,
                 Message = "Validation context created successfully",
@@ -73,18 +73,18 @@ public class ValidationPipelineService : IValidationPipelineService
                 ContextType = request.ContextType,
                 ContextData = request.ContextData,
                 CreatedAt = DateTime.UtcNow
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating validation context for type: {ContextType}", request.ContextType);
-            return new ValidationContextResponse
+            return Task.FromResult(new ValidationContextResponse
             {
                 Success = false,
                 Message = "Failed to create validation context",
                 ContextType = request.ContextType,
                 CreatedAt = DateTime.UtcNow
-            };
+            });
         }
     }
 
@@ -94,7 +94,7 @@ public class ValidationPipelineService : IValidationPipelineService
         {
             _logger.LogInformation("Processing validation results for context: {ValidationContextId}", request.ValidationContextId);
 
-            return new ValidationResultResponse
+            return Task.FromResult(new ValidationResultResponse
             {
                 Success = true,
                 Message = "Validation results processed successfully",
@@ -109,19 +109,19 @@ public class ValidationPipelineService : IValidationPipelineService
                 },
                 AllValidationsPassed = true,
                 ExecutionTime = TimeSpan.FromMilliseconds(50)
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing validation results for context: {ValidationContextId}", request.ValidationContextId);
-            return new ValidationResultResponse
+            return Task.FromResult(new ValidationResultResponse
             {
                 Success = false,
                 Message = "Failed to process validation results",
                 Results = new List<ValidationResultDto>(),
                 AllValidationsPassed = false,
                 ExecutionTime = TimeSpan.FromMilliseconds(0)
-            };
+            });
         }
     }
 
@@ -131,26 +131,26 @@ public class ValidationPipelineService : IValidationPipelineService
         {
             _logger.LogInformation("Registering custom validator: {ValidatorType}", request.ValidatorType);
 
-            return new CustomValidationResponse
+            return Task.FromResult(new CustomValidationResponse
             {
                 Success = true,
                 Message = "Custom validator registered successfully",
                 ValidatorName = request.ValidatorName,
                 IsRegistered = true,
                 Configuration = request.Configuration
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error registering custom validator: {ValidatorType}", request.ValidatorType);
-            return new CustomValidationResponse
+            return Task.FromResult(new CustomValidationResponse
             {
                 Success = false,
                 Message = "Failed to register custom validator",
                 ValidatorName = request.ValidatorName,
                 IsRegistered = false,
                 Configuration = new Dictionary<string, object>()
-            };
+            });
         }
     }
 
@@ -160,7 +160,7 @@ public class ValidationPipelineService : IValidationPipelineService
         {
             _logger.LogInformation("Adding validation rule: {RuleName}", request.RuleName);
 
-            return new ValidationRuleResponse
+            return Task.FromResult(new ValidationRuleResponse
             {
                 Success = true,
                 Message = "Validation rule added successfully",
@@ -174,16 +174,16 @@ public class ValidationPipelineService : IValidationPipelineService
                     IsActive = request.IsActive,
                     CreatedAt = DateTime.UtcNow
                 }
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding validation rule: {RuleName}", request.RuleName);
-            return new ValidationRuleResponse
+            return Task.FromResult(new ValidationRuleResponse
             {
                 Success = false,
                 Message = "Failed to add validation rule"
-            };
+            });
         }
     }
 
@@ -207,12 +207,12 @@ public class ValidationPipelineService : IValidationPipelineService
                 }
             };
 
-            return rules;
+            return Task.FromResult<IEnumerable<ValidationRuleDto>>(rules);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving validation rules");
-            return new List<ValidationRuleDto>();
+            return Task.FromResult<IEnumerable<ValidationRuleDto>>(new List<ValidationRuleDto>());
         }
     }
 
@@ -231,7 +231,7 @@ public class ValidationPipelineService : IValidationPipelineService
                 LastExecuted = DateTime.UtcNow
             };
 
-            return metrics;
+            return Task.FromResult(metrics);
         }
         catch (Exception ex)
         {

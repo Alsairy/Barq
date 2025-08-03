@@ -472,7 +472,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
         return json;
     }
 
-    private object XmlToJsonObject(XElement element)
+    private object XmlToJsonObject(XElement? element)
     {
         if (element == null) return null;
 
@@ -505,7 +505,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             return element.Value;
         }
 
-        return result.Any() ? result : element.Value;
+        return result.Any() ? result : (element?.Value ?? string.Empty);
     }
 
     private async Task<string> TransformJsonToForm(string jsonContent)
