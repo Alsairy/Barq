@@ -111,16 +111,18 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Generated integration metrics for tenant {TenantId}: {TotalRequests} total requests, {SuccessRate}% success rate", 
                 tenantId, totalRequests, metrics.SuccessRate);
 
-            return Task.FromResult(metrics);
+            return Task.CompletedTask.ContinueWith(_ => metrics);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating integration metrics");
-            return Task.FromResult(new IntegrationMetrics
+            var metrics = new IntegrationMetrics
             {
                 FromDate = fromDate,
                 ToDate = toDate
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => metrics);
         }
     }
 
@@ -135,12 +137,13 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                 .OrderByDescending(a => a.CreatedAt)
                 .ToList();
 
-            return Task.FromResult<IEnumerable<IntegrationAlert>>(tenantAlerts);
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationAlert>)tenantAlerts);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving active alerts");
-            return Task.FromResult<IEnumerable<IntegrationAlert>>(new List<IntegrationAlert>());
+            var emptyAlerts = new List<IntegrationAlert>();
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationAlert>)emptyAlerts);
         }
     }
 
@@ -159,12 +162,12 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Alert rule created: {RuleName} with condition {Condition}", 
                 rule.Name, rule.Condition);
 
-            return Task.FromResult(true);
+            return Task.CompletedTask.ContinueWith(_ => true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating alert rule {RuleName}", rule.Name);
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -332,7 +335,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
     private Task<bool> EvaluateHighErrorRate(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.Level != IntegrationEventLevel.Error)
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
 
         var timeWindow = TimeSpan.FromMinutes((int)rule.Parameters["time_window_minutes"]);
         var threshold = (double)rule.Parameters["threshold"];
@@ -343,30 +346,30 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                                              e.EventType == "REQUEST_PROCESSED").ToList();
 
         if (recentEvents.Count == 0)
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
 
         var errorCount = recentEvents.Count(e => e.Level == IntegrationEventLevel.Error);
         var errorRate = (double)errorCount / recentEvents.Count;
 
-        return Task.FromResult(errorRate > threshold);
+        return Task.CompletedTask.ContinueWith(_ => errorRate > threshold);
     }
 
     private Task<bool> EvaluateSlowResponseTime(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED" || 
             !integrationEvent.Data.ContainsKey("ProcessingTimeMs"))
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
 
         var threshold = (int)rule.Parameters["threshold_ms"];
         var responseTime = Convert.ToDouble(integrationEvent.Data["ProcessingTimeMs"]);
 
-        return Task.FromResult(responseTime > threshold);
+        return Task.CompletedTask.ContinueWith(_ => responseTime > threshold);
     }
 
     private Task<bool> EvaluateEndpointDown(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED")
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
 
         var minRequests = (int)rule.Parameters["min_requests"];
         var recentEvents = _events.Where(e => e.EndpointId == integrationEvent.EndpointId && 
@@ -374,10 +377,10 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                                              e.EventType == "REQUEST_PROCESSED").ToList();
 
         if (recentEvents.Count < minRequests)
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
 
         var successfulRequests = recentEvents.Count(e => e.Level == IntegrationEventLevel.Info);
-        return Task.FromResult(successfulRequests == 0);
+        return Task.CompletedTask.ContinueWith(_ => successfulRequests == 0);
     }
 
     private async Task CreateAlertAsync(IntegrationAlertRule rule, IntegrationEvent integrationEvent)

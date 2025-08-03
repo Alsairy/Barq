@@ -118,7 +118,7 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlite("Data Source=barq_dev.db"));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
@@ -162,6 +162,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IAIOrchestrationService, AIOrchestrationService>();
+builder.Services.AddScoped<BARQ.Core.Interfaces.IAIRequestService, BARQ.Application.Services.AIRequests.AIRequestService>();
 
 builder.Services.AddFlowableBpmServices(builder.Configuration);
 
@@ -306,7 +307,7 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://barq.app" })
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://barq.app", "https://barq-application-plu4nmbz.devinapps.com" })
                   .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                   .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID", "X-Correlation-ID")
                   .AllowCredentials()

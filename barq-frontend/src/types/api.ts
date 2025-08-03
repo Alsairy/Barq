@@ -50,7 +50,7 @@ export interface WorkflowInstance {
   workflowTemplateId: string;
   templateId: string;
   workflowName?: string;
-  status: string;
+  status: WorkflowStatus;
   currentStepId?: string;
   initiatorId: string;
   workflowData?: string;
@@ -131,7 +131,8 @@ export enum WorkflowStatus {
   Suspended = 2,
   Completed = 3,
   Failed = 4,
-  Cancelled = 5
+  Cancelled = 5,
+  WaitingForApproval = 6
 }
 
 export interface CreateAIRequestRequest {
@@ -140,6 +141,7 @@ export interface CreateAIRequestRequest {
   requestType: AIRequestType;
   priority: AIRequestPriority;
   requestData: string;
+  requesterId: string;
   dueDate?: string;
 }
 

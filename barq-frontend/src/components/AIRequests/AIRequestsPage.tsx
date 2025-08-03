@@ -31,7 +31,8 @@ export default function AIRequestsPage() {
     description: '',
     requestType: AIRequestType.TextGeneration,
     priority: AIRequestPriority.Normal,
-    requestData: ''
+    requestData: '',
+    requesterId: ''
   })
 
   useEffect(() => {
@@ -100,7 +101,8 @@ export default function AIRequestsPage() {
         description: '',
         requestType: AIRequestType.TextGeneration,
         priority: AIRequestPriority.Normal,
-        requestData: ''
+        requestData: '',
+        requesterId: ''
       })
     } catch (err) {
       console.error('Failed to create AI request:', err)

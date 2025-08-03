@@ -326,12 +326,13 @@ public class MessageOrchestrationService : IMessageOrchestrationService
                 });
             }
 
-            return Task.FromResult<IEnumerable<QueueStatus>>(statuses);
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<QueueStatus>)statuses);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting queue status");
-            return Task.FromResult<IEnumerable<QueueStatus>>(new List<QueueStatus>());
+            var emptyStatuses = new List<QueueStatus>();
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<QueueStatus>)emptyStatuses);
         }
     }
 
@@ -392,25 +393,25 @@ public class MessageOrchestrationService : IMessageOrchestrationService
     private Task<bool> ProcessEmailMessage(IntegrationMessage message)
     {
         _logger.LogInformation("Processing email message {MessageId}", message.Id);
-        return Task.FromResult(true);
+        return Task.CompletedTask.ContinueWith(_ => true);
     }
 
     private Task<bool> ProcessSmsMessage(IntegrationMessage message)
     {
         _logger.LogInformation("Processing SMS message {MessageId}", message.Id);
-        return Task.FromResult(true);
+        return Task.CompletedTask.ContinueWith(_ => true);
     }
 
     private Task<bool> ProcessWebhookMessage(IntegrationMessage message)
     {
         _logger.LogInformation("Processing webhook message {MessageId}", message.Id);
-        return Task.FromResult(true);
+        return Task.CompletedTask.ContinueWith(_ => true);
     }
 
     private Task<bool> ProcessApiMessage(IntegrationMessage message)
     {
         _logger.LogInformation("Processing API message {MessageId}", message.Id);
-        return Task.FromResult(true);
+        return Task.CompletedTask.ContinueWith(_ => true);
     }
 
     private string DetectMessageFormat(string content)
@@ -461,7 +462,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
     private Task<string> TransformJsonToXml(string jsonContent)
     {
         var jsonDoc = JsonDocument.Parse(jsonContent);
-        return Task.FromResult($"<root>{JsonElementToXml(jsonDoc.RootElement)}</root>");
+        return Task.CompletedTask.ContinueWith(_ => $"<root>{JsonElementToXml(jsonDoc.RootElement)}</root>");
     }
 
     private Task<string> TransformXmlToJson(string xmlContent)
@@ -469,7 +470,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
         var doc = XDocument.Parse(xmlContent);
         var jsonObject = XmlToJsonObject(doc.Root!);
         var json = JsonSerializer.Serialize(jsonObject);
-        return Task.FromResult(json);
+        return Task.CompletedTask.ContinueWith(_ => json);
     }
 
     private object XmlToJsonObject(XElement? element)
@@ -518,7 +519,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             formPairs.Add($"{property.Name}={Uri.EscapeDataString(property.Value.ToString())}");
         }
         
-        return Task.FromResult(string.Join("&", formPairs));
+        return Task.CompletedTask.ContinueWith(_ => string.Join("&", formPairs));
     }
 
     private Task<string> TransformFormToJson(string formContent)
@@ -535,7 +536,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             }
         }
         
-        return Task.FromResult(JsonSerializer.Serialize(jsonObject));
+        return Task.CompletedTask.ContinueWith(_ => JsonSerializer.Serialize(jsonObject));
     }
 
     private string JsonElementToXml(JsonElement element)

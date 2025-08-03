@@ -36,6 +36,8 @@ public class BarqDbContext : DbContext
     public DbSet<ITSMTicket> ITSMTickets { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<BusinessRequirementDocument> BusinessRequirementDocuments { get; set; }
+    public DbSet<AIRequest> AIRequests { get; set; }
+    public DbSet<AIRequestApproval> AIRequestApprovals { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
