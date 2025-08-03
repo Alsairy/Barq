@@ -32,6 +32,7 @@ using BARQ.Infrastructure.Analytics;
 using BARQ.Infrastructure.Caching;
 using BARQ.Infrastructure.Performance;
 using BARQ.Infrastructure.BackgroundJobs;
+using BARQ.Infrastructure.Data.SeedData;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -299,7 +300,7 @@ builder.Services.AddCors(options =>
     {
         if (builder.Environment.IsDevelopment())
         {
-            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173")
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials()
@@ -317,6 +318,12 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// using (var scope = app.Services.CreateScope())
+// {
+//     var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+//     await OAuthProviderSeeder.SeedOAuthProvidersAsync(context);
+// }
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();

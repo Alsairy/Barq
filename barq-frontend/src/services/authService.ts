@@ -14,9 +14,14 @@ import {
   PasswordResetResponse,
   PasswordChangeResponse,
   ApiResponse,
+  OAuthAuthenticationResponse,
+  OpenIdConnectAuthenticationResponse,
+  SamlAuthenticationResponse,
+  SsoConfigurationResponse,
+  UpdateSsoConfigurationRequest,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-application-tunnel-lmiwads1.devinapps.com';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-backend-tunnel-api.devinapps.com';
 
 const authApi = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,
@@ -135,6 +140,81 @@ export const authService = {
   async regenerateBackupCodes(userId: string): Promise<BackupCodesResponse> {
     const response: AxiosResponse<ApiResponse<BackupCodesResponse>> = await authApi.post('/regenerate-backup-codes', {
       userId,
+    });
+    return response.data.data!;
+  },
+
+  async initiateOAuth(provider: string, tenantIdentifier: string): Promise<OAuthAuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<OAuthAuthenticationResponse>> = await authApi.post('/oauth/initiate', {
+      request: {
+        provider,
+        tenantIdentifier,
+        returnUrl: window.location.origin + '/auth/callback'
+      }
+    });
+    return response.data.data!;
+  },
+
+  async handleOAuthCallback(code: string, state?: string): Promise<AuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<AuthenticationResponse>> = await authApi.post('/oauth/callback', {
+      request: {
+        code,
+        state
+      }
+    });
+    return response.data.data!;
+  },
+
+  async initiateOpenIdConnect(provider: string, tenantIdentifier: string): Promise<OpenIdConnectAuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<OpenIdConnectAuthenticationResponse>> = await authApi.post('/oidc/initiate', {
+      request: {
+        provider,
+        tenantIdentifier,
+        returnUrl: window.location.origin + '/auth/callback'
+      }
+    });
+    return response.data.data!;
+  },
+
+  async handleOpenIdConnectCallback(code: string, state?: string): Promise<AuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<AuthenticationResponse>> = await authApi.post('/oidc/callback', {
+      request: {
+        code,
+        state
+      }
+    });
+    return response.data.data!;
+  },
+
+  async initiateSaml(provider: string, tenantIdentifier: string): Promise<SamlAuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<SamlAuthenticationResponse>> = await authApi.post('/saml/initiate', {
+      request: {
+        provider,
+        tenantIdentifier,
+        returnUrl: window.location.origin + '/auth/callback'
+      }
+    });
+    return response.data.data!;
+  },
+
+  async handleSamlCallback(samlResponse: string, relayState?: string): Promise<AuthenticationResponse> {
+    const response: AxiosResponse<ApiResponse<AuthenticationResponse>> = await authApi.post('/saml/callback', {
+      request: {
+        samlResponse,
+        relayState
+      }
+    });
+    return response.data.data!;
+  },
+
+  async getSsoConfiguration(tenantId: string): Promise<SsoConfigurationResponse> {
+    const response: AxiosResponse<ApiResponse<SsoConfigurationResponse>> = await authApi.get(`/sso/configuration/${tenantId}`);
+    return response.data.data!;
+  },
+
+  async updateSsoConfiguration(request: UpdateSsoConfigurationRequest): Promise<SsoConfigurationResponse> {
+    const response: AxiosResponse<ApiResponse<SsoConfigurationResponse>> = await authApi.post('/sso/configuration', {
+      request
     });
     return response.data.data!;
   },

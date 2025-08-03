@@ -16,17 +16,20 @@ public class AuthController : ControllerBase
     private readonly IAuthenticationService _authenticationService;
     private readonly IMultiFactorAuthService _mfaService;
     private readonly IPasswordService _passwordService;
+    private readonly ISsoAuthenticationService _ssoAuthenticationService;
 
     public AuthController(
         IMediator mediator,
         IAuthenticationService authenticationService,
         IMultiFactorAuthService mfaService,
-        IPasswordService passwordService)
+        IPasswordService passwordService,
+        ISsoAuthenticationService ssoAuthenticationService)
     {
         _mediator = mediator;
         _authenticationService = authenticationService;
         _mfaService = mfaService;
         _passwordService = passwordService;
+        _ssoAuthenticationService = ssoAuthenticationService;
     }
 
     [HttpPost("login")]
@@ -286,6 +289,190 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(new ApiResponse<BackupCodesResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oauth/initiate")]
+    public async Task<ActionResult<ApiResponse<OAuthAuthenticationResponse>>> InitiateOAuth([FromBody] OAuthAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateOAuthAuthenticationAsync(request);
+            return Ok(new ApiResponse<OAuthAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<OAuthAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oauth/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> OAuthCallback([FromBody] OAuthCallbackRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessOAuthCallbackAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oidc/initiate")]
+    public async Task<ActionResult<ApiResponse<OpenIdConnectAuthenticationResponse>>> InitiateOpenIdConnect([FromBody] OpenIdConnectAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateOpenIdConnectAuthenticationAsync(request);
+            return Ok(new ApiResponse<OpenIdConnectAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<OpenIdConnectAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oidc/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> OpenIdConnectCallback([FromBody] OpenIdConnectCallbackRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessOpenIdConnectCallbackAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("saml/initiate")]
+    public async Task<ActionResult<ApiResponse<SamlAuthenticationResponse>>> InitiateSaml([FromBody] SamlAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateSamlAuthenticationAsync(request);
+            return Ok(new ApiResponse<SamlAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SamlAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("saml/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> SamlCallback([FromBody] SamlResponseRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessSamlResponseAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("sso/configuration/{tenantId:guid}")]
+    public async Task<ActionResult<ApiResponse<SsoConfigurationResponse>>> GetSsoConfiguration(Guid tenantId)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.GetSsoConfigurationAsync(tenantId);
+            return Ok(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("sso/configuration")]
+    public async Task<ActionResult<ApiResponse<SsoConfigurationResponse>>> UpdateSsoConfiguration([FromBody] UpdateSsoConfigurationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.UpdateSsoConfigurationAsync(request);
+            return Ok(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SsoConfigurationResponse>
             {
                 Success = false,
                 Message = ex.Message

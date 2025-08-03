@@ -141,3 +141,54 @@ export interface SocialProvider {
   iconUrl?: string;
   isEnabled: boolean;
 }
+
+export interface OAuthAuthenticationResponse {
+  success: boolean;
+  authorizationUrl: string;
+  state: string;
+  message?: string;
+}
+
+export interface OpenIdConnectAuthenticationResponse {
+  success: boolean;
+  authorizationUrl: string;
+  state: string;
+  nonce?: string;
+  message?: string;
+}
+
+export interface SamlAuthenticationResponse {
+  success: boolean;
+  samlRequestUrl: string;
+  relayState: string;
+  message?: string;
+}
+
+export interface SsoConfigurationResponse {
+  success: boolean;
+  configurations: SsoConfiguration[];
+  message?: string;
+}
+
+export interface SsoConfiguration {
+  id: string;
+  provider: string;
+  providerName: string;
+  isEnabled: boolean;
+  isRequired: boolean;
+  clientId?: string;
+  authority?: string;
+  callbackUrl?: string;
+  scopes?: string;
+  attributeMappings?: string;
+  defaultRole?: string;
+  autoProvisionUsers: boolean;
+  isValid: boolean;
+  lastValidation?: string;
+  validationError?: string;
+}
+
+export interface UpdateSsoConfigurationRequest {
+  tenantId: string;
+  configurations: SsoConfiguration[];
+}

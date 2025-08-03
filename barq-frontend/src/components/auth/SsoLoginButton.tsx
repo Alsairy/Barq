@@ -1,17 +1,68 @@
 import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { SsoProvider } from '../../types/auth';
+import { authService } from '../../services/authService';
 
 interface SsoLoginButtonProps {
   provider: SsoProvider;
   isLoading?: boolean;
-  onLogin: (providerId: string) => void;
+  onLogin?: (providerId: string) => void;
+  onError?: (error: string) => void;
+  tenantIdentifier?: string;
 }
 
-export function SsoLoginButton({ provider, isLoading = false, onLogin }: SsoLoginButtonProps) {
-  const handleClick = () => {
-    if (!isLoading && provider.isEnabled) {
-      onLogin(provider.id);
+export function SsoLoginButton({ 
+  provider, 
+  isLoading = false, 
+  onLogin, 
+  onError,
+  tenantIdentifier = 'default'
+}: SsoLoginButtonProps) {
+  const handleClick = async () => {
+    if (isLoading || !provider.isEnabled) return;
+
+    try {
+      if (onLogin) {
+        onLogin(provider.id);
+        return;
+      }
+
+      let response;
+      
+      switch (provider.type) {
+        case 'oauth':
+          response = await authService.initiateOAuth(provider.name, tenantIdentifier);
+          if (response.success && response.authorizationUrl) {
+            window.location.href = response.authorizationUrl;
+          }
+          break;
+        case 'oidc':
+          const oidcResponse = await authService.initiateOpenIdConnect(provider.name, tenantIdentifier);
+          if (oidcResponse.success && oidcResponse.authorizationUrl) {
+            window.location.href = oidcResponse.authorizationUrl;
+          }
+          break;
+        case 'saml':
+          const samlResponse = await authService.initiateSaml(provider.name, tenantIdentifier);
+          if (samlResponse.success && samlResponse.samlRequestUrl) {
+            window.location.href = samlResponse.samlRequestUrl;
+          }
+          break;
+        default:
+          throw new Error(`Unsupported SSO provider type: ${provider.type}`);
+      }
+      
+      if (!response?.success) {
+        throw new Error(response?.message || 'Failed to initiate SSO authentication');
+      }
+    } catch (error) {
+      console.error('SSO initiation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        alert(`Authentication failed: ${errorMessage}`);
+      }
     }
   };
 

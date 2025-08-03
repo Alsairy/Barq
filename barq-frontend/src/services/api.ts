@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-application-tunnel-mhso4pv2.devinapps.com';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-backend-tunnel-api.devinapps.com';
 const API_USERNAME = (import.meta as any).env.VITE_API_USERNAME || 'user';
 const API_PASSWORD = (import.meta as any).env.VITE_API_PASSWORD || '288284fe24969eaf87e98a985800230b';
 const API_TIMEOUT = parseInt((import.meta as any).env.VITE_API_TIMEOUT || '30000');

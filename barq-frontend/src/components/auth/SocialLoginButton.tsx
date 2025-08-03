@@ -1,17 +1,47 @@
 import { Button } from '../ui/button';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import { SocialProvider } from '../../types/auth';
+import { authService } from '../../services/authService';
 
 interface SocialLoginButtonProps {
   provider: SocialProvider;
   isLoading?: boolean;
-  onLogin: (providerId: string) => void;
+  onLogin?: (providerId: string) => void;
+  onError?: (error: string) => void;
+  tenantIdentifier?: string;
 }
 
-export function SocialLoginButton({ provider, isLoading = false, onLogin }: SocialLoginButtonProps) {
-  const handleClick = () => {
-    if (!isLoading && provider.isEnabled) {
-      onLogin(provider.id);
+export function SocialLoginButton({ 
+  provider, 
+  isLoading = false, 
+  onLogin, 
+  onError,
+  tenantIdentifier = 'default'
+}: SocialLoginButtonProps) {
+  const handleClick = async () => {
+    if (isLoading || !provider.isEnabled) return;
+
+    try {
+      if (onLogin) {
+        onLogin(provider.id);
+        return;
+      }
+
+      const response = await authService.initiateOAuth(provider.type, tenantIdentifier);
+      
+      if (response.success && response.authorizationUrl) {
+        window.location.href = response.authorizationUrl;
+      } else {
+        throw new Error(response.message || 'Failed to initiate OAuth authentication');
+      }
+    } catch (error) {
+      console.error('OAuth initiation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        alert(`Authentication failed: ${errorMessage}`);
+      }
     }
   };
 

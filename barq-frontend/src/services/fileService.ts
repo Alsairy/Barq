@@ -8,7 +8,7 @@ export interface FileUploadItem {
   error?: string;
 }
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-application-tunnel-lmiwads1.devinapps.com';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-backend-tunnel-api.devinapps.com';
 
 const fileApi = axios.create({
   baseURL: `${API_BASE_URL}/api/files`,

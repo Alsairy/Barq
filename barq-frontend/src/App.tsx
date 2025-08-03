@@ -12,6 +12,7 @@ import { CodeGenerationPage } from './pages/ai/CodeGenerationPage'
 import { BRDGenerationPage } from './pages/ai/BRDGenerationPage'
 import { AIRequestManagementPage } from './pages/ai/AIRequestManagementPage'
 import { LoginPage } from './pages/auth/LoginPage'
+import { OAuthCallbackPage } from './pages/auth/OAuthCallbackPage'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import './App.css'
 
@@ -22,6 +23,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/auth/login" element={<LoginPage />} />
+            <Route path="/auth/callback" element={<OAuthCallbackPage />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout>
