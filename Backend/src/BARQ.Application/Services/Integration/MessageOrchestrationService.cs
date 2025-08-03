@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using System.Xml.Linq;
 using BARQ.Core.Services.Integration;
 using BARQ.Core.Models.DTOs;
 using BARQ.Core.Enums;
