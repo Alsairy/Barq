@@ -290,7 +290,7 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
         var principal = new System.Security.Claims.ClaimsPrincipal(identity);
         var ticket = new Microsoft.AspNetCore.Authentication.AuthenticationTicket(principal, "Test");
 
-        return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
+        return Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket);
     }
 }
 

@@ -951,27 +951,8 @@ public class ProjectService : IProjectService
                 return new List<ProjectResourceDto>();
             }
 
-            var resources = new List<ProjectResourceDto>
-            {
-                new ProjectResourceDto
-                {
-                    Id = Guid.NewGuid(),
-                    ProjectId = projectId,
-                    Name = "Project Manager",
-                    Type = "Human Resource",
-                    Allocation = 100,
-                    Cost = project.Budget * 0.2m ?? 0
-                },
-                new ProjectResourceDto
-                {
-                    Id = Guid.NewGuid(),
-                    ProjectId = projectId,
-                    Name = "Development Team",
-                    Type = "Human Resource",
-                    Allocation = 80,
-                    Cost = project.Budget * 0.6m ?? 0
-                }
-            };
+            var projectResources = await _projectResourceRepository.FindAsync(pr => pr.ProjectId == projectId && pr.IsActive);
+            var resources = _mapper.Map<List<ProjectResourceDto>>(projectResources);
 
             return resources;
         }
@@ -1168,37 +1149,8 @@ public class ProjectService : IProjectService
                 return new List<ProjectRiskDto>();
             }
 
-            var risks = new List<ProjectRiskDto>();
-
-            if (project.Status == ProjectStatus.InProgress)
-            {
-                risks.Add(new ProjectRiskDto
-                {
-                    Id = Guid.NewGuid(),
-                    ProjectId = projectId,
-                    Title = "Schedule Risk",
-                    Description = "Project may exceed planned timeline",
-                    Probability = 0.3m,
-                    Impact = 0.7m,
-                    RiskLevel = "Medium",
-                    MitigationPlan = "Regular progress monitoring and resource reallocation"
-                });
-            }
-
-            if ((project.ActualCost ?? 0) > (project.Budget ?? 0) * 0.8m)
-            {
-                risks.Add(new ProjectRiskDto
-                {
-                    Id = Guid.NewGuid(),
-                    ProjectId = projectId,
-                    Title = "Budget Risk",
-                    Description = "Project approaching budget limits",
-                    Probability = 0.6m,
-                    Impact = 0.8m,
-                    RiskLevel = "High",
-                    MitigationPlan = "Cost optimization and budget review"
-                });
-            }
+            var projectRisks = await _projectRiskRepository.FindAsync(pr => pr.ProjectId == projectId && pr.IsActive);
+            var risks = _mapper.Map<List<ProjectRiskDto>>(projectRisks);
 
             return risks;
         }
