@@ -126,7 +126,7 @@ public class SecurityMonitoringService : ISecurityMonitoringService
             if (!string.IsNullOrEmpty(eventType))
                 query = query.Where(e => e.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
 
-            return query.OrderByDescending(e => e.Timestamp).ToList();
+            return Task.FromResult<IEnumerable<SecurityEventDto>>(query.OrderByDescending(e => e.Timestamp).ToList());
         }
         catch (Exception ex)
         {
@@ -221,7 +221,7 @@ public class SecurityMonitoringService : ISecurityMonitoringService
     {
         try
         {
-            return _activeAlerts.Where(a => a.IsActive).OrderByDescending(a => a.CreatedAt);
+            return Task.FromResult<IEnumerable<SecurityAlertDto>>(_activeAlerts.Where(a => a.IsActive).OrderByDescending(a => a.CreatedAt));
         }
         catch (Exception ex)
         {

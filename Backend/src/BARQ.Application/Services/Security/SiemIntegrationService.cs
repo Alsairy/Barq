@@ -151,7 +151,7 @@ public class SiemIntegrationService : ISiemIntegrationService
                 });
             }
 
-            return correlations;
+            return Task.FromResult<IEnumerable<SiemCorrelationDto>>(correlations);
         }
         catch (Exception ex)
         {
@@ -337,7 +337,7 @@ public class SiemIntegrationService : ISiemIntegrationService
     {
         try
         {
-            return _siemConfiguration;
+            return Task.FromResult(_siemConfiguration);
         }
         catch (Exception ex)
         {
@@ -376,7 +376,7 @@ public class SiemIntegrationService : ISiemIntegrationService
             if (toDate.HasValue)
                 query = query.Where(a => a.CreatedAt <= toDate.Value);
 
-            return query.OrderByDescending(a => a.CreatedAt).ToList();
+            return Task.FromResult<IEnumerable<SiemAlertDto>>(query.OrderByDescending(a => a.CreatedAt).ToList());
         }
         catch (Exception ex)
         {

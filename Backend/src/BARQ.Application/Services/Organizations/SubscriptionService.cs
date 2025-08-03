@@ -357,7 +357,7 @@ public class SubscriptionService : ISubscriptionService
         {
             _logger.LogInformation("Tracking usage for organization: {OrganizationId}", request.OrganizationId);
 
-            return new UsageTrackingResponse
+            return Task.FromResult(new UsageTrackingResponse
             {
                 Success = true,
                 Message = "Usage tracked successfully",
@@ -366,16 +366,16 @@ public class SubscriptionService : ISubscriptionService
                 UsagePercentage = 0,
                 PeriodStart = DateTime.UtcNow.AddDays(-30),
                 PeriodEnd = DateTime.UtcNow
-            };
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error tracking usage for organization: {OrganizationId}", request.OrganizationId);
-            return new UsageTrackingResponse
+            return Task.FromResult(new UsageTrackingResponse
             {
                 Success = false,
                 Message = "Failed to track usage"
-            };
+            });
         }
     }
 
@@ -420,12 +420,12 @@ public class SubscriptionService : ISubscriptionService
                 }
             };
 
-            return plans;
+            return Task.FromResult<IEnumerable<SubscriptionPlanDto>>(plans);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving available plans");
-            return new List<SubscriptionPlanDto>();
+            return Task.FromResult<IEnumerable<SubscriptionPlanDto>>(new List<SubscriptionPlanDto>());
         }
     }
 
