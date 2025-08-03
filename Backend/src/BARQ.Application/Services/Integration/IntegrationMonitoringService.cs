@@ -116,11 +116,11 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating integration metrics");
-            return new IntegrationMetrics
+            return Task.FromResult(new IntegrationMetrics
             {
                 FromDate = fromDate,
                 ToDate = toDate
-            };
+            });
         }
     }
 
@@ -140,7 +140,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving active alerts");
-            return new List<IntegrationAlert>();
+            return Task.FromResult<IEnumerable<IntegrationAlert>>(new List<IntegrationAlert>());
         }
     }
 
@@ -164,7 +164,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating alert rule {RuleName}", rule.Name);
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -329,7 +329,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         }
     }
 
-    private async Task<bool> EvaluateHighErrorRate(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
+    private Task<bool> EvaluateHighErrorRate(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.Level != IntegrationEventLevel.Error)
             return false;
@@ -348,10 +348,10 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         var errorCount = recentEvents.Count(e => e.Level == IntegrationEventLevel.Error);
         var errorRate = (double)errorCount / recentEvents.Count;
 
-        return errorRate > threshold;
+        return Task.FromResult(errorRate > threshold);
     }
 
-    private async Task<bool> EvaluateSlowResponseTime(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
+    private Task<bool> EvaluateSlowResponseTime(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED" || 
             !integrationEvent.Data.ContainsKey("ProcessingTimeMs"))
@@ -360,10 +360,10 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         var threshold = (int)rule.Parameters["threshold_ms"];
         var responseTime = Convert.ToDouble(integrationEvent.Data["ProcessingTimeMs"]);
 
-        return responseTime > threshold;
+        return Task.FromResult(responseTime > threshold);
     }
 
-    private async Task<bool> EvaluateEndpointDown(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
+    private Task<bool> EvaluateEndpointDown(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED")
             return false;
@@ -377,7 +377,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             return false;
 
         var successfulRequests = recentEvents.Count(e => e.Level == IntegrationEventLevel.Info);
-        return successfulRequests == 0;
+        return Task.FromResult(successfulRequests == 0);
     }
 
     private async Task CreateAlertAsync(IntegrationAlertRule rule, IntegrationEvent integrationEvent)

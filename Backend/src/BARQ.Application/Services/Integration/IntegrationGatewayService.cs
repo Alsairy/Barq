@@ -256,7 +256,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving registered endpoints");
-            return new List<IntegrationEndpoint>();
+            return Task.FromResult<IEnumerable<IntegrationEndpoint>>(new List<IntegrationEndpoint>());
         }
     }
 
@@ -337,7 +337,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving integration logs");
-            return new List<IntegrationLog>();
+            return Task.FromResult<IEnumerable<IntegrationLog>>(new List<IntegrationLog>());
         }
     }
 

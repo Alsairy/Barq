@@ -331,7 +331,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting queue status");
-            return new List<QueueStatus>();
+            return Task.FromResult<IEnumerable<QueueStatus>>(new List<QueueStatus>());
         }
     }
 
@@ -467,7 +467,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
     private Task<string> TransformXmlToJson(string xmlContent)
     {
         var doc = XDocument.Parse(xmlContent);
-        var jsonObject = XmlToJsonObject(doc.Root);
+        var jsonObject = XmlToJsonObject(doc.Root!);
         var json = JsonSerializer.Serialize(jsonObject);
         return Task.FromResult(json);
     }
