@@ -474,7 +474,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
 
     private object XmlToJsonObject(XElement? element)
     {
-        if (element == null) return null;
+        if (element == null) return string.Empty;
 
         var result = new Dictionary<string, object>();
         

@@ -332,7 +332,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
     private Task<bool> EvaluateHighErrorRate(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.Level != IntegrationEventLevel.Error)
-            return false;
+            return Task.FromResult(false);
 
         var timeWindow = TimeSpan.FromMinutes((int)rule.Parameters["time_window_minutes"]);
         var threshold = (double)rule.Parameters["threshold"];
@@ -343,7 +343,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                                              e.EventType == "REQUEST_PROCESSED").ToList();
 
         if (recentEvents.Count == 0)
-            return false;
+            return Task.FromResult(false);
 
         var errorCount = recentEvents.Count(e => e.Level == IntegrationEventLevel.Error);
         var errorRate = (double)errorCount / recentEvents.Count;
@@ -355,7 +355,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED" || 
             !integrationEvent.Data.ContainsKey("ProcessingTimeMs"))
-            return false;
+            return Task.FromResult(false);
 
         var threshold = (int)rule.Parameters["threshold_ms"];
         var responseTime = Convert.ToDouble(integrationEvent.Data["ProcessingTimeMs"]);
@@ -366,7 +366,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
     private Task<bool> EvaluateEndpointDown(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
     {
         if (integrationEvent.EventType != "REQUEST_PROCESSED")
-            return false;
+            return Task.FromResult(false);
 
         var minRequests = (int)rule.Parameters["min_requests"];
         var recentEvents = _events.Where(e => e.EndpointId == integrationEvent.EndpointId && 
@@ -374,7 +374,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                                              e.EventType == "REQUEST_PROCESSED").ToList();
 
         if (recentEvents.Count < minRequests)
-            return false;
+            return Task.FromResult(false);
 
         var successfulRequests = recentEvents.Count(e => e.Level == IntegrationEventLevel.Info);
         return Task.FromResult(successfulRequests == 0);
