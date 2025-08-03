@@ -187,8 +187,6 @@ export default function WorkflowDesignerPage() {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const workflowData = {
         name: workflowName,
         description: workflowDescription,
@@ -198,7 +196,19 @@ export default function WorkflowDesignerPage() {
         createdAt: new Date().toISOString(),
       };
 
-      console.log('Saving workflow:', workflowData);
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(workflowData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save workflow');
+      }
+
+      console.log('Workflow saved successfully');
       
     } catch (error) {
       console.error('Failed to save workflow:', error);
@@ -214,8 +224,6 @@ export default function WorkflowDesignerPage() {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const executionData = {
         workflowId: 'new-workflow',
         nodes,
@@ -223,7 +231,19 @@ export default function WorkflowDesignerPage() {
         startedAt: new Date().toISOString(),
       };
 
-      console.log('Executing workflow:', executionData);
+      const response = await fetch('/api/workflows/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(executionData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to execute workflow');
+      }
+
+      console.log('Workflow executed successfully');
       
     } catch (error) {
       console.error('Failed to execute workflow:', error);

@@ -86,7 +86,18 @@ export function UserProfilePage() {
     setError(null);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+      
       setSuccess('Profile updated successfully');
       setIsEditing(false);
     } catch (error: any) {
@@ -101,7 +112,18 @@ export function UserProfilePage() {
     setError(null);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const response = await fetch('/api/profile/security', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(securitySettings),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update security settings');
+      }
+      
       setSuccess('Security settings updated successfully');
     } catch (error: any) {
       setError('Failed to update security settings. Please try again.');

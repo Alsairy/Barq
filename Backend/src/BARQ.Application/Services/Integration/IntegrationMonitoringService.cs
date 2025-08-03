@@ -111,7 +111,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Generated integration metrics for tenant {TenantId}: {TotalRequests} total requests, {SuccessRate}% success rate", 
                 tenantId, totalRequests, metrics.SuccessRate);
 
-            return await Task.FromResult(metrics);
+            return metrics;
         }
         catch (Exception ex)
         {
@@ -135,7 +135,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                 .OrderByDescending(a => a.CreatedAt)
                 .ToList();
 
-            return await Task.FromResult(tenantAlerts);
+            return tenantAlerts;
         }
         catch (Exception ex)
         {
@@ -159,7 +159,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Alert rule created: {RuleName} with condition {Condition}", 
                 rule.Name, rule.Condition);
 
-            return await Task.FromResult(true);
+            return true;
         }
         catch (Exception ex)
         {
@@ -348,7 +348,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         var errorCount = recentEvents.Count(e => e.Level == IntegrationEventLevel.Error);
         var errorRate = (double)errorCount / recentEvents.Count;
 
-        return await Task.FromResult(errorRate > threshold);
+        return errorRate > threshold;
     }
 
     private async Task<bool> EvaluateSlowResponseTime(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
@@ -360,7 +360,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         var threshold = (int)rule.Parameters["threshold_ms"];
         var responseTime = Convert.ToDouble(integrationEvent.Data["ProcessingTimeMs"]);
 
-        return await Task.FromResult(responseTime > threshold);
+        return responseTime > threshold;
     }
 
     private async Task<bool> EvaluateEndpointDown(IntegrationAlertRule rule, IntegrationEvent integrationEvent)
@@ -377,7 +377,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             return false;
 
         var successfulRequests = recentEvents.Count(e => e.Level == IntegrationEventLevel.Info);
-        return await Task.FromResult(successfulRequests == 0);
+        return successfulRequests == 0;
     }
 
     private async Task CreateAlertAsync(IntegrationAlertRule rule, IntegrationEvent integrationEvent)

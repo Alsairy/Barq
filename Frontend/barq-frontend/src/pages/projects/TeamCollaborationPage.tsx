@@ -90,139 +90,24 @@ export function TeamCollaborationPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const mockTeamMembers: TeamMember[] = [
-          {
-            id: '1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            role: 'Project Manager',
-            avatar: '/avatars/john.jpg',
-            status: 'online'
-          },
-          {
-            id: '2',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            role: 'Frontend Developer',
-            avatar: '/avatars/jane.jpg',
-            status: 'online'
-          },
-          {
-            id: '3',
-            name: 'Mike Johnson',
-            email: 'mike@example.com',
-            role: 'DevOps Engineer',
-            avatar: '/avatars/mike.jpg',
-            status: 'away',
-            lastSeen: '2024-01-20T10:30:00Z'
-          },
-          {
-            id: '4',
-            name: 'Sarah Wilson',
-            email: 'sarah@example.com',
-            role: 'Technical Writer',
-            avatar: '/avatars/sarah.jpg',
-            status: 'busy'
-          }
-        ];
+        const [teamResponse, channelsResponse, messagesResponse, meetingsResponse] = await Promise.all([
+          fetch(`/api/projects/${projectId}/team-members`),
+          fetch(`/api/projects/${projectId}/channels`),
+          fetch(`/api/projects/${projectId}/messages`),
+          fetch(`/api/projects/${projectId}/meetings`)
+        ]);
 
-        const mockChannels: Channel[] = [
-          {
-            id: '1',
-            name: 'general',
-            description: 'General project discussions',
-            type: 'public',
-            memberCount: 4,
-            unreadCount: 2
-          },
-          {
-            id: '2',
-            name: 'development',
-            description: 'Development-related discussions',
-            type: 'public',
-            memberCount: 3,
-            unreadCount: 0
-          },
-          {
-            id: '3',
-            name: 'design-review',
-            description: 'Design reviews and feedback',
-            type: 'private',
-            memberCount: 2,
-            unreadCount: 1
-          }
-        ];
+        const teamMembers = await teamResponse.json();
+        const channels = await channelsResponse.json();
+        const messages = await messagesResponse.json();
+        const meetings = await meetingsResponse.json();
 
-        const mockMessages: Message[] = [
-          {
-            id: '1',
-            senderId: '1',
-            senderName: 'John Doe',
-            senderAvatar: '/avatars/john.jpg',
-            content: 'Good morning team! Let\'s review the sprint progress in today\'s standup.',
-            timestamp: '2024-01-20T09:00:00Z',
-            type: 'text'
-          },
-          {
-            id: '2',
-            senderId: '2',
-            senderName: 'Jane Smith',
-            senderAvatar: '/avatars/jane.jpg',
-            content: 'I\'ve completed the dashboard UI. Here\'s the latest design:',
-            timestamp: '2024-01-20T09:15:00Z',
-            type: 'file',
-            attachments: [
-              {
-                name: 'dashboard-mockup.png',
-                url: '/files/dashboard-mockup.png',
-                type: 'image'
-              }
-            ]
-          },
-          {
-            id: '3',
-            senderId: '3',
-            senderName: 'Mike Johnson',
-            senderAvatar: '/avatars/mike.jpg',
-            content: 'Great work! The CI/CD pipeline is now configured and ready for testing.',
-            timestamp: '2024-01-20T09:30:00Z',
-            type: 'text',
-            reactions: [
-              { emoji: '👍', users: ['1', '2'] },
-              { emoji: '🎉', users: ['4'] }
-            ]
-          }
-        ];
-
-        const mockMeetings: Meeting[] = [
-          {
-            id: '1',
-            title: 'Daily Standup',
-            description: 'Daily team sync and progress update',
-            startTime: '2024-01-20T10:00:00Z',
-            endTime: '2024-01-20T10:30:00Z',
-            attendees: mockTeamMembers,
-            status: 'upcoming',
-            meetingUrl: 'https://meet.example.com/standup'
-          },
-          {
-            id: '2',
-            title: 'Sprint Planning',
-            description: 'Plan tasks for the upcoming sprint',
-            startTime: '2024-01-22T14:00:00Z',
-            endTime: '2024-01-22T16:00:00Z',
-            attendees: mockTeamMembers.slice(0, 3),
-            status: 'upcoming'
-          }
-        ];
-
-        setTeamMembers(mockTeamMembers);
-        setChannels(mockChannels);
-        setMessages(mockMessages);
-        setMeetings(mockMeetings);
-        setSelectedChannel(mockChannels[0]?.id || '');
+        setTeamMembers(teamMembers);
+        setChannels(channels);
+        setMessages(messages);
+        setMeetings(meetings);
+        setSelectedChannel(channels[0]?.id || '');
       } catch (error) {
         console.error('Failed to fetch collaboration data:', error);
       } finally {

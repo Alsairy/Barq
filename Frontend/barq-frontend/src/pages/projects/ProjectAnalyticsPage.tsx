@@ -89,68 +89,9 @@ export function ProjectAnalyticsPage() {
     const fetchAnalyticsData = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockData: AnalyticsData = {
-          performance: {
-            overallProgress: 68,
-            tasksCompleted: 89,
-            totalTasks: 156,
-            onTimeDelivery: 85,
-            budgetUtilization: 72,
-            teamEfficiency: 91
-          },
-          budget: {
-            allocated: 500000,
-            spent: 340000,
-            remaining: 160000,
-            burnRate: 15000,
-            projectedOverrun: 25000,
-            costPerTask: 3820
-          },
-          timeline: {
-            originalEndDate: '2024-12-31',
-            currentProjectedEndDate: '2025-01-15',
-            daysAhead: 0,
-            daysBehind: 15,
-            milestoneCompletion: 75
-          },
-          quality: {
-            defectRate: 2.3,
-            customerSatisfaction: 4.2,
-            codeQuality: 87,
-            testCoverage: 82,
-            reviewApprovalRate: 94
-          },
-          resources: {
-            teamUtilization: 85,
-            averageHoursPerTask: 12.5,
-            overtimeHours: 45,
-            skillGapAnalysis: [
-              { skill: 'React Development', demand: 80, supply: 90, gap: -10 },
-              { skill: 'DevOps', demand: 70, supply: 50, gap: 20 },
-              { skill: 'UI/UX Design', demand: 60, supply: 75, gap: -15 },
-              { skill: 'Backend Development', demand: 85, supply: 80, gap: 5 }
-            ]
-          },
-          trends: {
-            velocityTrend: [12, 15, 18, 16, 20, 22, 19, 24, 21, 25, 23, 27],
-            burndownData: [
-              { date: '2024-01-01', planned: 100, actual: 100 },
-              { date: '2024-01-15', planned: 85, actual: 88 },
-              { date: '2024-02-01', planned: 70, actual: 75 },
-              { date: '2024-02-15', planned: 55, actual: 62 },
-              { date: '2024-03-01', planned: 40, actual: 48 },
-              { date: '2024-03-15', planned: 25, actual: 35 },
-              { date: '2024-04-01', planned: 10, actual: 22 },
-              { date: '2024-04-15', planned: 0, actual: 12 }
-            ],
-            qualityTrend: [82, 85, 83, 87, 89, 86, 88, 90, 87, 89, 91, 87],
-            budgetTrend: [95, 88, 82, 78, 75, 72, 69, 65, 62, 58, 55, 52]
-          }
-        };
-        
-        setAnalyticsData(mockData);
+        const response = await fetch(`/api/projects/${projectId}/analytics?timeRange=${timeRange}`);
+        const analyticsData = await response.json();
+        setAnalyticsData(analyticsData);
       } catch (error) {
         console.error('Failed to fetch analytics data:', error);
       } finally {
@@ -163,8 +104,15 @@ export function ProjectAnalyticsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setRefreshing(false);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/analytics?timeRange=${timeRange}`);
+      const analyticsData = await response.json();
+      setAnalyticsData(analyticsData);
+    } catch (error) {
+      console.error('Failed to refresh analytics data:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const kpis: KPI[] = analyticsData ? [

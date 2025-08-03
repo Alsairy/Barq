@@ -56,7 +56,7 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("Successfully migrated JSON to BPMN 2.0 for process {ProcessId}", processId);
                 
-                return await Task.FromResult(bpmnXml);
+                return bpmnXml;
             }
             catch (Exception ex)
             {
@@ -107,7 +107,7 @@ namespace BARQ.Infrastructure.BPM
 
                 _logger.LogInformation("BPMN validation completed: {IsValid}", result.IsValid);
                 
-                return await Task.FromResult(result);
+                return result;
             }
             catch (Exception ex)
             {
@@ -138,7 +138,7 @@ namespace BARQ.Infrastructure.BPM
                 _logger.LogInformation("Migration completed: {Successful}/{Total} templates migrated successfully", 
                     result.SuccessfulMigrations, result.TotalTemplates);
                 
-                return await Task.FromResult(result);
+                return result;
             }
             catch (Exception ex)
             {

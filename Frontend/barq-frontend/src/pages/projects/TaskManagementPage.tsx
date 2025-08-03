@@ -76,111 +76,17 @@ export function TaskManagementPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        const mockTasks: Task[] = [
-          {
-            id: '1',
-            title: 'Implement user authentication',
-            description: 'Create login and registration functionality with JWT tokens',
-            status: 'completed',
-            priority: 'high',
-            assignee: { id: '1', name: 'John Doe', avatar: '/avatars/john.jpg' },
-            dueDate: '2024-01-20',
-            createdDate: '2024-01-10',
-            estimatedHours: 16,
-            actualHours: 18,
-            tags: ['backend', 'security'],
-            comments: 5,
-            attachments: 2,
-            dependencies: [],
-            milestone: 'MVP Release'
-          },
-          {
-            id: '2',
-            title: 'Design project dashboard UI',
-            description: 'Create wireframes and mockups for the main dashboard interface',
-            status: 'in-progress',
-            priority: 'medium',
-            assignee: { id: '2', name: 'Jane Smith', avatar: '/avatars/jane.jpg' },
-            dueDate: '2024-01-25',
-            createdDate: '2024-01-15',
-            estimatedHours: 12,
-            actualHours: 8,
-            tags: ['frontend', 'design'],
-            comments: 3,
-            attachments: 1,
-            dependencies: ['1'],
-            milestone: 'MVP Release'
-          },
-          {
-            id: '3',
-            title: 'Set up CI/CD pipeline',
-            description: 'Configure automated testing and deployment workflows',
-            status: 'todo',
-            priority: 'high',
-            assignee: { id: '3', name: 'Mike Johnson', avatar: '/avatars/mike.jpg' },
-            dueDate: '2024-01-30',
-            createdDate: '2024-01-18',
-            estimatedHours: 20,
-            actualHours: 0,
-            tags: ['devops', 'automation'],
-            comments: 1,
-            attachments: 0,
-            dependencies: ['1', '2'],
-            milestone: 'Infrastructure'
-          },
-          {
-            id: '4',
-            title: 'Write API documentation',
-            description: 'Document all REST API endpoints with examples and schemas',
-            status: 'review',
-            priority: 'medium',
-            assignee: { id: '4', name: 'Sarah Wilson', avatar: '/avatars/sarah.jpg' },
-            dueDate: '2024-02-05',
-            createdDate: '2024-01-20',
-            estimatedHours: 8,
-            actualHours: 6,
-            tags: ['documentation', 'api'],
-            comments: 2,
-            attachments: 3,
-            dependencies: ['1'],
-            milestone: 'Documentation'
-          }
-        ];
+        const [tasksResponse, milestonesResponse] = await Promise.all([
+          fetch(`/api/projects/${projectId}/tasks`),
+          fetch(`/api/projects/${projectId}/milestones`)
+        ]);
+        
+        const tasks = await tasksResponse.json();
+        const milestones = await milestonesResponse.json();
 
-        const mockMilestones: Milestone[] = [
-          {
-            id: '1',
-            name: 'MVP Release',
-            dueDate: '2024-02-15',
-            progress: 65,
-            status: 'active',
-            tasksCount: 12,
-            completedTasks: 8
-          },
-          {
-            id: '2',
-            name: 'Infrastructure',
-            dueDate: '2024-02-28',
-            progress: 30,
-            status: 'active',
-            tasksCount: 8,
-            completedTasks: 2
-          },
-          {
-            id: '3',
-            name: 'Documentation',
-            dueDate: '2024-03-10',
-            progress: 15,
-            status: 'upcoming',
-            tasksCount: 6,
-            completedTasks: 1
-          }
-        ];
-
-        setTasks(mockTasks);
-        setMilestones(mockMilestones);
+        setTasks(tasks);
+        setMilestones(milestones);
       } catch (error) {
         console.error('Failed to fetch tasks:', error);
       } finally {

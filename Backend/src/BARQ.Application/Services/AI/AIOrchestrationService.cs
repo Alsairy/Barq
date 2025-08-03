@@ -275,20 +275,20 @@ public class AIOrchestrationService : IAIOrchestrationService
 
             var isValid = !validationErrors.Any();
 
-            return Task.FromResult(new AIProviderValidationResult
+            return new AIProviderValidationResult
             {
                 IsValid = isValid,
                 Errors = validationErrors
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating provider configuration: {ProviderId}", configuration.Id);
-            return Task.FromResult(new AIProviderValidationResult
+            return new AIProviderValidationResult
             {
                 IsValid = false,
                 Errors = new List<string> { ex.Message }
-            });
+            };
         }
     }
 
@@ -406,7 +406,7 @@ public class AIOrchestrationService : IAIOrchestrationService
         {
             var startTime = DateTime.UtcNow;
 
-            await Task.Delay(1000, cancellationToken);
+            var resultData = await ExecuteAITaskWithProvider(task, provider, cancellationToken);
 
             var endTime = DateTime.UtcNow;
             var executionTime = endTime - startTime;
@@ -415,7 +415,7 @@ public class AIOrchestrationService : IAIOrchestrationService
             {
                 TaskId = task.Id,
                 Success = true,
-                ResultData = await ExecuteAITaskWithProvider(task, provider, cancellationToken),
+                ResultData = resultData,
                 ExecutionTimeMs = (long)executionTime.TotalMilliseconds,
                 Cost = CalculateTaskCost(task, provider, executionTime),
                 Provider = provider.Provider
@@ -1021,23 +1021,23 @@ public class AIOrchestrationService : IAIOrchestrationService
     private Task<string> ExecuteTextGenerationTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
     {
         var prompt = task.InputData?.ToString() ?? "Generate text based on the provided context";
-        return Task.FromResult($"Generated text response for prompt: '{prompt}' using {provider.Name}");
+        return $"Generated text response for prompt: '{prompt}' using {provider.Name}";
     }
 
     private Task<string> ExecuteTextAnalysisTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
     {
         var text = task.InputData?.ToString() ?? "";
-        return Task.FromResult($"Analysis complete: Sentiment: Positive, Confidence: 0.85, Key topics identified using {provider.Name}");
+        return $"Analysis complete: Sentiment: Positive, Confidence: 0.85, Key topics identified using {provider.Name}";
     }
 
     private Task<string> ExecuteDocumentProcessingTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
     {
-        return Task.FromResult($"Document processed successfully: Extracted 5 key sections, 12 entities, and 3 action items using {provider.Name}");
+        return $"Document processed successfully: Extracted 5 key sections, 12 entities, and 3 action items using {provider.Name}";
     }
 
     private Task<string> ExecuteDataExtractionTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
     {
-        return Task.FromResult($"Data extraction complete: 25 fields extracted, 98% accuracy using {provider.Name}");
+        return $"Data extraction complete: 25 fields extracted, 98% accuracy using {provider.Name}";
     }
 
     private decimal CalculateTaskCost(AITask task, AIProviderConfiguration provider, TimeSpan executionTime)

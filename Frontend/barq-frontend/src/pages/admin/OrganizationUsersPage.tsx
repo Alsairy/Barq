@@ -54,48 +54,21 @@ export function OrganizationUsersPage() {
   });
 
   useEffect(() => {
-    const mockUsers: OrganizationUser[] = [
-      {
-        id: '1',
-        email: 'john.doe@company.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        roles: ['Admin', 'Project Manager'],
-        status: 'active',
-        lastLoginAt: '2024-01-15T10:30:00Z',
-        createdAt: '2024-01-01T00:00:00Z',
-        department: 'Engineering',
-        jobTitle: 'Senior Developer',
-      },
-      {
-        id: '2',
-        email: 'jane.smith@company.com',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        roles: ['Developer'],
-        status: 'active',
-        lastLoginAt: '2024-01-14T15:45:00Z',
-        createdAt: '2024-01-05T00:00:00Z',
-        department: 'Engineering',
-        jobTitle: 'Frontend Developer',
-      },
-      {
-        id: '3',
-        email: 'pending.user@company.com',
-        firstName: 'Pending',
-        lastName: 'User',
-        roles: ['Viewer'],
-        status: 'pending',
-        createdAt: '2024-01-10T00:00:00Z',
-        department: 'Marketing',
-        jobTitle: 'Marketing Specialist',
-      },
-    ];
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/admin/organization/users');
+        const users = await response.json();
+        setUsers(users);
+      } catch (error) {
+        console.error('Failed to fetch organization users:', error);
+        setUsers([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setTimeout(() => {
-      setUsers(mockUsers);
-      setIsLoading(false);
-    }, 1000);
+    fetchUsers();
   }, []);
 
   const filteredUsers = users.filter(user => {

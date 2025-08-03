@@ -244,32 +244,32 @@ public class AuthenticationService : IAuthenticationService
 
             if (Guid.TryParse(userIdClaim, out var userId))
             {
-                return Task.FromResult(new SessionValidationResponse
+                return new SessionValidationResponse
                 {
                     Success = true,
                     Message = "Session is valid",
                     IsValid = true,
                     UserId = userId,
                     ExpiresAt = validatedToken.ValidTo
-                });
+                };
             }
 
-            return Task.FromResult(new SessionValidationResponse
+            return new SessionValidationResponse
             {
                 Success = false,
                 Message = "Invalid session",
                 IsValid = false
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating session token");
-            return Task.FromResult(new SessionValidationResponse
+            return new SessionValidationResponse
             {
                 Success = false,
                 Message = "Session validation failed",
                 IsValid = false
-            });
+            };
         }
     }
 

@@ -70,81 +70,9 @@ export default function AIProviderManagementPage() {
   const fetchProviders = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockProviders: AIProvider[] = [
-        {
-          id: '1',
-          name: 'OpenAI GPT-4',
-          type: 'openai',
-          status: 'active',
-          endpoint: 'https://api.openai.com/v1',
-          apiKeyMasked: 'sk-...abc123',
-          responseTime: 1200,
-          uptime: 99.8,
-          costPerRequest: 0.03,
-          requestsToday: 1250,
-          costToday: 37.50,
-          errorRate: 0.2,
-          rateLimit: 10000,
-          rateLimitUsed: 3500,
-          lastHealthCheck: '2 minutes ago',
-          configuration: {
-            timeout: 30000,
-            retries: 3,
-            priority: 1,
-            failoverEnabled: true
-          }
-        },
-        {
-          id: '2',
-          name: 'Anthropic Claude',
-          type: 'anthropic',
-          status: 'active',
-          endpoint: 'https://api.anthropic.com/v1',
-          apiKeyMasked: 'sk-...def456',
-          responseTime: 950,
-          uptime: 99.9,
-          costPerRequest: 0.025,
-          requestsToday: 890,
-          costToday: 22.25,
-          errorRate: 0.1,
-          rateLimit: 5000,
-          rateLimitUsed: 1200,
-          lastHealthCheck: '1 minute ago',
-          configuration: {
-            timeout: 25000,
-            retries: 2,
-            priority: 2,
-            failoverEnabled: true
-          }
-        },
-        {
-          id: '3',
-          name: 'Azure OpenAI',
-          type: 'azure',
-          status: 'error',
-          endpoint: 'https://barq-ai.openai.azure.com',
-          apiKeyMasked: 'key-...ghi789',
-          responseTime: 0,
-          uptime: 95.2,
-          costPerRequest: 0.028,
-          requestsToday: 0,
-          costToday: 0,
-          errorRate: 100,
-          rateLimit: 8000,
-          rateLimitUsed: 0,
-          lastHealthCheck: '15 minutes ago',
-          configuration: {
-            timeout: 35000,
-            retries: 5,
-            priority: 3,
-            failoverEnabled: false
-          }
-        }
-      ];
-      
-      setProviders(mockProviders);
+      const response = await fetch('/api/ai/providers');
+      const providers = await response.json();
+      setProviders(providers);
     } catch (error) {
       console.error('Failed to fetch providers:', error);
     } finally {
@@ -154,18 +82,9 @@ export default function AIProviderManagementPage() {
 
   const fetchMetrics = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockMetrics: ProviderMetrics = {
-        totalProviders: 3,
-        activeProviders: 2,
-        totalRequests: 2140,
-        totalCost: 59.75,
-        averageResponseTime: 1075,
-        overallUptime: 98.3
-      };
-      
-      setMetrics(mockMetrics);
+      const response = await fetch('/api/ai/providers/metrics');
+      const metrics = await response.json();
+      setMetrics(metrics);
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }

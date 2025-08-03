@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -10,43 +11,89 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts'
 
-const mockData = {
+interface DashboardData {
   aiRequests: {
-    total: 156,
-    pending: 23,
-    approved: 98,
-    rejected: 12,
-    inProgress: 23
-  },
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    inProgress: number;
+  };
   workflows: {
-    active: 45,
-    completed: 234,
-    failed: 8
-  },
+    active: number;
+    completed: number;
+    failed: number;
+  };
   qualityAssessments: {
-    pending: 15,
-    completed: 89,
-    averageScore: 87.5
-  }
+    pending: number;
+    completed: number;
+    averageScore: number;
+  };
 }
 
-const chartData = [
-  { name: 'Jan', requests: 65, completed: 45 },
-  { name: 'Feb', requests: 78, completed: 62 },
-  { name: 'Mar', requests: 90, completed: 78 },
-  { name: 'Apr', requests: 81, completed: 69 },
-  { name: 'May', requests: 95, completed: 85 },
-  { name: 'Jun', requests: 102, completed: 89 }
-]
+interface ChartDataPoint {
+  name: string;
+  requests: number;
+  completed: number;
+}
 
-const qualityTrendData = [
-  { name: 'Week 1', score: 82 },
-  { name: 'Week 2', score: 85 },
-  { name: 'Week 3', score: 88 },
-  { name: 'Week 4', score: 87 }
-]
+interface QualityTrendPoint {
+  name: string;
+  score: number;
+}
 
 export default function Dashboard() {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [qualityTrendData, setQualityTrendData] = useState<QualityTrendPoint[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true)
+        
+        const [statsResponse, chartResponse, qualityResponse] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/dashboard/chart-data'),
+          fetch('/api/dashboard/quality-trends')
+        ])
+
+        const stats = await statsResponse.json()
+        const chart = await chartResponse.json()
+        const quality = await qualityResponse.json()
+
+        setDashboardData(stats)
+        setChartData(chart)
+        setQualityTrendData(quality)
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+        setDashboardData({
+          aiRequests: { total: 0, pending: 0, approved: 0, rejected: 0, inProgress: 0 },
+          workflows: { active: 0, completed: 0, failed: 0 },
+          qualityAssessments: { pending: 0, completed: 0, averageScore: 0 }
+        })
+        setChartData([])
+        setQualityTrendData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading dashboard data...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -64,7 +111,7 @@ export default function Dashboard() {
             <Bot className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.aiRequests.total}</div>
+            <div className="text-2xl font-bold">{dashboardData?.aiRequests?.total || 0}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+12%</span> from last month
             </p>
@@ -77,7 +124,7 @@ export default function Dashboard() {
             <Workflow className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.workflows.active}</div>
+            <div className="text-2xl font-bold">{dashboardData?.workflows?.active || 0}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-blue-600">+5</span> new this week
             </p>
@@ -90,7 +137,7 @@ export default function Dashboard() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.qualityAssessments.averageScore}%</div>
+            <div className="text-2xl font-bold">{dashboardData?.qualityAssessments?.averageScore || 0}%</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+2.5%</span> improvement
             </p>
@@ -103,7 +150,7 @@ export default function Dashboard() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.aiRequests.pending}</div>
+            <div className="text-2xl font-bold">{dashboardData?.aiRequests?.pending || 0}</div>
             <p className="text-xs text-muted-foreground">
               Requires attention
             </p>

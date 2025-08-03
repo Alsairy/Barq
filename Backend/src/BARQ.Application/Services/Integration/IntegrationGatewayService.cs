@@ -251,7 +251,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             _logger.LogDebug("Retrieved {Count} endpoints for tenant {TenantId}", 
                 tenantEndpoints.Count, tenantId);
 
-            return await Task.FromResult(tenantEndpoints);
+            return tenantEndpoints;
         }
         catch (Exception ex)
         {
@@ -332,7 +332,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             if (toDate.HasValue)
                 logs = logs.Where(l => l.CreatedAt <= toDate.Value);
 
-            return await Task.FromResult(logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList());
+            return logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList();
         }
         catch (Exception ex)
         {

@@ -72,45 +72,9 @@ export function ProjectDashboardPage() {
     const fetchProjectData = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockProject: ProjectMetrics = {
-          id: projectId || '1',
-          name: 'BARQ Platform Development',
-          description: 'Enterprise-grade business automation and requirements platform',
-          status: 'active',
-          progress: 68,
-          startDate: '2024-01-15',
-          endDate: '2024-12-31',
-          budget: {
-            allocated: 500000,
-            spent: 340000,
-            remaining: 160000
-          },
-          team: {
-            totalMembers: 12,
-            activeMembers: 10,
-            utilization: 85
-          },
-          tasks: {
-            total: 156,
-            completed: 89,
-            inProgress: 34,
-            overdue: 8
-          },
-          milestones: {
-            total: 8,
-            completed: 5,
-            upcoming: 2
-          },
-          risks: {
-            high: 2,
-            medium: 5,
-            low: 3
-          }
-        };
-        
-        setProject(mockProject);
+        const response = await fetch(`/api/projects/${projectId}/dashboard`);
+        const projectData = await response.json();
+        setProject(projectData);
       } catch (err) {
         setError('Failed to load project data');
       } finally {

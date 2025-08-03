@@ -88,129 +88,9 @@ export default function WorkflowLibraryPage() {
   const fetchTemplates = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockTemplates: WorkflowTemplate[] = [
-        {
-          id: '1',
-          name: 'Customer Onboarding',
-          description: 'Complete customer onboarding process with document verification and account setup',
-          category: 'Customer Management',
-          version: '2.1.0',
-          isPublic: true,
-          isFavorite: true,
-          createdBy: 'john.doe@example.com',
-          createdAt: '2024-01-10T10:00:00Z',
-          lastModified: '2024-01-15T14:30:00Z',
-          usageCount: 245,
-          rating: 4.8,
-          ratingCount: 32,
-          tags: ['onboarding', 'customer', 'verification', 'automation'],
-          complexity: 'medium',
-          estimatedDuration: 1800000,
-          permissions: {
-            canView: true,
-            canEdit: true,
-            canExecute: true,
-            canShare: true,
-          },
-          versions: [
-            {
-              id: 'v1',
-              version: '2.1.0',
-              description: 'Added automated document verification',
-              createdBy: 'john.doe@example.com',
-              createdAt: '2024-01-15T14:30:00Z',
-              isActive: true,
-              changeLog: ['Added AI document verification', 'Improved error handling', 'Updated UI components']
-            },
-            {
-              id: 'v2',
-              version: '2.0.0',
-              description: 'Major redesign with new approval process',
-              createdBy: 'jane.smith@example.com',
-              createdAt: '2024-01-10T10:00:00Z',
-              isActive: false,
-              changeLog: ['Redesigned approval workflow', 'Added multi-step verification']
-            }
-          ],
-          collaborators: ['jane.smith@example.com', 'bob.wilson@example.com']
-        },
-        {
-          id: '2',
-          name: 'Invoice Processing',
-          description: 'Automated invoice processing with approval workflow and payment scheduling',
-          category: 'Finance',
-          version: '1.5.2',
-          isPublic: false,
-          isFavorite: false,
-          createdBy: 'finance@example.com',
-          createdAt: '2024-01-05T09:00:00Z',
-          lastModified: '2024-01-12T16:45:00Z',
-          usageCount: 189,
-          rating: 4.6,
-          ratingCount: 28,
-          tags: ['finance', 'invoice', 'approval', 'payment'],
-          complexity: 'simple',
-          estimatedDuration: 900000,
-          permissions: {
-            canView: true,
-            canEdit: false,
-            canExecute: true,
-            canShare: false,
-          },
-          versions: [
-            {
-              id: 'v1',
-              version: '1.5.2',
-              description: 'Bug fixes and performance improvements',
-              createdBy: 'finance@example.com',
-              createdAt: '2024-01-12T16:45:00Z',
-              isActive: true,
-              changeLog: ['Fixed calculation errors', 'Improved performance']
-            }
-          ],
-          collaborators: ['accounting@example.com']
-        },
-        {
-          id: '3',
-          name: 'Data Migration Pipeline',
-          description: 'Complex data migration workflow with validation, transformation, and rollback capabilities',
-          category: 'Data Management',
-          version: '3.0.0-beta',
-          isPublic: true,
-          isFavorite: true,
-          createdBy: 'data.team@example.com',
-          createdAt: '2024-01-01T08:00:00Z',
-          lastModified: '2024-01-14T11:20:00Z',
-          usageCount: 67,
-          rating: 4.2,
-          ratingCount: 15,
-          tags: ['data', 'migration', 'etl', 'validation'],
-          complexity: 'complex',
-          estimatedDuration: 7200000,
-          permissions: {
-            canView: true,
-            canEdit: true,
-            canExecute: false,
-            canShare: true,
-          },
-          versions: [
-            {
-              id: 'v1',
-              version: '3.0.0-beta',
-              description: 'Beta release with new transformation engine',
-              createdBy: 'data.team@example.com',
-              createdAt: '2024-01-14T11:20:00Z',
-              isActive: true,
-              changeLog: ['New transformation engine', 'Enhanced validation', 'Rollback capabilities']
-            }
-          ],
-          collaborators: ['dev.team@example.com', 'qa.team@example.com']
-        }
-      ];
-
-      setTemplates(mockTemplates);
+      const response = await fetch('/api/workflows/templates');
+      const data = await response.json();
+      setTemplates(data);
     } catch (error) {
       console.error('Failed to fetch templates:', error);
     } finally {
@@ -220,44 +100,9 @@ export default function WorkflowLibraryPage() {
 
   const fetchCategories = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockCategories: WorkflowCategory[] = [
-        {
-          id: 'customer',
-          name: 'Customer Management',
-          description: 'Workflows for customer onboarding, support, and management',
-          icon: 'Users',
-          workflowCount: 12,
-          isExpanded: true
-        },
-        {
-          id: 'finance',
-          name: 'Finance',
-          description: 'Financial processes, invoicing, and payment workflows',
-          icon: 'DollarSign',
-          workflowCount: 8,
-          isExpanded: false
-        },
-        {
-          id: 'data',
-          name: 'Data Management',
-          description: 'Data processing, migration, and analytics workflows',
-          icon: 'Database',
-          workflowCount: 15,
-          isExpanded: false
-        },
-        {
-          id: 'hr',
-          name: 'Human Resources',
-          description: 'Employee onboarding, performance reviews, and HR processes',
-          icon: 'UserCheck',
-          workflowCount: 6,
-          isExpanded: false
-        }
-      ];
-
-      setCategories(mockCategories);
+      const response = await fetch('/api/workflows/categories');
+      const data = await response.json();
+      setCategories(data);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }

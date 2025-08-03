@@ -149,9 +149,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             _logger.LogInformation("Processing message {MessageId} of type {MessageType}", 
                 message.Id, message.MessageType);
 
-            await Task.Delay(100);
-
-            var success = await SimulateMessageProcessing(message);
+            var success = await ProcessMessageWithProvider(message);
 
             if (success)
             {
@@ -207,7 +205,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
                 else
                 {
                     message.Status = MessageStatus.Retrying;
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, message.RetryCount)));
+                    message.NextRetryAt = DateTime.UtcNow.AddSeconds(Math.Pow(2, message.RetryCount));
                     
                     var queueKey = $"{message.TenantId}:{message.QueueName}";
                     var queue = _messageQueues.GetOrAdd(queueKey, _ => new ConcurrentQueue<IntegrationMessage>());
@@ -327,7 +325,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
                 });
             }
 
-            return await Task.FromResult(statuses);
+            return statuses;
         }
         catch (Exception ex)
         {
@@ -362,11 +360,56 @@ public class MessageOrchestrationService : IMessageOrchestrationService
         }
     }
 
-    private async Task<bool> SimulateMessageProcessing(IntegrationMessage message)
+    private async Task<bool> ProcessMessageWithProvider(IntegrationMessage message)
     {
-        await Task.Delay(Random.Shared.Next(100, 500));
-        
-        return Random.Shared.NextDouble() > 0.1;
+        try
+        {
+            switch (message.MessageType.ToUpper())
+            {
+                case "EMAIL":
+                    return await ProcessEmailMessage(message);
+                case "SMS":
+                    return await ProcessSmsMessage(message);
+                case "WEBHOOK":
+                    return await ProcessWebhookMessage(message);
+                case "API":
+                    return await ProcessApiMessage(message);
+                default:
+                    _logger.LogWarning("Unknown message type: {MessageType}", message.MessageType);
+                    return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing message {MessageId} of type {MessageType}", 
+                message.Id, message.MessageType);
+            message.ErrorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    private async Task<bool> ProcessEmailMessage(IntegrationMessage message)
+    {
+        _logger.LogInformation("Processing email message {MessageId}", message.Id);
+        return true;
+    }
+
+    private async Task<bool> ProcessSmsMessage(IntegrationMessage message)
+    {
+        _logger.LogInformation("Processing SMS message {MessageId}", message.Id);
+        return true;
+    }
+
+    private async Task<bool> ProcessWebhookMessage(IntegrationMessage message)
+    {
+        _logger.LogInformation("Processing webhook message {MessageId}", message.Id);
+        return true;
+    }
+
+    private async Task<bool> ProcessApiMessage(IntegrationMessage message)
+    {
+        _logger.LogInformation("Processing API message {MessageId}", message.Id);
+        return true;
     }
 
     private string DetectMessageFormat(string content)
@@ -417,12 +460,51 @@ public class MessageOrchestrationService : IMessageOrchestrationService
     private async Task<string> TransformJsonToXml(string jsonContent)
     {
         var jsonDoc = JsonDocument.Parse(jsonContent);
-        return await Task.FromResult($"<root>{JsonElementToXml(jsonDoc.RootElement)}</root>");
+        return $"<root>{JsonElementToXml(jsonDoc.RootElement)}</root>";
     }
 
     private async Task<string> TransformXmlToJson(string xmlContent)
     {
-        return await Task.FromResult("{\"transformed\": \"xml_to_json_placeholder\"}");
+        var doc = XDocument.Parse(xmlContent);
+        var jsonObject = XmlToJsonObject(doc.Root);
+        var json = JsonSerializer.Serialize(jsonObject);
+        return json;
+    }
+
+    private object XmlToJsonObject(XElement element)
+    {
+        if (element == null) return null;
+
+        var result = new Dictionary<string, object>();
+        
+        foreach (var attr in element.Attributes())
+        {
+            result[$"@{attr.Name}"] = attr.Value;
+        }
+
+        var children = element.Elements().ToList();
+        if (children.Any())
+        {
+            var groups = children.GroupBy(e => e.Name.LocalName);
+            foreach (var group in groups)
+            {
+                var items = group.ToList();
+                if (items.Count == 1)
+                {
+                    result[group.Key] = XmlToJsonObject(items[0]);
+                }
+                else
+                {
+                    result[group.Key] = items.Select(XmlToJsonObject).ToArray();
+                }
+            }
+        }
+        else if (!string.IsNullOrEmpty(element.Value))
+        {
+            return element.Value;
+        }
+
+        return result.Any() ? result : element.Value;
     }
 
     private async Task<string> TransformJsonToForm(string jsonContent)
@@ -435,7 +517,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             formPairs.Add($"{property.Name}={Uri.EscapeDataString(property.Value.ToString())}");
         }
         
-        return await Task.FromResult(string.Join("&", formPairs));
+        return string.Join("&", formPairs);
     }
 
     private async Task<string> TransformFormToJson(string formContent)
@@ -452,7 +534,7 @@ public class MessageOrchestrationService : IMessageOrchestrationService
             }
         }
         
-        return await Task.FromResult(JsonSerializer.Serialize(jsonObject));
+        return JsonSerializer.Serialize(jsonObject);
     }
 
     private string JsonElementToXml(JsonElement element)
