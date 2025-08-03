@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,52 +19,6 @@ import {
 } from 'lucide-react'
 import { WorkflowInstance, WorkflowStatus } from '@/types/api'
 
-const mockWorkflows: WorkflowInstance[] = [
-  {
-    id: 'wf-001',
-    templateId: 'template-1',
-    status: WorkflowStatus.Running,
-    currentStepId: 'step-2',
-    initiatorId: 'user1',
-    workflowData: '{"requestId": "1", "approvalLevel": 2}',
-    startedAt: '2024-08-01T10:00:00Z',
-    createdAt: '2024-08-01T10:00:00Z',
-    updatedAt: '2024-08-02T14:30:00Z'
-  },
-  {
-    id: 'wf-002',
-    templateId: 'template-2',
-    status: WorkflowStatus.Completed,
-    initiatorId: 'user3',
-    workflowData: '{"requestId": "2", "analysisType": "sales"}',
-    startedAt: '2024-08-01T15:00:00Z',
-    completedAt: '2024-08-02T16:00:00Z',
-    createdAt: '2024-08-01T15:00:00Z',
-    updatedAt: '2024-08-02T16:00:00Z'
-  },
-  {
-    id: 'wf-003',
-    templateId: 'template-3',
-    status: WorkflowStatus.Suspended,
-    currentStepId: 'step-1',
-    initiatorId: 'user4',
-    workflowData: '{"requestId": "3", "reviewType": "security"}',
-    startedAt: '2024-08-02T09:00:00Z',
-    createdAt: '2024-08-02T09:00:00Z',
-    updatedAt: '2024-08-02T09:00:00Z'
-  },
-  {
-    id: 'wf-004',
-    templateId: 'template-1',
-    status: WorkflowStatus.Failed,
-    currentStepId: 'step-3',
-    initiatorId: 'user2',
-    workflowData: '{"requestId": "4", "errorCode": "TIMEOUT"}',
-    startedAt: '2024-08-01T08:00:00Z',
-    createdAt: '2024-08-01T08:00:00Z',
-    updatedAt: '2024-08-01T12:00:00Z'
-  }
-]
 
 const workflowTemplates = {
   'template-1': { name: 'AI Request Approval', steps: 4 },
@@ -73,10 +27,29 @@ const workflowTemplates = {
 }
 
 export default function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<WorkflowInstance[]>(mockWorkflows)
+  const [workflows, setWorkflows] = useState<WorkflowInstance[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [templateFilter, setTemplateFilter] = useState<string>('all')
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchWorkflows = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/workflows/instances')
+        const workflowData = await response.json()
+        setWorkflows(workflowData)
+      } catch (error) {
+        console.error('Failed to fetch workflows:', error)
+        setWorkflows([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchWorkflows()
+  }, [])
 
   const filteredWorkflows = workflows.filter(workflow => {
     const templateName = workflowTemplates[workflow.templateId as keyof typeof workflowTemplates]?.name || 'Unknown'

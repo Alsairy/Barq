@@ -151,7 +151,7 @@ public class SiemIntegrationService : ISiemIntegrationService
                 });
             }
 
-            return Task.FromResult<IEnumerable<SiemCorrelationDto>>(correlations);
+            return correlations;
         }
         catch (Exception ex)
         {
@@ -316,7 +316,6 @@ public class SiemIntegrationService : ISiemIntegrationService
                         batch.Count(), response.StatusCode);
                 }
 
-                await Task.Delay(_siemConfiguration.BatchInterval);
             }
 
             await LogSiemOperationAsync("BULK_SEND_COMPLETED", 
@@ -338,7 +337,7 @@ public class SiemIntegrationService : ISiemIntegrationService
     {
         try
         {
-            return Task.FromResult(_siemConfiguration);
+            return _siemConfiguration;
         }
         catch (Exception ex)
         {
@@ -377,7 +376,7 @@ public class SiemIntegrationService : ISiemIntegrationService
             if (toDate.HasValue)
                 query = query.Where(a => a.CreatedAt <= toDate.Value);
 
-            return Task.FromResult<IEnumerable<SiemAlertDto>>(query.OrderByDescending(a => a.CreatedAt).ToList());
+            return query.OrderByDescending(a => a.CreatedAt).ToList();
         }
         catch (Exception ex)
         {

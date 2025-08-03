@@ -98,7 +98,6 @@ public class PerformanceTestFramework
             var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(30));
             results.Add(loadTestResult);
 
-            await Task.Delay(TimeSpan.FromSeconds(5));
         }
 
         return results;
