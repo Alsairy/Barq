@@ -241,7 +241,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         }
     }
 
-    public async Task<IEnumerable<IntegrationEndpoint>> GetRegisteredEndpointsAsync()
+    public Task<IEnumerable<IntegrationEndpoint>> GetRegisteredEndpointsAsync()
     {
         try
         {
@@ -251,7 +251,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             _logger.LogDebug("Retrieved {Count} endpoints for tenant {TenantId}", 
                 tenantEndpoints.Count, tenantId);
 
-            return tenantEndpoints;
+            return Task.FromResult<IEnumerable<IntegrationEndpoint>>(tenantEndpoints);
         }
         catch (Exception ex)
         {
@@ -319,7 +319,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         }
     }
 
-    public async Task<IEnumerable<IntegrationLog>> GetIntegrationLogsAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    public Task<IEnumerable<IntegrationLog>> GetIntegrationLogsAsync(DateTime? fromDate = null, DateTime? toDate = null)
     {
         try
         {
@@ -332,7 +332,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             if (toDate.HasValue)
                 logs = logs.Where(l => l.CreatedAt <= toDate.Value);
 
-            return logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList();
+            return Task.FromResult<IEnumerable<IntegrationLog>>(logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList());
         }
         catch (Exception ex)
         {

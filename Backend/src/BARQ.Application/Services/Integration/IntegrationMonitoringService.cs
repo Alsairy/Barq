@@ -63,7 +63,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         }
     }
 
-    public async Task<IntegrationMetrics> GetMetricsAsync(DateTime fromDate, DateTime toDate)
+    public Task<IntegrationMetrics> GetMetricsAsync(DateTime fromDate, DateTime toDate)
     {
         try
         {
@@ -111,7 +111,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Generated integration metrics for tenant {TenantId}: {TotalRequests} total requests, {SuccessRate}% success rate", 
                 tenantId, totalRequests, metrics.SuccessRate);
 
-            return metrics;
+            return Task.FromResult(metrics);
         }
         catch (Exception ex)
         {
@@ -124,7 +124,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         }
     }
 
-    public async Task<IEnumerable<IntegrationAlert>> GetActiveAlertsAsync()
+    public Task<IEnumerable<IntegrationAlert>> GetActiveAlertsAsync()
     {
         try
         {
@@ -135,7 +135,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
                 .OrderByDescending(a => a.CreatedAt)
                 .ToList();
 
-            return tenantAlerts;
+            return Task.FromResult<IEnumerable<IntegrationAlert>>(tenantAlerts);
         }
         catch (Exception ex)
         {
@@ -144,7 +144,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
         }
     }
 
-    public async Task<bool> CreateAlertRuleAsync(IntegrationAlertRule rule)
+    public Task<bool> CreateAlertRuleAsync(IntegrationAlertRule rule)
     {
         try
         {
@@ -159,7 +159,7 @@ public class IntegrationMonitoringService : IIntegrationMonitoringService
             _logger.LogInformation("Alert rule created: {RuleName} with condition {Condition}", 
                 rule.Name, rule.Condition);
 
-            return true;
+            return Task.FromResult(true);
         }
         catch (Exception ex)
         {
