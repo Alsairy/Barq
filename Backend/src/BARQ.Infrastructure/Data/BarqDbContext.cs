@@ -38,6 +38,12 @@ public class BarqDbContext : DbContext
     public DbSet<BusinessRequirementDocument> BusinessRequirementDocuments { get; set; }
     public DbSet<AIRequest> AIRequests { get; set; }
     public DbSet<AIRequestApproval> AIRequestApprovals { get; set; }
+    public DbSet<CodeGenerationConfiguration> CodeGenerationConfigurations { get; set; }
+    public DbSet<BRDTemplateConfiguration> BRDTemplateConfigurations { get; set; }
+    public DbSet<ProposalConfiguration> ProposalConfigurations { get; set; }
+    public DbSet<PresentationConfiguration> PresentationConfigurations { get; set; }
+    public DbSet<DesignConfiguration> DesignConfigurations { get; set; }
+    public DbSet<TestingConfiguration> TestingConfigurations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
