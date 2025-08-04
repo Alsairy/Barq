@@ -21,7 +21,7 @@ import {
   UpdateSsoConfigurationRequest,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://barq-backend-tunnel-api.devinapps.com';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://user:308d6daae8279f496d7bb8a257d83551@barq-application-tunnel-hreq4bce.devinapps.com';
 
 const authApi = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,
@@ -68,7 +68,7 @@ authApi.interceptors.response.use(
 export const authService = {
   async login(request: LoginRequest): Promise<AuthenticationResponse> {
     const response: AxiosResponse<ApiResponse<AuthenticationResponse>> = await authApi.post('/login', {
-      request,
+      Request: request,
     });
     return response.data.data!;
   },

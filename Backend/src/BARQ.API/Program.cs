@@ -33,6 +33,7 @@ using BARQ.Infrastructure.Caching;
 using BARQ.Infrastructure.Performance;
 using BARQ.Infrastructure.BackgroundJobs;
 using BARQ.Infrastructure.Data.SeedData;
+using BARQ.Application.Services.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -119,7 +120,7 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlite("Data Source=barq_dev.db"));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
@@ -169,6 +170,7 @@ builder.Services.AddFlowableBpmServices(builder.Configuration);
 
 builder.Services.AddScoped<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<IKeyManagementService, KeyManagementService>();
+builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<ISecurityMonitoringService, SecurityMonitoringService>();
 builder.Services.AddScoped<IThreatDetectionService, ThreatDetectionService>();
 builder.Services.AddScoped<ISiemIntegrationService, SiemIntegrationService>();
@@ -308,9 +310,13 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://barq.app", "https://barq-application-plu4nmbz.devinapps.com" })
-                  .WithMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-                  .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "X-Tenant-ID", "X-Correlation-ID")
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? 
+                  new[] { 
+                      "https://barq.app", 
+                      "https://barq-application-plu4nmbz.devinapps.com"
+                  })
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
                   .AllowCredentials()
                   .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
         }
@@ -319,11 +325,21 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
-//     await OAuthProviderSeeder.SeedOAuthProvidersAsync(context);
-// }
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        var passwordService = scope.ServiceProvider.GetRequiredService<PasswordService>();
+        
+        await context.Database.EnsureCreatedAsync();
+        await UserSeeder.SeedUsersAsync(context, passwordService);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Warning: Database seeding failed: {ex.Message}");
+    }
+}
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
