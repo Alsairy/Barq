@@ -374,8 +374,8 @@ else
 }
 
 app.UseResponseCompression();
-app.UseHttpsRedirection();
 app.UseCors("SecurePolicy");
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
