@@ -13,6 +13,9 @@ import { BRDGenerationPage } from './pages/ai/BRDGenerationPage'
 import { AIRequestManagementPage } from './pages/ai/AIRequestManagementPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { OAuthCallbackPage } from './pages/auth/OAuthCallbackPage'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { DevinChatInterface } from './components/chat/DevinChatInterface'
+import { RolePermissionManager } from './components/admin/RolePermissionManager'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import './App.css'
 
@@ -77,6 +80,27 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <AIRequestManagementPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requiredRole="Admin">
+                <Layout>
+                  <AdminDashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/roles" element={
+              <ProtectedRoute requiredRole="Admin">
+                <Layout>
+                  <RolePermissionManager />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/ai/chat" element={
+              <ProtectedRoute>
+                <Layout>
+                  <DevinChatInterface />
                 </Layout>
               </ProtectedRoute>
             } />
