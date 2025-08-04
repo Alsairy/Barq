@@ -21,7 +21,7 @@ import {
   UpdateSsoConfigurationRequest,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://user:308d6daae8279f496d7bb8a257d83551@barq-application-tunnel-hreq4bce.devinapps.com';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://user:66e773a39154587338ca576f1911e36a@barqapp-tunnel-8lnml3e1.devinapps.com';
 
 const authApi = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,

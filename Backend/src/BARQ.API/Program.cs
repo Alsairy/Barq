@@ -298,28 +298,22 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddCors(options =>
 {
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+    });
+    
     options.AddPolicy("SecurePolicy", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials()
-                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-        }
-        else
-        {
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? 
-                  new[] { 
-                      "https://barq.app", 
-                      "https://barq-application-plu4nmbz.devinapps.com"
-                  })
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials()
-                  .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-        }
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()
+              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
     });
 });
 
