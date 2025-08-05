@@ -107,7 +107,46 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    options.CustomSchemaIds(type => 
+    {
+        var fullName = type.FullName?.Replace("+", ".");
+        if (fullName == null) return type.Name;
+        
+        if (type.IsGenericType)
+        {
+            var baseTypeName = type.Name.Split('`')[0];
+            var genericArgs = type.GetGenericArguments();
+            
+            var argNames = genericArgs.Select(arg => 
+            {
+                if (arg.IsGenericType)
+                {
+                    var innerBase = arg.Name.Split('`')[0];
+                    var innerArgs = arg.GetGenericArguments();
+                    if (innerArgs.Length > 0)
+                    {
+                        return innerBase + "Of" + innerArgs[0].Name;
+                    }
+                    return innerBase;
+                }
+                else
+                {
+                    return arg.Name;
+                }
+            });
+            
+            return baseTypeName + "Of" + string.Join("And", argNames);
+        }
+        
+        var namespaceParts = fullName.Split('.');
+        if (namespaceParts.Length > 1)
+        {
+            var relevantParts = namespaceParts.Skip(Math.Max(0, namespaceParts.Length - 3)).ToArray();
+            return string.Join("", relevantParts).Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+        }
+        
+        return type.Name.Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+    });
 });
 
 var environment = builder.Environment.EnvironmentName;
