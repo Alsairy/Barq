@@ -413,11 +413,14 @@ public class AuthenticationService : IAuthenticationService
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
             _logger.LogInformation("Created {ClaimsCount} claims for token", claims.Count);
 
+            var symmetricKey = new SymmetricSecurityKey(key);
+            symmetricKey.KeyId = "barq-jwt-key"; // Add KeyId to prevent validation errors
+            
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                SigningCredentials = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -468,11 +471,14 @@ public class AuthenticationService : IAuthenticationService
             new("token_type", "mfa")
         };
 
+        var symmetricKey = new SymmetricSecurityKey(key);
+        symmetricKey.KeyId = "barq-jwt-key"; // Add KeyId to prevent validation errors
+        
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(5), // Short-lived MFA token
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            SigningCredentials = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256Signature)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
