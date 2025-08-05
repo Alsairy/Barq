@@ -21,19 +21,23 @@ import {
   UpdateSsoConfigurationRequest,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://user:51bd78b7693299552db3da4da4bfd998@barq-application-tunnel-5gqnqm93.devinapps.com';
+const API_USERNAME = (import.meta as any).env.VITE_API_USERNAME || 'user';
+const API_PASSWORD = (import.meta as any).env.VITE_API_PASSWORD || '6b3acd7c5ad67439f79fe499f0a47eea';
 
 const authApi = axios.create({
-  baseURL: `${API_BASE_URL}/api/auth`,
+  baseURL: `https://technology-stack-app-tunnel-phn9uram.devinapps.com/api/auth`,
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Authorization': `Basic ${btoa(`${API_USERNAME}:${API_PASSWORD}`)}`,
   },
 });
 
 authApi.interceptors.request.use((config) => {
+  
   const token = localStorage.getItem('accessToken');
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers['X-JWT-Token'] = token;
   }
   return config;
 });

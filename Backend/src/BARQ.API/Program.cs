@@ -312,6 +312,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins("https://barq-application-plu4nmbz.devinapps.com")
               .AllowAnyMethod()
               .AllowAnyHeader()
+              .WithExposedHeaders("X-Pagination", "X-Total-Count", "X-Correlation-ID")
               .AllowCredentials()
               .SetPreflightMaxAge(TimeSpan.FromDays(1));
     });

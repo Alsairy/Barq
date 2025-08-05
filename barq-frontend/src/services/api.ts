@@ -1,7 +1,8 @@
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://technology-stack-app-tunnel-phn9uram.devinapps.com';
 const API_USERNAME = (import.meta as any).env.VITE_API_USERNAME || 'user';
 const API_PASSWORD = (import.meta as any).env.VITE_API_PASSWORD || '6b3acd7c5ad67439f79fe499f0a47eea';
 const API_TIMEOUT = parseInt((import.meta as any).env.VITE_API_TIMEOUT || '30000');
+
+const API_BASE_URL = 'https://technology-stack-app-tunnel-phn9uram.devinapps.com';
 
 class ApiService {
   private baseUrl: string;
