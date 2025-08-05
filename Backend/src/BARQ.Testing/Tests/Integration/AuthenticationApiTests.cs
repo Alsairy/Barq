@@ -87,15 +87,18 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "newuser@test.com",
-            FirstName = "New",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization"
+            Request = new
+            {
+                Email = "newuser@test.com",
+                FirstName = "New",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization"
+            }
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
+        var response = await _factory.PostJsonAsync("/api/user/register", registerRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
@@ -105,15 +108,18 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
     {
         var registerRequest = new
         {
-            Email = "test@acme.com",
-            FirstName = "Duplicate",
-            LastName = "User",
-            Password = "NewPassword123!",
-            ConfirmPassword = "NewPassword123!",
-            OrganizationName = "Test Organization"
+            Request = new
+            {
+                Email = "test@acme.com",
+                FirstName = "Duplicate",
+                LastName = "User",
+                Password = "NewPassword123!",
+                ConfirmPassword = "NewPassword123!",
+                OrganizationName = "Test Organization"
+            }
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/register", registerRequest);
+        var response = await _factory.PostJsonAsync("/api/user/register", registerRequest);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
@@ -127,7 +133,7 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
             RefreshToken = "valid-refresh-token"
         };
 
-        var response = await _factory.PostJsonAsync("/api/auth/refresh", refreshRequest, authToken);
+        var response = await _factory.PostJsonAsync("/api/auth/refresh-token", refreshRequest, authToken);
 
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.BadRequest);
     }

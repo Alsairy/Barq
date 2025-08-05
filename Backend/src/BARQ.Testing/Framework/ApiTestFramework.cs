@@ -127,8 +127,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
         
         response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        var apiResponse = await DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
 }
 
