@@ -16,7 +16,7 @@ import {
   ApiResponse,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'https://localhost:5001/api';
+const API_BASE_URL = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'https://localhost:5001/api';
 
 const authApi = axios.create({
   baseURL: `${API_BASE_URL}/auth`,
@@ -45,7 +45,7 @@ authApi.interceptors.response.use(
           localStorage.setItem('accessToken', accessToken);
           error.config.headers.Authorization = `Bearer ${accessToken}`;
           return authApi.request(error.config);
-        } catch (refreshError) {
+        } catch {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           window.location.href = '/login';

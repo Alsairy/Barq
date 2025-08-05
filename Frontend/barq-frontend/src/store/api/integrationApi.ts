@@ -9,7 +9,7 @@ export interface IntegrationEndpoint {
   isActive: boolean;
   isHealthy: boolean;
   lastHealthCheck: string;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   authentication: {
     type: 'none' | 'basic' | 'bearer' | 'oauth2' | 'api-key';
     credentials?: Record<string, string>;
@@ -47,7 +47,7 @@ export interface IntegrationAlert {
   isResolved: boolean;
   createdAt: string;
   resolvedAt?: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface IntegrationAlertRule {
@@ -57,7 +57,7 @@ export interface IntegrationAlertRule {
   condition: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   isActive: boolean;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -78,7 +78,7 @@ export interface IntegrationEvent {
   endpointId: string;
   level: 'info' | 'warning' | 'error';
   message: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   createdAt: string;
   tenantId: string;
 }
@@ -97,7 +97,7 @@ export interface ConnectionTestResult {
   responseTime: number;
   statusCode?: number;
   errorMessage?: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 }
 
 export interface DevToolIntegration {
@@ -106,7 +106,7 @@ export interface DevToolIntegration {
   type: 'git' | 'ci-cd' | 'issue-tracking' | 'code-quality';
   provider: string;
   isConnected: boolean;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   lastSync: string;
   syncStatus: 'success' | 'failed' | 'in-progress';
   features: string[];
@@ -118,10 +118,10 @@ export interface BusinessSystemIntegration {
   type: 'crm' | 'communication' | 'document-management' | 'calendar';
   provider: string;
   isConnected: boolean;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   lastSync: string;
   syncStatus: 'success' | 'failed' | 'in-progress';
-  dataMapping: Record<string, any>;
+  dataMapping: Record<string, unknown>;
 }
 
 export interface SecurityConfiguration {
@@ -129,7 +129,7 @@ export interface SecurityConfiguration {
   name: string;
   type: 'authentication' | 'encryption' | 'access-control' | 'audit';
   isEnabled: boolean;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   lastUpdated: string;
   complianceStatus: 'compliant' | 'non-compliant' | 'pending';
 }
@@ -337,7 +337,7 @@ export const integrationApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Integration'],
     }),
 
-    runComplianceCheck: builder.mutation<{ status: string; results: Record<string, any> }, string>({
+    runComplianceCheck: builder.mutation<{ status: string; results: Record<string, unknown> }, string>({
       query: (configurationId) => ({
         url: `/api/integration/security/configurations/${configurationId}/compliance-check`,
         method: 'POST',
@@ -345,7 +345,7 @@ export const integrationApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Integration'],
     }),
 
-    getAuditLogs: builder.query<any[], { fromDate?: string; toDate?: string; type?: string }>({
+    getAuditLogs: builder.query<unknown[], { fromDate?: string; toDate?: string; type?: string }>({
       query: ({ fromDate, toDate, type } = {}) => ({
         url: '/api/integration/security/audit-logs',
         params: { fromDate, toDate, type },

@@ -39,8 +39,8 @@ interface WorkflowExecution {
   executionContext: {
     environment: string;
     version: string;
-    inputs: Record<string, any>;
-    outputs?: Record<string, any>;
+    inputs: Record<string, unknown>;
+    outputs?: Record<string, unknown>;
   };
   steps: WorkflowStepExecution[];
   errors?: WorkflowExecutionError[];
@@ -60,8 +60,8 @@ interface WorkflowStepExecution {
   startedAt?: string;
   completedAt?: string;
   duration?: number;
-  inputs?: Record<string, any>;
-  outputs?: Record<string, any>;
+  inputs?: Record<string, unknown>;
+  outputs?: Record<string, unknown>;
   errorMessage?: string;
   retryCount: number;
   maxRetries: number;

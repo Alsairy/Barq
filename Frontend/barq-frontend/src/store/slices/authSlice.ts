@@ -27,8 +27,8 @@ export const loginAsync = createAsyncThunk(
         localStorage.setItem('refreshToken', response.refreshToken);
       }
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+    } catch (error: unknown) {
+      return rejectWithValue((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Login failed');
     }
   }
 );
@@ -45,8 +45,8 @@ export const registerAsync = createAsyncThunk(
         localStorage.setItem('refreshToken', response.refreshToken);
       }
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+    } catch (error: unknown) {
+      return rejectWithValue((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Registration failed');
     }
   }
 );
@@ -60,8 +60,8 @@ export const verifyMfaAsync = createAsyncThunk(
         localStorage.setItem('accessToken', response.accessToken);
       }
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'MFA verification failed');
+    } catch (error: unknown) {
+      return rejectWithValue((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'MFA verification failed');
     }
   }
 );
@@ -73,8 +73,8 @@ export const logoutAsync = createAsyncThunk(
       await authService.logout(userId);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Logout failed');
+    } catch (error: unknown) {
+      return rejectWithValue((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Logout failed');
     }
   }
 );

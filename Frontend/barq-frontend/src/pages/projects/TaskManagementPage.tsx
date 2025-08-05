@@ -358,7 +358,7 @@ export function TaskManagementPage() {
       </div>
 
       {/* View Toggle */}
-      <Tabs value={selectedView} onValueChange={(value) => setSelectedView(value as any)}>
+      <Tabs value={selectedView} onValueChange={(value) => setSelectedView(value as 'list' | 'board' | 'timeline')}>
         <TabsList>
           <TabsTrigger value="list">List View</TabsTrigger>
           <TabsTrigger value="board">Board View</TabsTrigger>

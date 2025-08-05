@@ -4,7 +4,7 @@ jest.mock('../apiSlice', () => ({
   apiSlice: {
     reducerPath: 'api',
     reducer: jest.fn(),
-    middleware: jest.fn(() => (next: any) => (action: any) => next(action)),
+    middleware: jest.fn(() => (next: (action: unknown) => unknown) => (action: unknown) => next(action)),
     endpoints: {},
   },
 }));
