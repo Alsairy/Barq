@@ -196,7 +196,7 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing token: {RefreshToken}", refreshToken);
+            _logger.LogError(ex, "Error refreshing token for user session");
             return new AuthenticationResponse
             {
                 Success = false,
@@ -289,7 +289,7 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating session token");
+            _logger.LogError(ex, "Error validating user session");
             return Task.FromResult(new SessionValidationResponse
             {
                 Success = false,
