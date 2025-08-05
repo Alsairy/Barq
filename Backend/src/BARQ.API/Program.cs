@@ -318,9 +318,9 @@ var app = builder.Build();
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
-// app.UseMiddleware<WafMiddleware>();
-// app.UseMiddleware<InputValidationMiddleware>();
-// app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseApiMonitoring();
 

@@ -26,7 +26,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-backend
-        image: ${BACKEND_IMAGE:-barq/backend:latest}@sha256:placeholder
+        image: ${BACKEND_IMAGE:-barq/backend:latest}
         ports:
         - containerPort: 8080
           name: http
@@ -115,7 +115,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-frontend
-        image: ${FRONTEND_IMAGE:-barq/frontend:latest}@sha256:placeholder
+        image: ${FRONTEND_IMAGE:-barq/frontend:latest}
         ports:
         - containerPort: 80
           name: http
@@ -194,15 +194,15 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: postgres
-        image: postgres:15-alpine@sha256:placeholder
+        image: postgres:15-alpine
         ports:
         - containerPort: 5432
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 65534
-          runAsGroup: 65534
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 999
+          runAsGroup: 999
           capabilities:
             drop:
             - ALL
@@ -289,7 +289,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis:7-alpine@sha256:placeholder
+        image: redis:7-alpine
         ports:
         - containerPort: 6379
         securityContext:
