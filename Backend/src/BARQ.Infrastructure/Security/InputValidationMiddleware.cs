@@ -28,6 +28,12 @@ public class InputValidationMiddleware
             return;
         }
 
+        if (IsPathExcluded(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
         if (await ValidateRequestAsync(context))
         {
             await _next(context);
@@ -182,7 +188,12 @@ public class InputValidationMiddleware
         if (headerName.Length > _config.MaxHeaderNameLength)
             return false;
 
-        return Regex.IsMatch(headerName, @"^[a-zA-Z0-9\-_]+$");
+        var isValid = Regex.IsMatch(headerName, @"^[a-zA-Z0-9\-_.:]+$");
+        if (!isValid)
+        {
+            _logger.LogWarning("Invalid header name detected: '{HeaderName}' - contains invalid characters", headerName);
+        }
+        return isValid;
     }
 
     private bool IsValidHeaderValue(string? headerValue)
@@ -269,6 +280,12 @@ public class InputValidationMiddleware
         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
     }
 
+    private bool IsPathExcluded(PathString requestPath)
+    {
+        return _config.ExcludedPaths.Any(excludedPath => 
+            requestPath.StartsWithSegments(excludedPath, StringComparison.OrdinalIgnoreCase));
+    }
+
     private string GetClientIpAddress(HttpContext context)
     {
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -295,4 +312,5 @@ public class InputValidationConfiguration
     public int MaxParameterValueLength { get; set; } = 4096;
     public bool EnableStrictValidation { get; set; } = true;
     public bool LogInvalidRequests { get; set; } = true;
+    public string[] ExcludedPaths { get; set; } = Array.Empty<string>();
 }
