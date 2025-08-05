@@ -56,14 +56,11 @@ public class AuthenticationService : IAuthenticationService
             var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
             var user = users.FirstOrDefault();
             
-            _logger.LogInformation("Authentication attempt - User found: {UserFound}, Email: {Email}", user != null, request.Email);
+            _logger.LogInformation("Authentication attempt for email: {Email}", request.Email);
             if (user != null)
             {
                 _logger.LogInformation("User details - ID: {UserId}, Status: {Status}, EmailConfirmed: {EmailConfirmed}", 
                     user.Id, user.Status, user.EmailConfirmed);
-                
-                var passwordValid = _passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty);
-                _logger.LogInformation("Password verification result: {PasswordValid}", passwordValid);
             }
             
             if (user == null || !_passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty))

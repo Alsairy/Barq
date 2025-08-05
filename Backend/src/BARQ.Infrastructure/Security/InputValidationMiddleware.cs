@@ -191,7 +191,7 @@ public class InputValidationMiddleware
         var isValid = Regex.IsMatch(headerName, @"^[a-zA-Z0-9\-_.:]+$");
         if (!isValid)
         {
-            _logger.LogWarning("Invalid header name detected: '{HeaderName}' - contains invalid characters", headerName);
+            _logger.LogWarning("Invalid header name detected - contains invalid characters");
         }
         return isValid;
     }
