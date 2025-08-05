@@ -245,7 +245,7 @@ public class AuthenticationService : IAuthenticationService
             
             if (string.IsNullOrEmpty(jwtSecret))
             {
-                _logger.LogError("JWT Secret is null or empty for session validation");
+                _logger.LogError("JWT configuration error during session validation");
                 return Task.FromResult(new SessionValidationResponse
                 {
                     Success = false,
@@ -452,7 +452,7 @@ public class AuthenticationService : IAuthenticationService
         
         if (string.IsNullOrEmpty(jwtSecret))
         {
-            _logger.LogError("JWT Secret is null or empty for MFA token generation");
+            _logger.LogError("JWT configuration error during MFA token generation");
             return string.Empty;
         }
         
@@ -483,12 +483,12 @@ public class AuthenticationService : IAuthenticationService
         var secret = _configuration["Jwt:Secret"];
         if (string.IsNullOrEmpty(secret))
         {
-            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt:Secret in configuration.");
+            throw new InvalidOperationException("JWT configuration is invalid.");
         }
         
         if (secret.Length < 32)
         {
-            throw new InvalidOperationException("JWT secret must be at least 32 characters long for security.");
+            throw new InvalidOperationException("JWT configuration is invalid.");
         }
         
         return secret;
