@@ -392,13 +392,7 @@ public class AuthenticationService : IAuthenticationService
             
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtSecret = GetJwtSecret();
-            _logger.LogInformation("JWT Secret length: {SecretLength}", jwtSecret?.Length ?? 0);
             
-            if (string.IsNullOrEmpty(jwtSecret))
-            {
-                _logger.LogError("JWT Secret is null or empty");
-                return string.Empty;
-            }
             
             var key = Encoding.ASCII.GetBytes(jwtSecret);
 
@@ -485,7 +479,21 @@ public class AuthenticationService : IAuthenticationService
         return tokenHandler.WriteToken(token) ?? string.Empty;
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "your-super-secret-jwt-key-that-should-be-in-config";
+    private string GetJwtSecret() 
+    {
+        var secret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt:Secret in configuration.");
+        }
+        
+        if (secret.Length < 32)
+        {
+            throw new InvalidOperationException("JWT secret must be at least 32 characters long for security.");
+        }
+        
+        return secret;
+    }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
     private int GetMaxFailedAttempts() => int.Parse(_configuration["Security:MaxFailedAttempts"] ?? "5");
     private int GetLockoutDurationMinutes() => int.Parse(_configuration["Security:LockoutDurationMinutes"] ?? "15");
