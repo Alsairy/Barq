@@ -128,11 +128,22 @@ const authSlice = createSlice({
           state.mfaToken = action.payload.mfaToken || null;
         } else {
           state.isAuthenticated = true;
-          state.user = action.payload.user || null;
+          state.user = {
+            id: action.payload.userId || '',
+            email: action.payload.userEmail || '',
+            firstName: '',
+            lastName: '',
+            organizationId: undefined,
+            roles: action.payload.roles || [],
+            permissions: [],
+            isEmailVerified: true,
+            isMfaEnabled: false,
+            createdAt: new Date().toISOString()
+          };
           state.token = action.payload.accessToken || null;
           state.accessToken = action.payload.accessToken || null;
           state.refreshToken = action.payload.refreshToken || null;
-          state.tenantId = action.payload.user?.organizationId || null;
+          state.tenantId = null;
           state.requiresMfa = false;
           state.mfaToken = null;
         }

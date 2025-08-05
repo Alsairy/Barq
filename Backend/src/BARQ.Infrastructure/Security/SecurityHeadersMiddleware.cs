@@ -25,53 +25,53 @@ public class SecurityHeadersMiddleware
 
         if (_config.EnableHsts)
         {
-            response.Headers.Add("Strict-Transport-Security", 
-                $"max-age={_config.HstsMaxAge}; includeSubDomains; preload");
+            response.Headers["Strict-Transport-Security"] = 
+                $"max-age={_config.HstsMaxAge}; includeSubDomains; preload";
         }
 
         if (_config.EnableContentSecurityPolicy)
         {
-            response.Headers.Add("Content-Security-Policy", _config.ContentSecurityPolicy);
+            response.Headers["Content-Security-Policy"] = _config.ContentSecurityPolicy;
         }
 
         if (_config.EnableXFrameOptions)
         {
-            response.Headers.Add("X-Frame-Options", _config.XFrameOptions);
+            response.Headers["X-Frame-Options"] = _config.XFrameOptions;
         }
 
         if (_config.EnableXContentTypeOptions)
         {
-            response.Headers.Add("X-Content-Type-Options", "nosniff");
+            response.Headers["X-Content-Type-Options"] = "nosniff";
         }
 
         if (_config.EnableXssProtection)
         {
-            response.Headers.Add("X-XSS-Protection", "1; mode=block");
+            response.Headers["X-XSS-Protection"] = "1; mode=block";
         }
 
         if (_config.EnableReferrerPolicy)
         {
-            response.Headers.Add("Referrer-Policy", _config.ReferrerPolicy);
+            response.Headers["Referrer-Policy"] = _config.ReferrerPolicy;
         }
 
         if (_config.EnablePermissionsPolicy)
         {
-            response.Headers.Add("Permissions-Policy", _config.PermissionsPolicy);
+            response.Headers["Permissions-Policy"] = _config.PermissionsPolicy;
         }
 
         if (_config.EnableCrossOriginEmbedderPolicy)
         {
-            response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
+            response.Headers["Cross-Origin-Embedder-Policy"] = "require-corp";
         }
 
         if (_config.EnableCrossOriginOpenerPolicy)
         {
-            response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+            response.Headers["Cross-Origin-Opener-Policy"] = "same-origin";
         }
 
         if (_config.EnableCrossOriginResourcePolicy)
         {
-            response.Headers.Add("Cross-Origin-Resource-Policy", "same-origin");
+            response.Headers["Cross-Origin-Resource-Policy"] = "same-origin";
         }
 
         if (_config.RemoveServerHeader)
@@ -86,13 +86,13 @@ public class SecurityHeadersMiddleware
 
         if (_config.EnableExpectCertificateTransparency)
         {
-            response.Headers.Add("Expect-CT", 
-                $"max-age={_config.ExpectCtMaxAge}, enforce, report-uri=\"{_config.ExpectCtReportUri}\"");
+            response.Headers["Expect-CT"] = 
+                $"max-age={_config.ExpectCtMaxAge}, enforce, report-uri=\"{_config.ExpectCtReportUri}\"";
         }
 
         if (_config.EnablePublicKeyPinning && !string.IsNullOrEmpty(_config.PublicKeyPins))
         {
-            response.Headers.Add("Public-Key-Pins", _config.PublicKeyPins);
+            response.Headers["Public-Key-Pins"] = _config.PublicKeyPins;
         }
     }
 }

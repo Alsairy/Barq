@@ -300,20 +300,18 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials()
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+              .AllowCredentials();
     });
     
     options.AddPolicy("SecurePolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://barq-application-plu4nmbz.devinapps.com")
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials()
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+              .AllowCredentials();
     });
 });
 
@@ -334,6 +332,9 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"Warning: Database seeding failed: {ex.Message}");
     }
 }
+
+// Configure CORS preflight middleware first to handle OPTIONS requests
+app.UseMiddleware<BARQ.Infrastructure.Middleware.CorsPreflightMiddleware>();
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
@@ -373,8 +374,8 @@ else
     });
 }
 
-app.UseResponseCompression();
 app.UseCors("SecurePolicy");
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

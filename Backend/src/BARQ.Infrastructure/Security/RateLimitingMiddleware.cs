@@ -137,7 +137,7 @@ public class RateLimitingMiddleware
         context.Response.ContentType = "application/json";
 
         var retryAfter = rateLimitInfo.BlockedUntil?.Subtract(DateTime.UtcNow).TotalSeconds ?? _config.BlockDurationSeconds;
-        context.Response.Headers.Add("Retry-After", ((int)retryAfter).ToString());
+        context.Response.Headers["Retry-After"] = ((int)retryAfter).ToString();
 
         var response = new
         {
@@ -155,9 +155,9 @@ public class RateLimitingMiddleware
         var remaining = Math.Max(0, _config.MaxRequestsPerWindow - rateLimitInfo.RequestCount);
         var resetTime = rateLimitInfo.WindowStart.AddSeconds(_config.WindowSizeSeconds);
 
-        context.Response.Headers.Add("X-RateLimit-Limit", _config.MaxRequestsPerWindow.ToString());
-        context.Response.Headers.Add("X-RateLimit-Remaining", remaining.ToString());
-        context.Response.Headers.Add("X-RateLimit-Reset", ((DateTimeOffset)resetTime).ToUnixTimeSeconds().ToString());
+        context.Response.Headers["X-RateLimit-Limit"] = _config.MaxRequestsPerWindow.ToString();
+        context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();
+        context.Response.Headers["X-RateLimit-Reset"] = ((DateTimeOffset)resetTime).ToUnixTimeSeconds().ToString();
     }
 
     private string GetClientIpAddress(HttpContext context)

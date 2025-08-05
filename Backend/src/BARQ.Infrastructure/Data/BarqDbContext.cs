@@ -18,6 +18,7 @@ public class BarqDbContext : DbContext
 
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<Project> Projects { get; set; }
     public DbSet<ProjectMember> ProjectMembers { get; set; }
@@ -48,7 +49,7 @@ public class BarqDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BarqDbContext).Assembly);
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
