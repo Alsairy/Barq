@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
 using BARQ.Core.Services;
+using BARQ.Core.Models.Responses;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -13,6 +14,8 @@ using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 
 namespace BARQ.Testing.Framework;
 
@@ -22,6 +25,19 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         builder.UseEnvironment("Testing");
+        
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Secret"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
+                ["Jwt:Issuer"] = "test-issuer",
+                ["Jwt:Audience"] = "test-audience",
+                ["Jwt:ExpiryMinutes"] = "60",
+                ["Security:MaxFailedAttempts"] = "5",
+                ["Security:LockoutDurationMinutes"] = "15"
+            });
+        });
         
         builder.ConfigureServices(services =>
         {
@@ -44,6 +60,12 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
+
+            services.RemoveAll<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+            services.AddMemoryCache();
+            services.AddSingleton<Microsoft.Extensions.Caching.Distributed.IDistributedCache, Microsoft.Extensions.Caching.Distributed.MemoryDistributedCache>();
+
+            services.RemoveAll<StackExchange.Redis.IConnectionMultiplexer>();
 
             services.RemoveAll<ITenantProvider>();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
@@ -131,8 +153,8 @@ public class TestDataSeeder : ITestDataSeeder
             return;
         }
 
-        var acmeOrgId = Guid.NewGuid();
-        var betaOrgId = Guid.NewGuid();
+        var acmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
+        var betaOrgId = new Guid("22222222-2222-2222-2222-222222222222");
         var acmeUserId = Guid.NewGuid();
         var betaUserId = Guid.NewGuid();
         var acmeProjectId = Guid.NewGuid();
@@ -216,6 +238,8 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Projects.AddRange(acmeProject, betaProject);
 
         await _context.SaveChangesAsync();
+        
+        Console.WriteLine($"DEBUG: Created test user with email: test@acme.com, TenantId: {acmeOrgId}, PasswordHash length: {acmeUser.PasswordHash?.Length ?? 0}");
     }
 }
 
@@ -227,7 +251,7 @@ public class TestTenantProvider : ITenantProvider
 
     public TestTenantProvider()
     {
-        _tenantId = Guid.NewGuid();
+        _tenantId = new Guid("11111111-1111-1111-1111-111111111111");
         _currentUserId = Guid.NewGuid();
     }
 
@@ -292,13 +316,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }

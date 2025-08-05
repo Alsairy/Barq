@@ -31,7 +31,18 @@ public class AuthenticationApiTests : IClassFixture<ApiTestFramework>
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var authResponse = await _factory.DeserializeResponseAsync<AuthenticationResponse>(response);
+        var content = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"DEBUG: Response content: {content}");
+        
+        var apiResponse = await _factory.DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
+        Console.WriteLine($"DEBUG: ApiResponse Success: {apiResponse?.Success}, Data is null: {apiResponse?.Data == null}");
+        
+        var authResponse = apiResponse?.Data;
+        if (authResponse != null)
+        {
+            Console.WriteLine($"DEBUG: AuthResponse Success: {authResponse.Success}, AccessToken: '{authResponse.AccessToken}', RefreshToken: '{authResponse.RefreshToken}'");
+        }
+
         authResponse.Should().NotBeNull();
         authResponse!.AccessToken.Should().NotBeNullOrEmpty();
         authResponse.Success.Should().BeTrue();

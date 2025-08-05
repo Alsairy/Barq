@@ -2,6 +2,7 @@ using BARQ.Testing.Framework;
 using FluentAssertions;
 using Microsoft.OpenApi.Models;
 using Xunit;
+using BARQ.Core.Models.Responses;
 
 namespace BARQ.Testing.Tests.Contract;
 
