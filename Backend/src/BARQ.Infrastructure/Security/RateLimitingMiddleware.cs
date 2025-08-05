@@ -32,6 +32,12 @@ public class RateLimitingMiddleware
             return;
         }
 
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        {
+            await _next(context);
+            return;
+        }
+
         if (IsPathExcluded(context.Request.Path))
         {
             await _next(context);
