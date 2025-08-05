@@ -30,7 +30,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Jwt:Secret"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
+                ["Jwt:Key"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
                 ["Jwt:Issuer"] = "test-issuer",
                 ["Jwt:Audience"] = "test-audience",
                 ["Jwt:ExpiryMinutes"] = "60",
