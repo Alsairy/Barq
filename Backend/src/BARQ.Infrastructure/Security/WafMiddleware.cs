@@ -40,6 +40,11 @@ public class WafMiddleware
     {
         var request = context.Request;
 
+        if (IsPathExcluded(request.Path))
+        {
+            return false;
+        }
+
         if (await CheckSqlInjectionAsync(request))
         {
             _logger.LogWarning("SQL injection attempt detected from {IP} on {Path}", 
@@ -277,6 +282,12 @@ public class WafMiddleware
         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
     }
 
+    private bool IsPathExcluded(PathString requestPath)
+    {
+        return _config.ExcludedPaths.Any(excludedPath => 
+            requestPath.StartsWithSegments(excludedPath, StringComparison.OrdinalIgnoreCase));
+    }
+
     private string GetClientIpAddress(HttpContext context)
     {
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -303,4 +314,5 @@ public class WafConfiguration
     public bool EnableSsrfProtection { get; set; } = true;
     public int MaxRequestSizeBytes { get; set; } = 1024 * 1024; // 1MB
     public bool LogBlockedRequests { get; set; } = true;
+    public string[] ExcludedPaths { get; set; } = Array.Empty<string>();
 }
