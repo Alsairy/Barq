@@ -59,8 +59,8 @@ public class AuthenticationService : IAuthenticationService
             _logger.LogInformation("Authentication attempt - User found: {UserFound}, Email: {Email}", user != null, request.Email);
             if (user != null)
             {
-                _logger.LogInformation("User details - ID: {UserId}, Status: {Status}, EmailConfirmed: {EmailConfirmed}, PasswordHash length: {PasswordHashLength}", 
-                    user.Id, user.Status, user.EmailConfirmed, user.PasswordHash?.Length ?? 0);
+                _logger.LogInformation("User details - ID: {UserId}, Status: {Status}, EmailConfirmed: {EmailConfirmed}", 
+                    user.Id, user.Status, user.EmailConfirmed);
                 
                 var passwordValid = _passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty);
                 _logger.LogInformation("Password verification result: {PasswordValid}", passwordValid);
@@ -126,8 +126,7 @@ public class AuthenticationService : IAuthenticationService
             var accessToken = GenerateAccessToken(user, roleNames);
             var refreshToken = GenerateRefreshToken();
             
-            _logger.LogInformation("Generated tokens - AccessToken length: {AccessTokenLength}, RefreshToken length: {RefreshTokenLength}", 
-                accessToken?.Length ?? 0, refreshToken?.Length ?? 0);
+            _logger.LogInformation("Generated tokens successfully for user: {UserId}", user.Id);
 
             // This would need to be stored in a separate RefreshToken entity
             await _userRepository.UpdateAsync(user);
@@ -255,7 +254,7 @@ public class AuthenticationService : IAuthenticationService
                 });
             }
             
-            var key = Encoding.ASCII.GetBytes(jwtSecret);
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
             var validationParameters = new TokenValidationParameters
             {
@@ -394,7 +393,7 @@ public class AuthenticationService : IAuthenticationService
             var jwtSecret = GetJwtSecret();
             
             
-            var key = Encoding.ASCII.GetBytes(jwtSecret);
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
             var claims = new List<Claim>
             {
@@ -419,7 +418,7 @@ public class AuthenticationService : IAuthenticationService
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
-            _logger.LogInformation("Successfully generated JWT token with length: {TokenLength}", tokenString?.Length ?? 0);
+            _logger.LogInformation("Successfully generated JWT token for user: {UserId}", user.Id);
             
             return tokenString ?? string.Empty;
         }
@@ -457,7 +456,7 @@ public class AuthenticationService : IAuthenticationService
             return string.Empty;
         }
         
-        var key = Encoding.ASCII.GetBytes(jwtSecret);
+        var key = Encoding.UTF8.GetBytes(jwtSecret);
 
         var claims = new List<Claim>
         {
