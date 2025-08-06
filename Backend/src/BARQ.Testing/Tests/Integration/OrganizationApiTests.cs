@@ -204,7 +204,7 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         foreach (var org in betaOrgsArray.EnumerateArray())
         {
             if (org.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Beta LLC")
+                nameProperty.GetString() == "Beta Industries")
             {
                 betaOrg = org;
                 break;

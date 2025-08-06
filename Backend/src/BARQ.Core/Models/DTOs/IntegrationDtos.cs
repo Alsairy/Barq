@@ -58,62 +58,203 @@ public class IntegrationRequest
     public int TimeoutSeconds { get; set; } = 30;
 }
 
+/// <summary>
+/// Integration response data transfer object containing the results of an external API integration request
+/// </summary>
 public class IntegrationResponse
 {
+    /// <summary>
+    /// Unique identifier of the original integration request
+    /// </summary>
     public string RequestId { get; set; } = string.Empty;
+    /// <summary>
+    /// Indicates whether the integration request was successful
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// HTTP status code returned by the external API
+    /// </summary>
     public int StatusCode { get; set; }
+    /// <summary>
+    /// Response body content from the external API
+    /// </summary>
     public string? Body { get; set; }
+    /// <summary>
+    /// HTTP response headers returned by the external API
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    /// <summary>
+    /// Error message if the integration request failed
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// Date and time when the integration response was processed (important-comment)
+    /// </summary>
     public DateTime ProcessedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Processing time in milliseconds for the integration request
+    /// </summary>
     public long ProcessingTimeMs { get; set; }
+    /// <summary>
+    /// Identifier of the endpoint that processed the integration request
+    /// </summary>
     public string? EndpointId { get; set; }
 }
 
+/// <summary>
+/// Integration endpoint configuration for external API connections
+/// </summary>
 public class IntegrationEndpoint
 {
+    /// <summary>
+    /// Unique identifier for the integration endpoint (important-comment)
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Display name of the integration endpoint
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+    /// <summary>
+    /// Description of the integration endpoint purpose
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Base URL for the external API endpoint
+    /// </summary>
     public string BaseUrl { get; set; } = string.Empty;
+    /// <summary>
+    /// Protocol type used for integration communication
+    /// </summary>
     public IntegrationProtocol Protocol { get; set; }
+    /// <summary>
+    /// Default HTTP headers to include in all requests
+    /// </summary>
     public Dictionary<string, string> DefaultHeaders { get; set; } = new();
+    /// <summary>
+    /// Type of authentication required for the endpoint
+    /// </summary>
     public string? AuthenticationType { get; set; }
+    /// <summary>
+    /// Authentication configuration parameters
+    /// </summary>
     public Dictionary<string, string> AuthenticationConfig { get; set; } = new();
+    /// <summary>
+    /// Indicates whether the endpoint is currently active
+    /// </summary>
     public bool IsActive { get; set; } = true;
+    /// <summary>
+    /// Request timeout duration in seconds
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
+    /// <summary>
+    /// Number of retry attempts for failed requests
+    /// </summary>
     public int RetryAttempts { get; set; } = 3;
+    /// <summary>
+    /// Delay between retry attempts
+    /// </summary>
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
+    /// <summary>
+    /// Tenant identifier for multi-tenant isolation (important-comment)
+    /// </summary>
     public Guid TenantId { get; set; }
+    /// <summary>
+    /// Date and time when the endpoint was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Date and time of the last health check
+    /// </summary>
     public DateTime? LastHealthCheck { get; set; }
+    /// <summary>
+    /// Current health status of the endpoint
+    /// </summary>
     public bool IsHealthy { get; set; } = true;
 }
 
+/// <summary>
+/// Health status information for integration endpoints
+/// </summary>
 public class IntegrationHealthStatus
 {
+    /// <summary>
+    /// Identifier of the endpoint being monitored
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// Indicates whether the endpoint is currently healthy (important-comment)
+    /// </summary>
     public bool IsHealthy { get; set; }
+    /// <summary>
+    /// Current status description of the endpoint
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// Error message if the endpoint is unhealthy
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// Date and time when the health check was performed
+    /// </summary>
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Response time in milliseconds for the health check
+    /// </summary>
     public long ResponseTimeMs { get; set; }
+    /// <summary>
+    /// Additional health check information and metrics
+    /// </summary>
     public Dictionary<string, object> AdditionalInfo { get; set; } = new();
 }
 
+/// <summary>
+/// Integration request and response logging information
+/// </summary>
 public class IntegrationLog
 {
+    /// <summary>
+    /// Unique identifier for the log entry
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Identifier of the associated integration request
+    /// </summary>
     public string RequestId { get; set; } = string.Empty;
+    /// <summary>
+    /// Identifier of the endpoint that processed the request (important-comment)
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// HTTP method used for the integration request
+    /// </summary>
     public string Method { get; set; } = string.Empty;
+    /// <summary>
+    /// URL path of the integration request
+    /// </summary>
     public string Path { get; set; } = string.Empty;
+    /// <summary>
+    /// HTTP status code returned by the integration (important-comment)
+    /// </summary>
     public int StatusCode { get; set; }
+    /// <summary>
+    /// Indicates whether the integration request was successful (important-comment)
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// Processing time in milliseconds for the integration request (important-comment)
+    /// </summary>
     public long ProcessingTimeMs { get; set; }
+    /// <summary>
+    /// Error message if the integration request failed (important-comment)
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// Date and time when the log entry was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Tenant identifier for multi-tenant log isolation (important-comment)
+    /// </summary>
     public Guid TenantId { get; set; }
 }
 
