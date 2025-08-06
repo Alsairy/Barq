@@ -26,20 +26,20 @@ public class OpenApiContractTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task AllEndpoints_ShouldExistInOpenApiSpec()
     {
-        var criticalEndpoints = new[]
+        var criticalEndpoints = new Dictionary<string, OperationType>
         {
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/users/profile",
-            "/api/organizations",
-            "/api/projects",
-            "/api/workflows",
-            "/api/ai-tasks"
+            { "/api/auth/login", OperationType.Post },
+            { "/api/auth/register", OperationType.Post },
+            { "/api/users/profile", OperationType.Get },
+            { "/api/organizations", OperationType.Get },
+            { "/api/projects", OperationType.Get },
+            { "/api/workflows", OperationType.Get },
+            { "/api/ai-tasks", OperationType.Get }
         };
 
         foreach (var endpoint in criticalEndpoints)
         {
-            await _contractFramework.ValidateEndpointExistsAsync(endpoint, OperationType.Get);
+            await _contractFramework.ValidateEndpointExistsAsync(endpoint.Key, endpoint.Value);
         }
     }
 

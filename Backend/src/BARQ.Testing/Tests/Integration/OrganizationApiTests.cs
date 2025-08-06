@@ -76,10 +76,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
         var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        var acmeOrg = organizations?.FirstOrDefault(o => 
+        {
+            if (o.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Acme Corporation";
+            }
+            return false;
+        });
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg?.GetProperty("id").GetString();
+        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -110,10 +119,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
         var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        var acmeOrg = organizations?.FirstOrDefault(o => 
+        {
+            if (o.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Acme Corporation";
+            }
+            return false;
+        });
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg?.GetProperty("id").GetString();
+        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
@@ -136,10 +154,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
         var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaOrgsContent);
-        var betaOrg = betaOrganizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Beta Industries");
+        var betaOrg = betaOrganizations?.FirstOrDefault(o => 
+        {
+            if (o.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Beta LLC";
+            }
+            return false;
+        });
         betaOrg.Should().NotBeNull();
         
-        var betaOrganizationId = betaOrg?.GetProperty("id").GetString();
+        var betaOrganizationId = betaOrg.HasValue && betaOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/organizations/{betaOrganizationId}", acmeToken);
 

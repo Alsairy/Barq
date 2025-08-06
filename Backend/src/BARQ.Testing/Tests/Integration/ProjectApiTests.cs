@@ -129,8 +129,9 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         var createResponse = await _factory.PostJsonAsync("/api/projects", createRequest, authToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createdProject = await _factory.DeserializeResponseAsync<dynamic>(createResponse);
-        var projectId = createdProject?.id?.ToString();
+        var createdProjectContent = await createResponse.Content.ReadAsStringAsync();
+        var createdProject = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(createdProjectContent);
+        var projectId = createdProject.GetProperty("id").GetString();
 
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
