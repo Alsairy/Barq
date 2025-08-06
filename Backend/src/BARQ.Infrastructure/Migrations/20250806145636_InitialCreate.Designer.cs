@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    [Migration("20250806145141_InitialCreate")]
+    [Migration("20250806145636_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -2728,7 +2728,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
                         .WithMany("BusinessRequirements")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Approver");

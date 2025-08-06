@@ -2725,7 +2725,7 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
                         .WithMany("BusinessRequirements")
                         .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Approver");

@@ -607,8 +607,7 @@ namespace BARQ.Infrastructure.Migrations
                         name: "FK_BusinessRequirementDocuments_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_BusinessRequirementDocuments_Users_ApproverId",
                         column: x => x.ApproverId,
