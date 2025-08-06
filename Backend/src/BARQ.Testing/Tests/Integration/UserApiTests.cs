@@ -110,10 +110,19 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         
         var betaUsersContent = await betaUsersResponse.Content.ReadAsStringAsync();
         var betaUsers = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaUsersContent);
-        var betaUser = betaUsers?.FirstOrDefault(u => u.GetProperty("email").GetString() == "test@beta.com");
+        var betaUser = betaUsers?.FirstOrDefault(u => 
+        {
+            if (u.TryGetProperty("email", out var emailProperty))
+            {
+                return emailProperty.GetString() == "test@beta.com";
+            }
+            return false;
+        });
         betaUser.Should().NotBeNull();
         
-        var betaUserId = betaUser?.GetProperty("id").GetString();
+        var betaUserId = betaUser.HasValue && betaUser.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/users/{betaUserId}", acmeToken);
 

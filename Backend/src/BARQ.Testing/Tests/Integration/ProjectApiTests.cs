@@ -87,10 +87,19 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
         var betaProjects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaProjectsContent);
-        var betaProject = betaProjects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
+        var betaProject = betaProjects?.FirstOrDefault(p => 
+        {
+            if (p.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Beta Project";
+            }
+            return false;
+        });
         betaProject.Should().NotBeNull();
         
-        var betaProjectId = betaProject?.GetProperty("id").GetString();
+        var betaProjectId = betaProject.HasValue && betaProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -107,10 +116,19 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
         var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        var acmeProject = projects?.FirstOrDefault(p => 
+        {
+            if (p.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Acme Project";
+            }
+            return false;
+        });
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject?.GetProperty("id").GetString();
+        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         var updateRequest = new
         {
             Name = "Updated Acme Project",
