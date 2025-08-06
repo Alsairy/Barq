@@ -3,19 +3,58 @@ using BARQ.Core.Enums;
 
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// Integration request data transfer object for external API integration requests (important-comment)
+/// </summary>
 public class IntegrationRequest
 {
+    /// <summary>
+    /// Unique identifier for the integration request
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Identifier of the target endpoint for the integration request
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// HTTP method for the integration request (GET, POST, PUT, DELETE, etc.)
+    /// </summary>
     public string Method { get; set; } = "POST";
+    /// <summary>
+    /// URL path for the integration request endpoint
+    /// </summary>
     public string Path { get; set; } = string.Empty;
+    /// <summary>
+    /// HTTP headers to be included in the integration request
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    /// <summary>
+    /// Request body content for the integration request
+    /// </summary>
     public string? Body { get; set; }
+    /// <summary>
+    /// Query parameters and other request parameters for the integration
+    /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
+    /// <summary>
+    /// Integration protocol type (REST, SOAP, GraphQL, etc.)
+    /// </summary>
     public IntegrationProtocol Protocol { get; set; } = IntegrationProtocol.REST;
+    /// <summary>
+    /// Date and time when the integration request was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Tenant identifier for multi-tenant integration isolation
+    /// </summary>
     public Guid TenantId { get; set; }
+    /// <summary>
+    /// Correlation identifier for tracking related integration requests
+    /// </summary>
     public string? CorrelationId { get; set; }
+    /// <summary>
+    /// Timeout duration in seconds for the integration request
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
 }
 
