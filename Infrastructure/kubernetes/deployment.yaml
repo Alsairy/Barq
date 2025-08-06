@@ -200,6 +200,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 5432
+        # checkov:skip=CKV_K8S_22:PostgreSQL requires write access to filesystem for data storage
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
