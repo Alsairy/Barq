@@ -63,30 +63,93 @@ public class SecurityEventDto
     public string? ResolvedBy { get; set; }
 }
 
+/// <summary>
+/// Data transfer object for threat detection analysis results and recommendations
+/// </summary>
 public class ThreatDetectionResultDto
 {
+    /// <summary>
+    /// Indicates whether a threat was detected in the analysis
+    /// </summary>
     public bool IsThreat { get; set; }
+    /// <summary>
+    /// Severity level of the detected threat
+    /// </summary>
     public string ThreatLevel { get; set; } = string.Empty;
+    /// <summary>
+    /// Confidence score of the threat detection algorithm
+    /// </summary>
     public double ConfidenceScore { get; set; }
+    /// <summary>
+    /// Type or category of the detected threat
+    /// </summary>
     public string ThreatType { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the detected threat
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// List of indicators that led to the threat detection
+    /// </summary>
     public IEnumerable<string> Indicators { get; set; } = new List<string>();
+    /// <summary>
+    /// Recommended action to take in response to the threat
+    /// </summary>
     public string RecommendedAction { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the threat was detected
+    /// </summary>
     public DateTime DetectedAt { get; set; }
 }
 
+/// <summary>
+/// Data transfer object for security dashboard metrics and summary information
+/// </summary>
 public class SecurityDashboardDto
 {
+    /// <summary>
+    /// Total number of security events recorded
+    /// </summary>
     public int TotalEvents { get; set; }
+    /// <summary>
+    /// Number of critical severity security alerts
+    /// </summary>
     public int CriticalAlerts { get; set; }
+    /// <summary>
+    /// Number of high severity security alerts
+    /// </summary>
     public int HighAlerts { get; set; }
+    /// <summary>
+    /// Number of medium severity security alerts
+    /// </summary>
     public int MediumAlerts { get; set; }
+    /// <summary>
+    /// Number of low severity security alerts
+    /// </summary>
     public int LowAlerts { get; set; }
+    /// <summary>
+    /// Number of security alerts that have been resolved
+    /// </summary>
     public int ResolvedAlerts { get; set; }
+    /// <summary>
+    /// Number of currently active security threats
+    /// </summary>
     public int ActiveThreats { get; set; }
+    /// <summary>
+    /// Overall threat score calculated from security metrics
+    /// </summary>
     public double ThreatScore { get; set; }
+    /// <summary>
+    /// Collection of recent security events for dashboard display
+    /// </summary>
     public IEnumerable<SecurityEventDto> RecentEvents { get; set; } = new List<SecurityEventDto>();
+    /// <summary>
+    /// Collection of threat trend data for analytics visualization
+    /// </summary>
     public IEnumerable<ThreatTrendDto> ThreatTrends { get; set; } = new List<ThreatTrendDto>();
+    /// <summary>
+    /// Date and time when the dashboard data was generated
+    /// </summary>
     public DateTime GeneratedAt { get; set; }
 }
 

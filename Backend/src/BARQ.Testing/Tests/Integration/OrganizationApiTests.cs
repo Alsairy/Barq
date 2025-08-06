@@ -175,7 +175,7 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NoContent);
     }
 
-    [Fact(Skip = "Temporarily disabled due to tenant context issues - will be re-enabled after tenant provider fix")]
+    [Fact]
     public async Task TenantIsolation_UserCannotAccessOtherTenantData()
     {
         var acmeToken = await _factory.GetAuthTokenAsync("test@acme.com");
