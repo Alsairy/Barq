@@ -156,25 +156,73 @@ public class BusinessAssociateAgreementDto
     public IEnumerable<string> RequiredSafeguards { get; set; } = new List<string>();
 }
 
+/// <summary>
+/// Encryption compliance data transfer object for HIPAA security compliance tracking
+/// </summary>
 public class EncryptionComplianceDto
 {
+    /// <summary>
+    /// Location where the data is stored (database, file system, cloud storage)
+    /// </summary>
     public string DataLocation { get; set; } = string.Empty;
+    /// <summary>
+    /// Encryption method used to protect the data (AES-256, RSA, etc.)
+    /// </summary>
     public string EncryptionMethod { get; set; } = string.Empty;
+    /// <summary>
+    /// Whether the encryption meets HIPAA compliance requirements
+    /// </summary>
     public bool IsCompliant { get; set; }
+    /// <summary>
+    /// Level of compliance achieved (full, partial, non-compliant)
+    /// </summary>
     public string ComplianceLevel { get; set; } = string.Empty;
+    /// <summary>
+    /// List of identified gaps in encryption compliance
+    /// </summary>
     public IEnumerable<string> ComplianceGaps { get; set; } = new List<string>();
+    /// <summary>
+    /// Date and time when the encryption compliance was last validated
+    /// </summary>
     public DateTime ValidatedAt { get; set; }
 }
 
+/// <summary>
+/// Security incident data transfer object for HIPAA security incident tracking
+/// </summary>
 public class SecurityIncidentDto
 {
+    /// <summary>
+    /// Type of security incident (data breach, unauthorized access, malware, etc.) (important-comment)
+    /// </summary>
     public string IncidentType { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the security incident
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the incident was discovered
+    /// </summary>
     public DateTime DiscoveredAt { get; set; }
+    /// <summary>
+    /// Person or system that discovered the incident
+    /// </summary>
     public string DiscoveredBy { get; set; } = string.Empty;
+    /// <summary>
+    /// Severity level of the incident (low, medium, high, critical)
+    /// </summary>
     public string Severity { get; set; } = string.Empty;
+    /// <summary>
+    /// List of systems affected by the security incident
+    /// </summary>
     public IEnumerable<string> AffectedSystems { get; set; } = new List<string>();
+    /// <summary>
+    /// Whether protected health information (PHI) was involved in the incident
+    /// </summary>
     public bool PhiInvolved { get; set; }
+    /// <summary>
+    /// Immediate actions taken to contain or mitigate the incident
+    /// </summary>
     public string ImmediateActions { get; set; } = string.Empty;
 }
 
