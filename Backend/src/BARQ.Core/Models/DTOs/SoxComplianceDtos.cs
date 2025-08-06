@@ -1,62 +1,168 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// </summary>
 public class FinancialControlsAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Start date of the audit period
+    /// </summary>
     public DateTime FromDate { get; set; }
+    /// <summary>
+    /// End date of the audit period
+    /// </summary>
     public DateTime ToDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string ControlArea { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool IsEffective { get; set; }
+    /// <summary>
+    /// Collection of financial controls that were tested during the audit
+    /// </summary>
     public IEnumerable<string> TestedControls { get; set; } = new List<string>();
+    /// <summary>
+    /// Collection of identified control deficiencies or weaknesses
+    /// </summary>
     public IEnumerable<string> Deficiencies { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public string AuditorName { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime AuditDate { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class ChangeControlLogDto
 {
+    /// <summary>
+    /// </summary>
     public string ChangeType { get; set; } = string.Empty;
+    /// <summary>
+    /// System or application affected by the change
+    /// </summary>
     public string SystemAffected { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string RequestedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// Identifier of the person who approved the change
+    /// </summary>
     public string ApprovedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime RequestDate { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime ApprovalDate { get; set; }
+    /// <summary>
+    /// Date when the change was implemented in the target system
+    /// </summary>
     public DateTime ImplementationDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string BusinessJustification { get; set; } = string.Empty;
+    /// <summary>
+    /// Risk assessment documenting potential impacts of the change
+    /// </summary>
     public string RiskAssessment { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// </summary>
 public class ChangeControlAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Type of change that was audited
+    /// </summary>
     public string ChangeType { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string SystemAffected { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Identifier of the person who originally requested the change
+    /// </summary>
     public string RequestedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public string ApprovedBy { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime RequestDate { get; set; }
+    /// <summary>
+    /// Date when the change was approved
+    /// </summary>
     public DateTime ApprovalDate { get; set; }
+    /// <summary>
+    /// </summary>
     public DateTime ImplementationDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string BusinessJustification { get; set; } = string.Empty;
+    /// <summary>
+    /// Risk assessment documentation for the change
+    /// </summary>
     public string RiskAssessment { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public bool ComplianceStatus { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class AccessControlsAuditDto
 {
+    /// <summary>
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Name of the system being audited for access controls
+    /// </summary>
     public string SystemName { get; set; } = string.Empty;
+    /// <summary>
+    /// </summary>
     public DateTime AuditDate { get; set; }
+    /// <summary>
+    /// </summary>
     public string AuditorName { get; set; } = string.Empty;
+    /// <summary>
+    /// Collection of users whose access was reviewed during the audit
+    /// </summary>
     public IEnumerable<string> UsersReviewed { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public IEnumerable<string> AccessViolations { get; set; } = new List<string>();
+    /// <summary>
+    /// Collection of recommended actions to address access control issues
+    /// </summary>
     public IEnumerable<string> RecommendedActions { get; set; } = new List<string>();
+    /// <summary>
+    /// </summary>
     public bool OverallCompliance { get; set; }
 }
 
+/// <summary>
+/// </summary>
 public class DocumentationComplianceDto
 {
+    /// <summary>
+    /// Name of the business process being assessed for documentation compliance
+    /// </summary>
     public string ProcessName { get; set; } = string.Empty;
     public bool HasDocumentation { get; set; }
     public bool IsCurrentVersion { get; set; }
