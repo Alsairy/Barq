@@ -21,6 +21,7 @@ namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
@@ -56,10 +57,11 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(dbContextDescriptor);
             }
 
-            var dbName = Guid.NewGuid().ToString();
+            var uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
+
             services.AddDbContext<BarqDbContext>(options =>
             {
-                options.UseInMemoryDatabase(dbName);
+                options.UseInMemoryDatabase(uniqueDbName);
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
@@ -84,6 +86,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         
         var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
         await seeder.SeedTestDataAsync();
+        
+        Console.WriteLine($"DEBUG: Database initialized with {context.Organizations.Count()} organizations and {context.Projects.Count()} projects");
     }
 
     public new async Task DisposeAsync()
@@ -151,17 +155,14 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (_context.Organizations.Any())
-        {
-            return;
-        }
+        Console.WriteLine("DEBUG: Starting fresh test data seeding for isolated database...");
 
         var acmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
         var betaOrgId = new Guid("22222222-2222-2222-2222-222222222222");
         var acmeUserId = new Guid("33333333-3333-3333-3333-333333333333");
         var betaUserId = new Guid("44444444-4444-4444-4444-444444444444");
-        var acmeProjectId = Guid.NewGuid();
-        var betaProjectId = Guid.NewGuid();
+        var acmeProjectId = new Guid("55555555-5555-5555-5555-555555555555");
+        var betaProjectId = new Guid("66666666-6666-6666-6666-666666666666");
 
         var acmeOrg = new Organization
         {
@@ -242,6 +243,7 @@ public class TestDataSeeder : ITestDataSeeder
 
         await _context.SaveChangesAsync();
         
+        Console.WriteLine($"DEBUG: Seeded {_context.Organizations.Count()} organizations, {_context.Users.Count()} users, {_context.Projects.Count()} projects");
         Console.WriteLine($"DEBUG: Created test user with email: test@acme.com, TenantId: {acmeOrgId}, PasswordHash length: {acmeUser.PasswordHash?.Length ?? 0}");
     }
 }

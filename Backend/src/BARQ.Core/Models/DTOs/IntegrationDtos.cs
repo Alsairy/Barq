@@ -258,105 +258,342 @@ public class IntegrationLog
     public Guid TenantId { get; set; }
 }
 
+/// <summary>
+/// Integration message for queue-based communication and processing
+/// </summary>
 public class IntegrationMessage
 {
+    /// <summary>
+    /// Unique identifier for the integration message (important-comment)
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Name of the queue where the message is processed
+    /// </summary>
     public string QueueName { get; set; } = string.Empty;
+    /// <summary>
+    /// Type classification of the message content
+    /// </summary>
     public string MessageType { get; set; } = string.Empty;
+    /// <summary>
+    /// Message payload content for processing
+    /// </summary>
     public string Content { get; set; } = string.Empty;
+    /// <summary>
+    /// Message headers for routing and processing metadata
+    /// </summary>
     public Dictionary<string, string> Headers { get; set; } = new();
+    /// <summary>
+    /// Processing priority level of the message
+    /// </summary>
     public MessagePriority Priority { get; set; } = MessagePriority.Normal;
+    /// <summary>
+    /// Date and time when the message was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Date and time when the message was processed
+    /// </summary>
     public DateTime? ProcessedAt { get; set; }
+    /// <summary>
+    /// Number of retry attempts for failed message processing (important-comment)
+    /// </summary>
     public int RetryCount { get; set; } = 0;
+    /// <summary>
+    /// Maximum number of retry attempts allowed
+    /// </summary>
     public int MaxRetries { get; set; } = 3;
+    /// <summary>
+    /// Error message if message processing failed
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// Current processing status of the message
+    /// </summary>
     public MessageStatus Status { get; set; } = MessageStatus.Pending;
+    /// <summary>
+    /// Tenant identifier for multi-tenant message isolation (important-comment)
+    /// </summary>
     public Guid TenantId { get; set; }
+    /// <summary>
+    /// Correlation identifier for tracking related messages (important-comment)
+    /// </summary>
     public string? CorrelationId { get; set; }
 }
 
+/// <summary>
+/// Result of message format transformation operations
+/// </summary>
 public class MessageTransformationResult
 {
+    /// <summary>
+    /// Indicates whether the message transformation was successful
+    /// </summary>
     public bool Success { get; set; }
+    /// <summary>
+    /// Transformed message content in the target format
+    /// </summary>
     public string? TransformedContent { get; set; }
+    /// <summary>
+    /// Error message if the transformation failed
+    /// </summary>
     public string? ErrorMessage { get; set; }
+    /// <summary>
+    /// Original format of the source message
+    /// </summary>
     public string SourceFormat { get; set; } = string.Empty;
+    /// <summary>
+    /// Target format for the transformed message
+    /// </summary>
     public string TargetFormat { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the transformation was completed
+    /// </summary>
     public DateTime TransformedAt { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>
+/// Status information for message processing queues
+/// </summary>
 public class QueueStatus
 {
+    /// <summary>
+    /// Name of the message processing queue
+    /// </summary>
     public string QueueName { get; set; } = string.Empty;
+    /// <summary>
+    /// Number of messages waiting to be processed
+    /// </summary>
     public int PendingMessages { get; set; }
+    /// <summary>
+    /// Number of messages currently being processed
+    /// </summary>
     public int ProcessingMessages { get; set; }
+    /// <summary>
+    /// Number of messages that have been successfully processed
+    /// </summary>
     public int CompletedMessages { get; set; }
+    /// <summary>
+    /// Number of messages that failed processing
+    /// </summary>
     public int FailedMessages { get; set; }
+    /// <summary>
+    /// Date and time when the queue status was last updated
+    /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Indicates whether the queue is operating normally
+    /// </summary>
     public bool IsHealthy { get; set; } = true;
 }
 
+/// <summary>
+/// Integration system event for monitoring and auditing
+/// </summary>
 public class IntegrationEvent
 {
+    /// <summary>
+    /// Unique identifier for the integration event (important-comment)
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Type classification of the integration event
+    /// </summary>
     public string EventType { get; set; } = string.Empty;
+    /// <summary>
+    /// Identifier of the endpoint associated with the event
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the integration event
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Severity level of the integration event
+    /// </summary>
     public IntegrationEventLevel Level { get; set; } = IntegrationEventLevel.Info;
+    /// <summary>
+    /// Additional event data and context information
+    /// </summary>
     public Dictionary<string, object> Data { get; set; } = new();
+    /// <summary>
+    /// Date and time when the event was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Tenant identifier for multi-tenant event isolation (important-comment)
+    /// </summary>
     public Guid TenantId { get; set; }
 }
 
+/// <summary>
+/// Performance and usage metrics for integration endpoints
+/// </summary>
 public class IntegrationMetrics
 {
+    /// <summary>
+    /// Total number of integration requests processed
+    /// </summary>
     public int TotalRequests { get; set; }
+    /// <summary>
+    /// Number of successful integration requests
+    /// </summary>
     public int SuccessfulRequests { get; set; }
+    /// <summary>
+    /// Number of failed integration requests
+    /// </summary>
     public int FailedRequests { get; set; }
+    /// <summary>
+    /// Success rate percentage for integration requests
+    /// </summary>
     public double SuccessRate { get; set; }
+    /// <summary>
+    /// Average response time in milliseconds for integration requests
+    /// </summary>
     public double AverageResponseTime { get; set; }
+    /// <summary>
+    /// Usage statistics by endpoint identifier
+    /// </summary>
     public Dictionary<string, int> EndpointUsage { get; set; } = new();
+    /// <summary>
+    /// Error count statistics by error type
+    /// </summary>
     public Dictionary<string, int> ErrorCounts { get; set; } = new();
+    /// <summary>
+    /// Start date for the metrics reporting period
+    /// </summary>
     public DateTime FromDate { get; set; }
+    /// <summary>
+    /// End date for the metrics reporting period
+    /// </summary>
     public DateTime ToDate { get; set; }
 }
 
+/// <summary>
+/// Alert notification for integration system issues
+/// </summary>
 public class IntegrationAlert
 {
+    /// <summary>
+    /// Unique identifier for the integration alert (important-comment)
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Identifier of the alert rule that triggered this alert
+    /// </summary>
     public string RuleId { get; set; } = string.Empty;
+    /// <summary>
+    /// Title of the integration alert
+    /// </summary>
     public string Title { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the integration alert
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Severity level of the integration alert
+    /// </summary>
     public IntegrationAlertSeverity Severity { get; set; }
+    /// <summary>
+    /// Identifier of the endpoint associated with the alert
+    /// </summary>
     public string EndpointId { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the alert was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    /// <summary>
+    /// Date and time when the alert was resolved
+    /// </summary>
     public DateTime? ResolvedAt { get; set; }
+    /// <summary>
+    /// Indicates whether the alert has been resolved
+    /// </summary>
     public bool IsResolved { get; set; } = false;
+    /// <summary>
+    /// Additional alert data and context information
+    /// </summary>
     public Dictionary<string, object> Data { get; set; } = new();
 }
 
+/// <summary>
+/// Rule configuration for generating integration alerts
+/// </summary>
 public class IntegrationAlertRule
 {
+    /// <summary>
+    /// Unique identifier for the alert rule
+    /// </summary>
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    /// <summary>
+    /// Name of the alert rule
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+    /// <summary>
+    /// Description of the alert rule purpose
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Condition expression that triggers the alert
+    /// </summary>
     public string Condition { get; set; } = string.Empty;
+    /// <summary>
+    /// Severity level for alerts generated by this rule
+    /// </summary>
     public IntegrationAlertSeverity Severity { get; set; }
+    /// <summary>
+    /// Indicates whether the alert rule is currently active
+    /// </summary>
     public bool IsActive { get; set; } = true;
+    /// <summary>
+    /// Specific endpoint identifier this rule applies to
+    /// </summary>
     public string? EndpointId { get; set; }
+    /// <summary>
+    /// Configuration parameters for the alert rule
+    /// </summary>
     public Dictionary<string, object> Parameters { get; set; } = new();
+    /// <summary>
+    /// Date and time when the alert rule was created
+    /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
+/// <summary>
+/// Dashboard view of integration system health and status
+/// </summary>
 public class IntegrationHealthDashboard
 {
+    /// <summary>
+    /// Total number of configured integration endpoints
+    /// </summary>
     public int TotalEndpoints { get; set; }
+    /// <summary>
+    /// Number of healthy integration endpoints
+    /// </summary>
     public int HealthyEndpoints { get; set; }
+    /// <summary>
+    /// Number of unhealthy integration endpoints
+    /// </summary>
     public int UnhealthyEndpoints { get; set; }
+    /// <summary>
+    /// Number of currently active alerts
+    /// </summary>
     public int ActiveAlerts { get; set; }
+    /// <summary>
+    /// Overall health score percentage for the integration system
+    /// </summary>
     public double OverallHealthScore { get; set; }
+    /// <summary>
+    /// List of endpoints that have recently failed
+    /// </summary>
     public IEnumerable<IntegrationEndpoint> RecentlyFailedEndpoints { get; set; } = new List<IntegrationEndpoint>();
+    /// <summary>
+    /// List of critical alerts requiring immediate attention
+    /// </summary>
     public IEnumerable<IntegrationAlert> CriticalAlerts { get; set; } = new List<IntegrationAlert>();
+    /// <summary>
+    /// Date and time when the dashboard was last updated
+    /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }
