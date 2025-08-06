@@ -32,8 +32,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 ["Jwt:Key"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
                 ["Jwt:Secret"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
-                ["Jwt:Issuer"] = "test-issuer",
-                ["Jwt:Audience"] = "test-audience",
+                ["Jwt:Issuer"] = "BarqAPI",
+                ["Jwt:Audience"] = "BarqClient",
                 ["Jwt:ExpiryMinutes"] = "60",
                 ["Security:MaxFailedAttempts"] = "5",
                 ["Security:LockoutDurationMinutes"] = "15",
