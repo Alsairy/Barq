@@ -226,74 +226,236 @@ public class SecurityIncidentDto
     public string ImmediateActions { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Security incident response data transfer object for HIPAA incident response tracking
+/// </summary>
 public class SecurityIncidentResponseDto
 {
+    /// <summary>
+    /// Unique identifier of the security incident being responded to
+    /// </summary>
     public Guid IncidentId { get; set; }
+    /// <summary>
+    /// Current status of the incident response (initiated, in-progress, completed)
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed response plan for addressing the security incident
+    /// </summary>
     public string ResponsePlan { get; set; } = string.Empty;
+    /// <summary>
+    /// List of actions required to complete the incident response
+    /// </summary>
     public IEnumerable<string> ActionsRequired { get; set; } = new List<string>();
+    /// <summary>
+    /// Date and time when the incident response was initiated
+    /// </summary>
     public DateTime ResponseInitiated { get; set; }
+    /// <summary>
+    /// Team or individuals responsible for the incident response
+    /// </summary>
     public string ResponseTeam { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Risk assessment data transfer object for HIPAA security risk evaluation
+/// </summary>
 public class RiskAssessmentDto
 {
+    /// <summary>
+    /// Unique identifier for the risk assessment
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Name of the system being assessed for security risks
+    /// </summary>
     public string SystemName { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the risk assessment scope and methodology
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Overall risk level determined by the assessment (low, medium, high, critical)
+    /// </summary>
     public string RiskLevel { get; set; } = string.Empty;
+    /// <summary>
+    /// List of security threats identified during the assessment
+    /// </summary>
     public IEnumerable<string> IdentifiedThreats { get; set; } = new List<string>();
+    /// <summary>
+    /// List of vulnerabilities discovered in the assessed system
+    /// </summary>
     public IEnumerable<string> Vulnerabilities { get; set; } = new List<string>();
+    /// <summary>
+    /// List of safeguards recommended or implemented to mitigate risks
+    /// </summary>
     public IEnumerable<string> Safeguards { get; set; } = new List<string>();
+    /// <summary>
+    /// Date when the risk assessment was conducted
+    /// </summary>
     public DateTime AssessmentDate { get; set; }
+    /// <summary>
+    /// Person or team who conducted the risk assessment
+    /// </summary>
     public string AssessedBy { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Audit log compliance data transfer object for HIPAA audit trail compliance tracking
+/// </summary>
 public class AuditLogComplianceDto
 {
+    /// <summary>
+    /// Start date of the audit log compliance assessment period
+    /// </summary>
     public DateTime FromDate { get; set; }
+    /// <summary>
+    /// End date of the audit log compliance assessment period
+    /// </summary>
     public DateTime ToDate { get; set; }
+    /// <summary>
+    /// Whether the audit logs meet HIPAA compliance requirements
+    /// </summary>
     public bool IsCompliant { get; set; }
+    /// <summary>
+    /// Total number of log entries reviewed during the assessment
+    /// </summary>
     public int TotalLogEntries { get; set; }
+    /// <summary>
+    /// Number of compliance violations found in the audit logs
+    /// </summary>
     public int ComplianceViolations { get; set; }
+    /// <summary>
+    /// Types of compliance violations identified in the audit logs
+    /// </summary>
     public IEnumerable<string> ViolationTypes { get; set; } = new List<string>();
+    /// <summary>
+    /// Overall compliance score for the audit log assessment
+    /// </summary>
     public string ComplianceScore { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// HIPAA breach report data transfer object for breach notification and reporting
+/// </summary>
 public class HipaaBreachReportDto
 {
+    /// <summary>
+    /// Type of HIPAA breach (unauthorized access, theft, loss, improper disposal)
+    /// </summary>
     public string BreachType { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the HIPAA breach incident
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the breach was discovered
+    /// </summary>
     public DateTime DiscoveredAt { get; set; }
+    /// <summary>
+    /// Person or system that discovered the breach
+    /// </summary>
     public string DiscoveredBy { get; set; } = string.Empty;
+    /// <summary>
+    /// Estimated number of individuals affected by the breach
+    /// </summary>
     public int EstimatedAffectedIndividuals { get; set; }
+    /// <summary>
+    /// Types of protected health information involved in the breach
+    /// </summary>
     public IEnumerable<string> PhiTypesInvolved { get; set; } = new List<string>();
+    /// <summary>
+    /// Risk level of the breach (low, medium, high, critical)
+    /// </summary>
     public string RiskLevel { get; set; } = string.Empty;
+    /// <summary>
+    /// Measures taken to contain and mitigate the breach
+    /// </summary>
     public string ContainmentMeasures { get; set; } = string.Empty;
+    /// <summary>
+    /// Whether the breach requires notification to the Department of Health and Human Services
+    /// </summary>
     public bool RequiresHhsNotification { get; set; }
+    /// <summary>
+    /// Whether the breach requires media notification due to its scope
+    /// </summary>
     public bool RequiresMediaNotification { get; set; }
 }
 
+/// <summary>
+/// Workforce training data transfer object for HIPAA training compliance tracking
+/// </summary>
 public class WorkforceTrainingDto
 {
+    /// <summary>
+    /// Unique identifier for the training record
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Unique identifier of the user who completed the training
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// Type of HIPAA training completed (privacy, security, breach response)
+    /// </summary>
     public string TrainingType { get; set; } = string.Empty;
+    /// <summary>
+    /// Title of the specific training course or module
+    /// </summary>
     public string TrainingTitle { get; set; } = string.Empty;
+    /// <summary>
+    /// Date when the training was completed
+    /// </summary>
     public DateTime CompletionDate { get; set; }
+    /// <summary>
+    /// Certification number or identifier issued upon training completion
+    /// </summary>
     public string CertificationNumber { get; set; } = string.Empty;
+    /// <summary>
+    /// Date when the training certification expires and renewal is required
+    /// </summary>
     public DateTime ExpirationDate { get; set; }
+    /// <summary>
+    /// Organization or entity that provided the training
+    /// </summary>
     public string TrainingProvider { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Contingency plan data transfer object for HIPAA emergency response and business continuity planning
+/// </summary>
 public class ContingencyPlanDto
 {
+    /// <summary>
+    /// Type of contingency plan (disaster recovery, emergency response, business continuity)
+    /// </summary>
     public string PlanType { get; set; } = string.Empty;
+    /// <summary>
+    /// Name of the contingency plan
+    /// </summary>
     public string PlanName { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the contingency plan scope and objectives
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// List of procedures to be followed during contingency activation
+    /// </summary>
     public IEnumerable<string> Procedures { get; set; } = new List<string>();
+    /// <summary>
+    /// List of persons responsible for executing the contingency plan
+    /// </summary>
     public IEnumerable<string> ResponsiblePersons { get; set; } = new List<string>();
+    /// <summary>
+    /// Date when the contingency plan was last updated
+    /// </summary>
     public DateTime LastUpdated { get; set; }
+    /// <summary>
+    /// Date when the contingency plan was last tested or exercised
+    /// </summary>
     public DateTime LastTested { get; set; }
+    /// <summary>
+    /// Results and findings from the most recent contingency plan test
+    /// </summary>
     public string TestResults { get; set; } = string.Empty;
 }
