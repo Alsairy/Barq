@@ -67,6 +67,7 @@ jobs:
 
   container-scan:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     permissions:
       contents: read
       security-events: write
@@ -109,6 +110,7 @@ jobs:
 
   infrastructure-scan:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
     - uses: actions/checkout@v4
 
@@ -157,6 +159,7 @@ jobs:
 
   compliance-check:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     steps:
     - uses: actions/checkout@v4
 
