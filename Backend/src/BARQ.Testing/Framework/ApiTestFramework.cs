@@ -138,6 +138,22 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var apiResponse = await DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
         return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        
+        context.Organizations.RemoveRange(context.Organizations);
+        context.Users.RemoveRange(context.Users);
+        context.Projects.RemoveRange(context.Projects);
+        await context.SaveChangesAsync();
+        
+        var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
+        await seeder.SeedTestDataAsync();
+        
+        Console.WriteLine($"DEBUG: Database reset and reseeded with {context.Organizations.Count()} organizations and {context.Projects.Count()} projects");
+    }
 }
 
 public interface ITestDataSeeder
