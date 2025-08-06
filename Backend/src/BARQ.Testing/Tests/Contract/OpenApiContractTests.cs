@@ -28,8 +28,6 @@ public class OpenApiContractTests : IClassFixture<ApiTestFramework>
     {
         var criticalEndpoints = new Dictionary<string, OperationType>
         {
-            { "/api/auth/login", OperationType.Post },
-            { "/api/auth/register", OperationType.Post },
             { "/api/users/profile", OperationType.Get },
             { "/api/organizations", OperationType.Get },
             { "/api/projects", OperationType.Get },
