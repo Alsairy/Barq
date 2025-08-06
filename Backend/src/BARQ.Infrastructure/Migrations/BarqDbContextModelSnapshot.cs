@@ -550,6 +550,8 @@ namespace BARQ.Infrastructure.Migrations
 
                     b.HasIndex("ProjectId");
 
+                    b.HasIndex("TenantId");
+
                     b.ToTable("BusinessRequirementDocuments");
                 });
 
@@ -2711,12 +2713,13 @@ namespace BARQ.Infrastructure.Migrations
                 {
                     b.HasOne("BARQ.Core.Entities.User", "Approver")
                         .WithMany()
-                        .HasForeignKey("ApproverId");
+                        .HasForeignKey("ApproverId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BARQ.Core.Entities.Project", "Project")

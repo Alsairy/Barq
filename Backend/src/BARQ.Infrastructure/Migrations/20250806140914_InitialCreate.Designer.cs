@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    [Migration("20250806135916_InitialCreate")]
+    [Migration("20250806140914_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -552,6 +552,8 @@ namespace BARQ.Infrastructure.Migrations
                     b.HasIndex("AuthorId");
 
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("TenantId");
 
                     b.ToTable("BusinessRequirementDocuments");
                 });
@@ -2714,12 +2716,13 @@ namespace BARQ.Infrastructure.Migrations
                 {
                     b.HasOne("BARQ.Core.Entities.User", "Approver")
                         .WithMany()
-                        .HasForeignKey("ApproverId");
+                        .HasForeignKey("ApproverId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("BARQ.Core.Entities.User", "Author")
                         .WithMany()
                         .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("BARQ.Core.Entities.Project", "Project")
