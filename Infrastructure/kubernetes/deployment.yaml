@@ -238,31 +238,19 @@ spec:
         livenessProbe:
           exec:
             command:
-            - /opt/mssql-tools18/bin/sqlcmd
-            - -S
-            - localhost
-            - -U
-            - sa
-            - -P
-            - $(SA_PASSWORD)
-            - -Q
-            - SELECT 1
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           exec:
             command:
-            - /opt/mssql-tools18/bin/sqlcmd
-            - -S
-            - localhost
-            - -U
-            - sa
-            - -P
-            - $(SA_PASSWORD)
-            - -Q
-            - SELECT 1
-          initialDelaySeconds: 5
-          periodSeconds: 5
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
+          initialDelaySeconds: 15
+          periodSeconds: 10
       volumes:
       - name: sqlserver-storage
         persistentVolumeClaim:

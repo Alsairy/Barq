@@ -22,10 +22,10 @@ jobs:
           SA_PASSWORD: YourStrong@Passw0rd
           MSSQL_DB: barq_test
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1'"
+          --health-cmd "bash -c 'timeout 30 bash -c \"</dev/tcp/localhost/1433\" && echo \"SQL Server is ready\"'"
           --health-interval 10s
-          --health-timeout 10s
-          --health-retries 5
+          --health-timeout 15s
+          --health-retries 8
         ports:
           - 1433:1433
       redis:
