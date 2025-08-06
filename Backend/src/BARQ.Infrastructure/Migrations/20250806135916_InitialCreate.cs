@@ -25,6 +25,7 @@ namespace BARQ.Infrastructure.Migrations
                     Status = table.Column<int>(type: "int", nullable: false),
                     MaxUsers = table.Column<int>(type: "int", nullable: false),
                     MaxProjects = table.Column<int>(type: "int", nullable: false),
+                    Domain = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     Settings = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SubscriptionExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -39,6 +40,54 @@ namespace BARQ.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Organizations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Permission",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Resource = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsSystemPermission = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Permission", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Role",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsSystemRole = table.Column<bool>(type: "bit", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Role", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -61,6 +110,10 @@ namespace BARQ.Infrastructure.Migrations
                     SupportedTaskTypes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     QualityScore = table.Column<int>(type: "int", nullable: true),
                     AverageResponseTimeMs = table.Column<long>(type: "bigint", nullable: true),
+                    AverageResponseTime = table.Column<long>(type: "bigint", nullable: true),
+                    TotalCost = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    AverageCost = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    Capabilities = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SuccessRate = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     LastHealthCheck = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsHealthy = table.Column<bool>(type: "bit", nullable: false),
@@ -81,6 +134,106 @@ namespace BARQ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_AIProviderConfigurations_Organizations_OrganizationId",
                         column: x => x.OrganizationId,
+                        principalTable: "Organizations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "LdapConfigurations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Host = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Port = table.Column<int>(type: "int", nullable: false),
+                    UseSsl = table.Column<bool>(type: "bit", nullable: false),
+                    UseStartTls = table.Column<bool>(type: "bit", nullable: false),
+                    BaseDn = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    BindDn = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    BindPassword = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    UserSearchFilter = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    GroupSearchFilter = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    UserDnPattern = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    EmailAttribute = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    FirstNameAttribute = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    LastNameAttribute = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DisplayNameAttribute = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    GroupMembershipAttribute = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    IsRequired = table.Column<bool>(type: "bit", nullable: false),
+                    AutoProvisionUsers = table.Column<bool>(type: "bit", nullable: false),
+                    DefaultRole = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    GroupRoleMappings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConnectionTimeout = table.Column<int>(type: "int", nullable: false),
+                    SearchTimeout = table.Column<int>(type: "int", nullable: false),
+                    LastSuccessfulAuth = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastValidation = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsValid = table.Column<bool>(type: "bit", nullable: false),
+                    ValidationError = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    LastSynchronization = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_LdapConfigurations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_LdapConfigurations_Organizations_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "Organizations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SsoConfigurations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Provider = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ProviderName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    IsEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    IsRequired = table.Column<bool>(type: "bit", nullable: false),
+                    ConfigurationJson = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EntityId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    SsoUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    LogoutUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    Certificate = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ClientId = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    ClientSecret = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Scopes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Authority = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CallbackUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    AttributeMappings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DefaultRole = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AutoProvisionUsers = table.Column<bool>(type: "bit", nullable: false),
+                    LastSuccessfulAuth = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastValidation = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsValid = table.Column<bool>(type: "bit", nullable: false),
+                    ValidationError = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SsoConfigurations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SsoConfigurations_Organizations_TenantId",
+                        column: x => x.TenantId,
                         principalTable: "Organizations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -113,6 +266,15 @@ namespace BARQ.Infrastructure.Migrations
                     Preferences = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TimeZone = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     Language = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    EmailVerificationToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    EmailVerificationTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EmailVerified = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordChangedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MfaSecretKey = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    MfaEnabled = table.Column<bool>(type: "bit", nullable: false),
+                    MfaEnabledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MfaRecoveryToken = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    MfaRecoveryTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
                     OrganizationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -132,12 +294,6 @@ namespace BARQ.Infrastructure.Migrations
                         column: x => x.OrganizationId,
                         principalTable: "Organizations",
                         principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Users_Organizations_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "Organizations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -152,6 +308,7 @@ namespace BARQ.Infrastructure.Migrations
                     WorkflowDefinition = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ApprovalSteps = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SLAConfiguration = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SlaHours = table.Column<int>(type: "int", nullable: true),
                     EscalationRules = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NotificationSettings = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -179,6 +336,39 @@ namespace BARQ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RolePermission",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RolePermission", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RolePermission_Permission_PermissionId",
+                        column: x => x.PermissionId,
+                        principalTable: "Permission",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RolePermission_Role_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Role",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AuditLogs",
                 columns: table => new
                 {
@@ -191,6 +381,37 @@ namespace BARQ.Infrastructure.Migrations
                     IPAddress = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     UserAgent = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SessionId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CorrelationId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AdditionalData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Source = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Category = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Severity = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsSuccessful = table.Column<bool>(type: "bit", nullable: true),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Duration = table.Column<TimeSpan>(type: "time", nullable: true),
+                    ComplianceFramework = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ComplianceEventType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    DataClassification = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    LegalBasis = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    RetentionPeriod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    RetentionExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsPersonalData = table.Column<bool>(type: "bit", nullable: false),
+                    IsSensitiveData = table.Column<bool>(type: "bit", nullable: false),
+                    ConsentId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ProcessingPurpose = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    DataSubjectId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    ComplianceStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    RegulatoryRequirement = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    RequiresNotification = table.Column<bool>(type: "bit", nullable: false),
+                    NotificationDeadline = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DigitalSignature = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IntegrityHash = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    IsTamperProof = table.Column<bool>(type: "bit", nullable: false),
+                    ArchiveLocation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ComplianceNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -227,6 +448,9 @@ namespace BARQ.Infrastructure.Migrations
                     TargetEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ActualEndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     Budget = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ActualCost = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    ProgressPercentage = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     TechnologyStack = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RepositoryUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     RepositoryBranch = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -235,6 +459,7 @@ namespace BARQ.Infrastructure.Migrations
                     AIConfiguration = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DesignSystemUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     ProjectOwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ProjectManagerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     OrganizationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -260,7 +485,7 @@ namespace BARQ.Infrastructure.Migrations
                         column: x => x.ProjectOwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -273,6 +498,7 @@ namespace BARQ.Infrastructure.Migrations
                     Permissions = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -287,9 +513,64 @@ namespace BARQ.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_UserRoles", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_UserRoles_Role_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "Role",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_UserRoles_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowSteps",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    StepType = table.Column<int>(type: "int", nullable: false),
+                    Order = table.Column<int>(type: "int", nullable: false),
+                    Configuration = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    InputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OutputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ValidationRules = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TimeoutMinutes = table.Column<int>(type: "int", nullable: true),
+                    RetryConfiguration = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ErrorHandling = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExecutionConditions = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RequiresApproval = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    AllowParallelExecution = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    WorkflowTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParentStepId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowSteps", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkflowSteps_WorkflowSteps_ParentStepId",
+                        column: x => x.ParentStepId,
+                        principalTable: "WorkflowSteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkflowSteps_WorkflowTemplates_WorkflowTemplateId",
+                        column: x => x.WorkflowTemplateId,
+                        principalTable: "WorkflowTemplates",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -338,7 +619,7 @@ namespace BARQ.Infrastructure.Migrations
                         column: x => x.AuthorId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -350,6 +631,7 @@ namespace BARQ.Infrastructure.Migrations
                     JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     LeftAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    AllocationPercentage = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     ProjectId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -482,6 +764,7 @@ namespace BARQ.Infrastructure.Migrations
                     Status = table.Column<int>(type: "int", nullable: false),
                     CurrentStepIndex = table.Column<int>(type: "int", nullable: false),
                     WorkflowData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Data = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ApprovalHistory = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StartedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -493,6 +776,10 @@ namespace BARQ.Infrastructure.Migrations
                     UserStoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CurrentAssigneeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     InitiatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ExecutionContext = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    ErrorDetails = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PerformanceMetrics = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SprintId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     UserStoryId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -541,7 +828,7 @@ namespace BARQ.Infrastructure.Migrations
                         column: x => x.CurrentAssigneeId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_WorkflowInstances_Users_InitiatorId",
                         column: x => x.InitiatorId,
@@ -574,10 +861,12 @@ namespace BARQ.Infrastructure.Migrations
                     ProcessingTimeMs = table.Column<long>(type: "bigint", nullable: true),
                     TokensUsed = table.Column<int>(type: "int", nullable: true),
                     StartedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ScheduledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     RetryCount = table.Column<int>(type: "int", nullable: false),
                     MaxRetries = table.Column<int>(type: "int", nullable: false),
+                    Parameters = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Configuration = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     QualityScore = table.Column<int>(type: "int", nullable: true),
                     RequiresHumanReview = table.Column<bool>(type: "bit", nullable: false),
@@ -589,6 +878,7 @@ namespace BARQ.Infrastructure.Migrations
                     ParentTaskId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     WorkflowInstanceId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     AssigneeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     AIProviderConfigurationId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -639,6 +929,120 @@ namespace BARQ.Infrastructure.Migrations
                         principalTable: "WorkflowInstances",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowDataContexts",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Scope = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "workflow"),
+                    Data = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}"),
+                    DataSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    EncryptionKeyId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    IsEncrypted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    AccessPermissions = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ValidationRules = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TransformationRules = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
+                    WorkflowInstanceId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    WorkflowStepId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ParentContextId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowDataContexts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkflowDataContexts_WorkflowDataContexts_ParentContextId",
+                        column: x => x.ParentContextId,
+                        principalTable: "WorkflowDataContexts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkflowDataContexts_WorkflowInstances_WorkflowInstanceId",
+                        column: x => x.WorkflowInstanceId,
+                        principalTable: "WorkflowInstances",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WorkflowDataContexts_WorkflowSteps_WorkflowStepId",
+                        column: x => x.WorkflowStepId,
+                        principalTable: "WorkflowSteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkflowStepExecutions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    InputData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OutputData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    ErrorDetails = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    StartedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DurationMs = table.Column<long>(type: "bigint", nullable: true),
+                    RetryCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    MaxRetries = table.Column<int>(type: "int", nullable: false, defaultValue: 3),
+                    NextRetryAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ExecutionContext = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExecutionLogs = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PerformanceMetrics = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    WorkflowInstanceId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    WorkflowStepId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ExecutedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AssignedToId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedById = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    TenantId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowStepExecutions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStepExecutions_Users_AssignedToId",
+                        column: x => x.AssignedToId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStepExecutions_Users_ExecutedById",
+                        column: x => x.ExecutedById,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStepExecutions_WorkflowInstances_WorkflowInstanceId",
+                        column: x => x.WorkflowInstanceId,
+                        principalTable: "WorkflowInstances",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WorkflowStepExecutions_WorkflowSteps_WorkflowStepId",
+                        column: x => x.WorkflowStepId,
+                        principalTable: "WorkflowSteps",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -986,6 +1390,22 @@ namespace BARQ.Infrastructure.Migrations
                 column: "UpdatedById");
 
             migrationBuilder.CreateIndex(
+                name: "IX_LdapConfigurations_Host",
+                table: "LdapConfigurations",
+                column: "Host");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LdapConfigurations_IsEnabled",
+                table: "LdapConfigurations",
+                column: "IsEnabled");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LdapConfigurations_TenantId",
+                table: "LdapConfigurations",
+                column: "TenantId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ProjectMembers_ProjectId",
                 table: "ProjectMembers",
                 column: "ProjectId");
@@ -1006,9 +1426,45 @@ namespace BARQ.Infrastructure.Migrations
                 column: "ProjectOwnerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RolePermission_PermissionId",
+                table: "RolePermission",
+                column: "PermissionId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RolePermission_RoleId",
+                table: "RolePermission",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Sprints_ProjectId",
                 table: "Sprints",
                 column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SsoConfigurations_IsEnabled",
+                table: "SsoConfigurations",
+                column: "IsEnabled");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SsoConfigurations_Provider",
+                table: "SsoConfigurations",
+                column: "Provider");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SsoConfigurations_TenantId",
+                table: "SsoConfigurations",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SsoConfigurations_TenantId_Provider",
+                table: "SsoConfigurations",
+                columns: new[] { "TenantId", "Provider" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserRoles_RoleId",
+                table: "UserRoles",
+                column: "RoleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserRoles_UserId",
@@ -1047,6 +1503,41 @@ namespace BARQ.Infrastructure.Migrations
                 column: "SprintId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_IsActive",
+                table: "WorkflowDataContexts",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_ParentContextId",
+                table: "WorkflowDataContexts",
+                column: "ParentContextId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_Scope",
+                table: "WorkflowDataContexts",
+                column: "Scope");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_TenantId",
+                table: "WorkflowDataContexts",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_WorkflowInstanceId",
+                table: "WorkflowDataContexts",
+                column: "WorkflowInstanceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_WorkflowInstanceId_Scope",
+                table: "WorkflowDataContexts",
+                columns: new[] { "WorkflowInstanceId", "Scope" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowDataContexts_WorkflowStepId",
+                table: "WorkflowDataContexts",
+                column: "WorkflowStepId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_WorkflowInstances_CurrentAssigneeId",
                 table: "WorkflowInstances",
                 column: "CurrentAssigneeId");
@@ -1057,9 +1548,19 @@ namespace BARQ.Infrastructure.Migrations
                 column: "InitiatorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_Priority",
+                table: "WorkflowInstances",
+                column: "Priority");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_WorkflowInstances_ProjectId",
                 table: "WorkflowInstances",
                 column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_ProjectId_Status",
+                table: "WorkflowInstances",
+                columns: new[] { "ProjectId", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowInstances_SprintId",
@@ -1070,6 +1571,21 @@ namespace BARQ.Infrastructure.Migrations
                 name: "IX_WorkflowInstances_SprintId1",
                 table: "WorkflowInstances",
                 column: "SprintId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_Status",
+                table: "WorkflowInstances",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_TenantId",
+                table: "WorkflowInstances",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_TenantId_Status",
+                table: "WorkflowInstances",
+                columns: new[] { "TenantId", "Status" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowInstances_UserStoryId",
@@ -1085,6 +1601,76 @@ namespace BARQ.Infrastructure.Migrations
                 name: "IX_WorkflowInstances_WorkflowTemplateId",
                 table: "WorkflowInstances",
                 column: "WorkflowTemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowInstances_WorkflowTemplateId_Status",
+                table: "WorkflowInstances",
+                columns: new[] { "WorkflowTemplateId", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_AssignedToId",
+                table: "WorkflowStepExecutions",
+                column: "AssignedToId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_ExecutedById",
+                table: "WorkflowStepExecutions",
+                column: "ExecutedById");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_Status",
+                table: "WorkflowStepExecutions",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_TenantId",
+                table: "WorkflowStepExecutions",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_WorkflowInstanceId",
+                table: "WorkflowStepExecutions",
+                column: "WorkflowInstanceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_WorkflowInstanceId_Status",
+                table: "WorkflowStepExecutions",
+                columns: new[] { "WorkflowInstanceId", "Status" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowStepExecutions_WorkflowStepId",
+                table: "WorkflowStepExecutions",
+                column: "WorkflowStepId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_IsActive",
+                table: "WorkflowSteps",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_ParentStepId",
+                table: "WorkflowSteps",
+                column: "ParentStepId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_StepType",
+                table: "WorkflowSteps",
+                column: "StepType");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_TenantId",
+                table: "WorkflowSteps",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_WorkflowTemplateId",
+                table: "WorkflowSteps",
+                column: "WorkflowTemplateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkflowSteps_WorkflowTemplateId_Order",
+                table: "WorkflowSteps",
+                columns: new[] { "WorkflowTemplateId", "Order" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowTemplates_OrganizationId",
@@ -1108,13 +1694,37 @@ namespace BARQ.Infrastructure.Migrations
                 name: "ITSMTicketUpdate");
 
             migrationBuilder.DropTable(
+                name: "LdapConfigurations");
+
+            migrationBuilder.DropTable(
                 name: "ProjectMembers");
+
+            migrationBuilder.DropTable(
+                name: "RolePermission");
+
+            migrationBuilder.DropTable(
+                name: "SsoConfigurations");
 
             migrationBuilder.DropTable(
                 name: "UserRoles");
 
             migrationBuilder.DropTable(
+                name: "WorkflowDataContexts");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowStepExecutions");
+
+            migrationBuilder.DropTable(
                 name: "ITSMTickets");
+
+            migrationBuilder.DropTable(
+                name: "Permission");
+
+            migrationBuilder.DropTable(
+                name: "Role");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowSteps");
 
             migrationBuilder.DropTable(
                 name: "AITasks");
