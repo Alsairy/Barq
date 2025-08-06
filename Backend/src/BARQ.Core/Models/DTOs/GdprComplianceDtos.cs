@@ -205,24 +205,80 @@ public class DataProcessingAuditDto
     public string DataTypes { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Privacy Impact Assessment data transfer object for GDPR compliance
+/// </summary>
 public class PrivacyImpactAssessmentDto
 {
+    /// <summary>
+    /// Unique identifier for the privacy impact assessment
+    /// </summary>
     public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Name of the process being assessed
+    /// </summary>
     public string ProcessName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Description of the privacy impact assessment
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Risk level determined by the assessment
+    /// </summary>
     public string RiskLevel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// List of identified privacy risks
+    /// </summary>
     public IEnumerable<string> IdentifiedRisks { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// List of mitigation measures for identified risks
+    /// </summary>
     public IEnumerable<string> Mitigations { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// Date when the assessment was conducted
+    /// </summary>
     public DateTime AssessmentDate { get; set; }
+    
+    /// <summary>
+    /// Person who conducted the assessment
+    /// </summary>
     public string AssessedBy { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Lawful basis validation data transfer object for GDPR compliance
+/// </summary>
 public class LawfulBasisValidationDto
 {
+    /// <summary>
+    /// The data processing activity being validated
+    /// </summary>
     public string ProcessingActivity { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The lawful basis claimed for the processing activity
+    /// </summary>
     public string LawfulBasis { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Whether the lawful basis is valid for the processing activity
+    /// </summary>
     public bool IsValid { get; set; }
+    
+    /// <summary>
+    /// Reason for the validation result
+    /// </summary>
     public string ValidationReason { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Date and time when the validation was performed
+    /// </summary>
     public DateTime ValidatedAt { get; set; }
 }
 
