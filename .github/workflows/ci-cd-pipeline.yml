@@ -15,18 +15,19 @@ jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      postgres:
-        image: postgres:15
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: barq_test
+          ACCEPT_EULA: Y
+          SA_PASSWORD: YourStrong@Passw0rd
+          MSSQL_DB: barq_test
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432:5432
+          - 1433:1433
       redis:
         image: redis:7
         options: >-
@@ -61,7 +62,7 @@ jobs:
     - name: Run Backend Tests
       run: dotnet test Backend/BARQ.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
       env:
-        ConnectionStrings__DefaultConnection: "Host=localhost;Database=barq_test;Username=postgres;Password=postgres"
+        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=barq_test;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;Connection Timeout=60;Command Timeout=300;"
         Redis__ConnectionString: "localhost:6379"
 
     - name: Install Frontend dependencies

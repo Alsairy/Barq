@@ -53,13 +53,15 @@ services:
     networks:
       - barq-monitoring
 
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: barq-postgres-exporter
+  sqlserver-exporter:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: barq-sqlserver-exporter
     ports:
-      - "9187:9187"
+      - "9399:9399"
     environment:
-      - DATA_SOURCE_NAME=postgresql://${DB_USER:-barq_user}:${DB_PASSWORD}@barq-database:5432/BarqDB?sslmode=disable
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+      - CONNECTION_STRING=Server=barq-database,1433;Database=BarqDB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;
     networks:
       - barq-monitoring
     depends_on:

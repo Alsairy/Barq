@@ -6,12 +6,13 @@
 
 1. **Prerequisites**
    - Install .NET 8 SDK
-   - Install PostgreSQL (or use Docker)
+   - Install SQL Server (or use Docker)
 
 2. **Database Setup**
    ```bash
-   # Create database (PostgreSQL)
-   createdb BarqDb
+   # Create database (SQL Server)
+   # Using SQL Server Management Studio or sqlcmd
+   sqlcmd -S localhost -E -Q "CREATE DATABASE BarqDb"
    ```
 
 3. **Run Backend**
@@ -67,6 +68,6 @@ BARQ is a comprehensive multi-tenant SaaS platform combining:
 
 - **Backend**: .NET 8 Web API with Entity Framework Core
 - **Frontend**: React/TypeScript with Redux Toolkit
-- **Database**: PostgreSQL with multi-tenant data isolation
+- **Database**: SQL Server with multi-tenant data isolation
 - **Security**: Comprehensive WAF, rate limiting, and compliance monitoring
 - **Integration**: REST/SOAP/GraphQL adapters with circuit breakers
