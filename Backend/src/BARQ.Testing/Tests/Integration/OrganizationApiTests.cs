@@ -6,6 +6,7 @@ using Xunit;
 
 namespace BARQ.Testing.Tests.Integration;
 
+[Collection("OrganizationApiTestCollection")]
 public class OrganizationApiTests : IClassFixture<ApiTestFramework>
 {
     private readonly ApiTestFramework _factory;
