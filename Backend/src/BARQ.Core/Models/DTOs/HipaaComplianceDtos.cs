@@ -1,28 +1,88 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// PHI access log data transfer object for HIPAA compliance tracking
+/// </summary>
 public class PhiAccessLogDto
 {
+    /// <summary>
+    /// Unique identifier of the user accessing PHI
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// Unique identifier of the patient whose PHI is being accessed
+    /// </summary>
     public Guid? PatientId { get; set; }
+    /// <summary>
+    /// Type of access performed (read, write, update, delete)
+    /// </summary>
     public string AccessType { get; set; } = string.Empty;
+    /// <summary>
+    /// Specific resource or data element that was accessed
+    /// </summary>
     public string ResourceAccessed { get; set; } = string.Empty;
+    /// <summary>
+    /// Business purpose or reason for accessing the PHI
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the PHI access occurred
+    /// </summary>
     public DateTime AccessTime { get; set; }
+    /// <summary>
+    /// IP address from which the access was made
+    /// </summary>
     public string IpAddress { get; set; } = string.Empty;
+    /// <summary>
+    /// User agent string of the client used for access
+    /// </summary>
     public string UserAgent { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// PHI access audit data transfer object for comprehensive HIPAA compliance auditing
+/// </summary>
 public class PhiAccessAuditDto
 {
+    /// <summary>
+    /// Unique identifier for the audit record (important-comment)
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Unique identifier of the user accessing PHI
+    /// </summary>
     public Guid UserId { get; set; }
+    /// <summary>
+    /// Unique identifier of the patient whose PHI is being accessed
+    /// </summary>
     public Guid? PatientId { get; set; }
+    /// <summary>
+    /// Type of access performed (read, write, update, delete)
+    /// </summary>
     public string AccessType { get; set; } = string.Empty;
+    /// <summary>
+    /// Specific resource or data element that was accessed
+    /// </summary>
     public string ResourceAccessed { get; set; } = string.Empty;
+    /// <summary>
+    /// Business purpose or reason for accessing the PHI
+    /// </summary>
     public string Purpose { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the PHI access occurred
+    /// </summary>
     public DateTime AccessTime { get; set; }
+    /// <summary>
+    /// IP address from which the access was made
+    /// </summary>
     public string IpAddress { get; set; } = string.Empty;
+    /// <summary>
+    /// User agent string of the client used for access
+    /// </summary>
     public string UserAgent { get; set; } = string.Empty;
+    /// <summary>
+    /// Authorization level of the user at the time of access
+    /// </summary>
     public string AuthorizationLevel { get; set; } = string.Empty;
 }
 

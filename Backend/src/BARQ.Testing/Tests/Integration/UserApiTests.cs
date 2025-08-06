@@ -126,9 +126,8 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         var authToken = await _factory.GetAuthTokenAsync();
         var changePasswordRequest = new
         {
-            CurrentPassword = "TestPassword123!",
-            NewPassword = "NewTestPassword123!",
-            ConfirmPassword = "NewTestPassword123!"
+            OldPassword = "TestPassword123!",
+            NewPassword = "NewTestPassword123!"
         };
 
         var response = await _factory.PostJsonAsync("/api/users/change-password", changePasswordRequest, authToken);

@@ -54,10 +54,19 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
         var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        var acmeProject = projects?.FirstOrDefault(p => 
+        {
+            if (p.TryGetProperty("name", out var nameProperty))
+            {
+                return nameProperty.GetString() == "Acme Project";
+            }
+            return false;
+        });
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject?.GetProperty("id").GetString();
+        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
