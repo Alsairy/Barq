@@ -75,15 +75,31 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => 
+        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        
+        System.Text.Json.JsonElement orgsArray;
+        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (o.TryGetProperty("name", out var nameProperty))
+            orgsArray = orgsJson;
+        }
+        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var org in orgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Corporation")
             {
-                return nameProperty.GetString() == "Acme Corporation";
+                acmeOrg = org;
+                break;
             }
-            return false;
-        });
+        }
         acmeOrg.Should().NotBeNull();
         
         var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
@@ -118,15 +134,31 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => 
+        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        
+        System.Text.Json.JsonElement orgsArray;
+        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (o.TryGetProperty("name", out var nameProperty))
+            orgsArray = orgsJson;
+        }
+        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var org in orgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Corporation")
             {
-                return nameProperty.GetString() == "Acme Corporation";
+                acmeOrg = org;
+                break;
             }
-            return false;
-        });
+        }
         acmeOrg.Should().NotBeNull();
         
         var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
@@ -153,15 +185,31 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
-        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaOrgsContent);
-        var betaOrg = betaOrganizations?.FirstOrDefault(o => 
+        var betaOrgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaOrgsContent);
+        
+        System.Text.Json.JsonElement betaOrgsArray;
+        if (betaOrgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (o.TryGetProperty("name", out var nameProperty))
+            betaOrgsArray = betaOrgsJson;
+        }
+        else if (betaOrgsJson.TryGetProperty("data", out betaOrgsArray) && betaOrgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {betaOrgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? betaOrg = null;
+        foreach (var org in betaOrgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Beta LLC")
             {
-                return nameProperty.GetString() == "Beta LLC";
+                betaOrg = org;
+                break;
             }
-            return false;
-        });
+        }
         betaOrg.Should().NotBeNull();
         
         var betaOrganizationId = betaOrg.HasValue && betaOrg.Value.TryGetProperty("id", out var idProperty) 

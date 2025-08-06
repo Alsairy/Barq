@@ -53,15 +53,31 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => 
+        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        
+        System.Text.Json.JsonElement projectsArray;
+        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (p.TryGetProperty("name", out var nameProperty))
+            projectsArray = projectsJson;
+        }
+        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeProject = null;
+        foreach (var project in projectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Project")
             {
-                return nameProperty.GetString() == "Acme Project";
+                acmeProject = project;
+                break;
             }
-            return false;
-        });
+        }
         acmeProject.Should().NotBeNull();
         
         var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
@@ -86,15 +102,31 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
-        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaProjectsContent);
-        var betaProject = betaProjects?.FirstOrDefault(p => 
+        var betaProjectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaProjectsContent);
+        
+        System.Text.Json.JsonElement betaProjectsArray;
+        if (betaProjectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (p.TryGetProperty("name", out var nameProperty))
+            betaProjectsArray = betaProjectsJson;
+        }
+        else if (betaProjectsJson.TryGetProperty("data", out betaProjectsArray) && betaProjectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {betaProjectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? betaProject = null;
+        foreach (var project in betaProjectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Beta Project")
             {
-                return nameProperty.GetString() == "Beta Project";
+                betaProject = project;
+                break;
             }
-            return false;
-        });
+        }
         betaProject.Should().NotBeNull();
         
         var betaProjectId = betaProject.HasValue && betaProject.Value.TryGetProperty("id", out var idProperty) 
@@ -115,15 +147,31 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => 
+        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        
+        System.Text.Json.JsonElement projectsArray;
+        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            if (p.TryGetProperty("name", out var nameProperty))
+            projectsArray = projectsJson;
+        }
+        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeProject = null;
+        foreach (var project in projectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Project")
             {
-                return nameProperty.GetString() == "Acme Project";
+                acmeProject = project;
+                break;
             }
-            return false;
-        });
+        }
         acmeProject.Should().NotBeNull();
         
         var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
