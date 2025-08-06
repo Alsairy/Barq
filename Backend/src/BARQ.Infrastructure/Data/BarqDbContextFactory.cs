@@ -19,7 +19,7 @@ public class BarqDbContextFactory : IDesignTimeDbContextFactory<BarqDbContext>
         var builder = new DbContextOptionsBuilder<BarqDbContext>();
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         
-        builder.UseSqlServer(connectionString);
+        builder.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
 
         var tenantProvider = new DesignTimeTenantProvider();
         return new BarqDbContext(builder.Options, tenantProvider);

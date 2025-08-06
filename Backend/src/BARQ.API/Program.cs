@@ -156,7 +156,8 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+            providerOptions => providerOptions.EnableRetryOnFailure()));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
