@@ -31,11 +31,14 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Jwt:Key"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
+                ["Jwt:Secret"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
                 ["Jwt:Issuer"] = "test-issuer",
                 ["Jwt:Audience"] = "test-audience",
                 ["Jwt:ExpiryMinutes"] = "60",
                 ["Security:MaxFailedAttempts"] = "5",
-                ["Security:LockoutDurationMinutes"] = "15"
+                ["Security:LockoutDurationMinutes"] = "15",
+                ["ConnectionStrings:DefaultConnection"] = "Data Source=:memory:",
+                ["Redis:ConnectionString"] = "localhost:6379"
             });
         });
         
