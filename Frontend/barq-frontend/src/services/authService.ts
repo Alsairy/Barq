@@ -16,7 +16,7 @@ import {
   ApiResponse,
 } from '../types/auth';
 
-const API_BASE_URL = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'https://localhost:5001/api';
+const API_BASE_URL = (import.meta as { env: { VITE_API_BASE_URL?: string } }).env.VITE_API_BASE_URL || 'https://localhost:7062/api';
 
 const authApi = axios.create({
   baseURL: `${API_BASE_URL}/auth`,
