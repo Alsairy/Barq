@@ -86,25 +86,73 @@ public class PhiAccessAuditDto
     public string AuthorizationLevel { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Business associate request data transfer object for HIPAA compliance tracking
+/// </summary>
 public class BusinessAssociateRequestDto
 {
+    /// <summary>
+    /// Name of the organization requesting business associate status
+    /// </summary>
     public string OrganizationName { get; set; } = string.Empty;
+    /// <summary>
+    /// Primary contact person for the business associate request
+    /// </summary>
     public string ContactPerson { get; set; } = string.Empty;
+    /// <summary>
+    /// Contact email address for the business associate request
+    /// </summary>
     public string ContactEmail { get; set; } = string.Empty;
+    /// <summary>
+    /// Description of services to be provided by the business associate
+    /// </summary>
     public string ServicesProvided { get; set; } = string.Empty;
+    /// <summary>
+    /// Types of PHI that the business associate will access
+    /// </summary>
     public IEnumerable<string> PhiTypesAccessed { get; set; } = new List<string>();
+    /// <summary>
+    /// Date when the business associate request was submitted
+    /// </summary>
     public DateTime RequestDate { get; set; }
 }
 
+/// <summary>
+/// Business associate agreement data transfer object for HIPAA compliance management
+/// </summary>
 public class BusinessAssociateAgreementDto
 {
+    /// <summary>
+    /// Unique identifier for the business associate agreement
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Name of the organization covered by the agreement
+    /// </summary>
     public string OrganizationName { get; set; } = string.Empty;
+    /// <summary>
+    /// Unique agreement number for tracking purposes
+    /// </summary>
     public string AgreementNumber { get; set; } = string.Empty;
+    /// <summary>
+    /// Date when the agreement becomes effective
+    /// </summary>
     public DateTime EffectiveDate { get; set; }
+    /// <summary>
+    /// Date when the agreement expires
+    /// </summary>
     public DateTime ExpirationDate { get; set; }
+    /// <summary>
+    /// Current status of the agreement (active, expired, terminated)
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    /// <summary>
+    /// List of permitted uses of PHI under this agreement
+    /// </summary>
     public IEnumerable<string> PermittedUses { get; set; } = new List<string>();
+    /// <summary>
+    /// Required safeguards that must be implemented by the business associate
+    /// </summary>
     public IEnumerable<string> RequiredSafeguards { get; set; } = new List<string>();
 }
 
