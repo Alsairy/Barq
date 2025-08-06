@@ -53,11 +53,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
         var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject?.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
@@ -77,11 +77,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
-        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaProjectsContent);
+        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaProjectsContent);
         var betaProject = betaProjects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
         betaProject.Should().NotBeNull();
         
-        var betaProjectId = betaProject.Value.GetProperty("id").GetString();
+        var betaProjectId = betaProject?.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -97,11 +97,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(projectsContent);
         var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject?.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Project",

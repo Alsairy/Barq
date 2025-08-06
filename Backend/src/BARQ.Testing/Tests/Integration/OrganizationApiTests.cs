@@ -75,11 +75,11 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
+        var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
         var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = acmeOrg?.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -109,11 +109,11 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
+        var organizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(orgsContent);
         var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = acmeOrg?.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
@@ -135,11 +135,11 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
-        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaOrgsContent);
+        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaOrgsContent);
         var betaOrg = betaOrganizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Beta Industries");
         betaOrg.Should().NotBeNull();
         
-        var betaOrganizationId = betaOrg.Value.GetProperty("id").GetString();
+        var betaOrganizationId = betaOrg?.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{betaOrganizationId}", acmeToken);
 
