@@ -1,20 +1,65 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// Data transfer object for security event information and monitoring details
+/// </summary>
 public class SecurityEventDto
 {
+    /// <summary>
+    /// Unique identifier for the security event
+    /// </summary>
     public Guid Id { get; set; }
+    /// <summary>
+    /// Type of security event that occurred
+    /// </summary>
     public string EventType { get; set; } = string.Empty;
+    /// <summary>
+    /// Detailed description of the security event (important-comment)
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    /// <summary>
+    /// Severity level of the security event
+    /// </summary>
     public string Severity { get; set; } = string.Empty;
+    /// <summary>
+    /// Date and time when the security event occurred
+    /// </summary>
     public DateTime Timestamp { get; set; }
+    /// <summary>
+    /// Identifier of the user associated with the security event
+    /// </summary>
     public string? UserId { get; set; }
+    /// <summary>
+    /// IP address from which the security event originated
+    /// </summary>
     public string? IPAddress { get; set; }
+    /// <summary>
+    /// User agent string of the client that triggered the security event (important-comment)
+    /// </summary>
     public string? UserAgent { get; set; }
+    /// <summary>
+    /// Session identifier associated with the security event
+    /// </summary>
     public string? SessionId { get; set; }
+    /// <summary>
+    /// Additional contextual data related to the security event
+    /// </summary>
     public string? AdditionalData { get; set; }
+    /// <summary>
+    /// Indicates whether the security event has been resolved
+    /// </summary>
     public bool IsResolved { get; set; }
+    /// <summary>
+    /// Description of how the security event was resolved
+    /// </summary>
     public string? Resolution { get; set; }
+    /// <summary>
+    /// Date and time when the security event was resolved
+    /// </summary>
     public DateTime? ResolvedAt { get; set; }
+    /// <summary>
+    /// Identifier of the user who resolved the security event
+    /// </summary>
     public string? ResolvedBy { get; set; }
 }
 

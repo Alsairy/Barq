@@ -73,6 +73,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             services.RemoveAll<StackExchange.Redis.IConnectionMultiplexer>();
 
             services.RemoveAll<ITenantProvider>();
+            services.AddHttpContextAccessor();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
@@ -253,15 +254,34 @@ public class TestTenantProvider : ITenantProvider
     private Guid _tenantId;
     private string _tenantName = "Test Tenant";
     private Guid _currentUserId;
+    private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
 
-    public TestTenantProvider()
+    public TestTenantProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
     {
         _tenantId = new Guid("11111111-1111-1111-1111-111111111111");
         _currentUserId = Guid.NewGuid();
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public Guid GetTenantId()
     {
+        var httpContext = _httpContextAccessor?.HttpContext;
+        if (httpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = httpContext.User.FindFirst("sub") ?? httpContext.User.FindFirst("userId");
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                if (userId == new Guid("33333333-3333-3333-3333-333333333333"))
+                {
+                    return new Guid("11111111-1111-1111-1111-111111111111");
+                }
+                else if (userId == new Guid("44444444-4444-4444-4444-444444444444"))
+                {
+                    return new Guid("22222222-2222-2222-2222-222222222222");
+                }
+            }
+        }
+        
         return _tenantId;
     }
 
