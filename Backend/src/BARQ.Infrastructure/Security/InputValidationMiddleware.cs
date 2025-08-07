@@ -34,6 +34,12 @@ public class InputValidationMiddleware
             return;
         }
 
+        if (context.Request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         if (await ValidateRequestAsync(context))
         {
             await _next(context);
