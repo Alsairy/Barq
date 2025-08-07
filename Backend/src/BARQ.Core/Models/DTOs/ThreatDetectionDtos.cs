@@ -97,26 +97,90 @@ public class ThreatIndicatorDto
     public string? Description { get; set; }
 }
 
+/// <summary>
+/// Data transfer object representing behavioral analysis information (important-comment)
+/// </summary>
 public class BehavioralAnalysisDto
 {
+    /// <summary>
+    /// Gets or sets the user identifier
+    /// </summary>
     public string UserId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the anomaly score
+    /// </summary>
     public double AnomalyScore { get; set; }
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether the behavior is anomalous (important-comment)
+    /// </summary>
     public bool IsAnomalous { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the list of anomalous patterns
+    /// </summary>
     public IEnumerable<string> AnomalousPatterns { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// Gets or sets the activity patterns
+    /// </summary>
     public IEnumerable<UserActivityPatternDto> ActivityPatterns { get; set; } = new List<UserActivityPatternDto>();
+    
+    /// <summary>
+    /// Gets or sets the analysis start time
+    /// </summary>
     public DateTime AnalysisStartTime { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the analysis end time
+    /// </summary>
     public DateTime AnalysisEndTime { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the analysis method
+    /// </summary>
     public string AnalysisMethod { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Data transfer object representing user activity pattern information (important-comment)
+/// </summary>
 public class UserActivityPatternDto
 {
+    /// <summary>
+    /// Gets or sets the activity type
+    /// </summary>
     public string ActivityType { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the frequency of the activity
+    /// </summary>
     public int Frequency { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the average interval between activities
+    /// </summary>
     public TimeSpan AverageInterval { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the first occurrence date
+    /// </summary>
     public DateTime FirstOccurrence { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the last occurrence date
+    /// </summary>
     public DateTime LastOccurrence { get; set; }
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether the pattern is normal (important-comment)
+    /// </summary>
     public bool IsNormal { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the deviation score
+    /// </summary>
     public double DeviationScore { get; set; }
 }
 
