@@ -184,20 +184,78 @@ public class UserActivityPatternDto
     public double DeviationScore { get; set; }
 }
 
+/// <summary>
+/// Represents geolocation risk assessment data for IP addresses
+/// </summary>
 public class GeolocationRiskDto
 {
+    /// <summary>
+    /// Gets or sets the IP address being assessed
+    /// </summary>
     public string IPAddress { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the country associated with the IP address
+    /// </summary>
     public string Country { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the region or state associated with the IP address
+    /// </summary>
     public string Region { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the city associated with the IP address
+    /// </summary>
     public string City { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the latitude coordinate of the IP address location
+    /// </summary>
     public double Latitude { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the longitude coordinate of the IP address location
+    /// </summary>
     public double Longitude { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the risk level classification (e.g., Low, Medium, High)
+    /// </summary>
     public string RiskLevel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the numerical risk score (0-100)
+    /// </summary>
     public double RiskScore { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the list of risk factors contributing to the assessment (important-comment)
+    /// </summary>
     public IEnumerable<string> RiskFactors { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether VPN usage is detected (important-comment)
+    /// </summary>
     public bool IsVpnDetected { get; set; }
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether proxy usage is detected (important-comment)
+    /// </summary>
     public bool IsProxyDetected { get; set; }
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether Tor usage is detected (important-comment)
+    /// </summary>
     public bool IsTorDetected { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the user identifier associated with this assessment (important-comment)
+    /// </summary>
     public string? UserId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the date and time when the assessment was performed
+    /// </summary>
     public DateTime AssessedAt { get; set; }
 }
