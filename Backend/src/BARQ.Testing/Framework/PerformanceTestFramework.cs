@@ -28,6 +28,7 @@ public class PerformanceTestFramework
             
             return response.IsSuccessStatusCode ? Response.Ok() : Response.Fail();
         })
+        .WithoutWarmUp()
         .WithLoadSimulations(
             Simulation.Inject(rate: virtualUsers, interval: TimeSpan.FromSeconds(1), during: duration.Value)
         );
@@ -63,6 +64,7 @@ public class PerformanceTestFramework
             var response = await _httpClient.GetAsync(endpoint);
             return response.IsSuccessStatusCode ? Response.Ok() : Response.Fail();
         })
+        .WithoutWarmUp()
         .WithLoadSimulations(
             Simulation.RampingInject(rate: maxUsers, interval: TimeSpan.FromSeconds(1), during: rampUpTime.Value)
         );

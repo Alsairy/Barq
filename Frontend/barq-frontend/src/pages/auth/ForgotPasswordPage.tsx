@@ -46,8 +46,8 @@ export function ForgotPasswordPage() {
     try {
       await authService.forgotPassword(formData);
       setIsSuccess(true);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to send reset email. Please try again.');
+    } catch (error: unknown) {
+      setError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to send reset email. Please try again.');
     } finally {
       setIsLoading(false);
     }

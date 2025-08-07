@@ -67,8 +67,8 @@ export function ResetPasswordPage() {
     try {
       await authService.resetPassword(formData);
       setIsSuccess(true);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to reset password. Please try again.');
+    } catch (error: unknown) {
+      setError((error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }

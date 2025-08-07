@@ -16,8 +16,8 @@ export interface WorkflowTemplate {
   tags: string[];
   complexity: 'simple' | 'medium' | 'complex';
   estimatedDuration: number;
-  nodes: any[];
-  edges: any[];
+  nodes: unknown[];
+  edges: unknown[];
 }
 
 export interface WorkflowExecution {
@@ -35,7 +35,7 @@ export interface WorkflowExecution {
   totalSteps: number;
   completedSteps: number;
   errorMessage?: string;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
 }
 
 export interface WorkflowMetrics {
@@ -88,7 +88,7 @@ export const workflowApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Workflow'],
     }),
 
-    executeWorkflow: builder.mutation<{ executionId: string }, { templateId: string; context?: Record<string, any> }>({
+    executeWorkflow: builder.mutation<{ executionId: string }, { templateId: string; context?: Record<string, unknown> }>({
       query: ({ templateId, context }) => ({
         url: `/api/workflows/templates/${templateId}/execute`,
         method: 'POST',
@@ -123,7 +123,7 @@ export const workflowApi = apiSlice.injectEndpoints({
       providesTags: ['Workflow'],
     }),
 
-    validateWorkflow: builder.mutation<{ isValid: boolean; errors: string[] }, { nodes: any[]; edges: any[] }>({
+    validateWorkflow: builder.mutation<{ isValid: boolean; errors: string[] }, { nodes: unknown[]; edges: unknown[] }>({
       query: ({ nodes, edges }) => ({
         url: '/api/workflows/validate',
         method: 'POST',

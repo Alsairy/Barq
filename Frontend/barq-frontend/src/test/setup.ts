@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 
-const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
 Object.defineProperty(globalThis, 'import', {
   value: {
@@ -14,14 +14,14 @@ Object.defineProperty(globalThis, 'import', {
   },
 });
 
-(global as any).IntersectionObserver = class IntersectionObserver {
+(global as unknown as { IntersectionObserver: unknown }).IntersectionObserver = class IntersectionObserver {
   constructor() {}
   disconnect() {}
   observe() {}
   unobserve() {}
 };
 
-(global as any).ResizeObserver = class ResizeObserver {
+(global as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
   constructor() {}
   disconnect() {}
   observe() {}

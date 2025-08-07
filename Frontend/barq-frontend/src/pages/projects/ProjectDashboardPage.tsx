@@ -59,7 +59,7 @@ interface KPI {
   value: string | number;
   change: number;
   trend: 'up' | 'down' | 'stable';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
 export function ProjectDashboardPage() {
@@ -111,7 +111,7 @@ export function ProjectDashboardPage() {
         };
         
         setProject(mockProject);
-      } catch (err) {
+      } catch {
         setError('Failed to load project data');
       } finally {
         setIsLoading(false);

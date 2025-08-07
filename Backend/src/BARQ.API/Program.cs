@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -107,7 +108,46 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    options.CustomSchemaIds(type => 
+    {
+        var fullName = type.FullName?.Replace("+", ".");
+        if (fullName == null) return type.Name;
+        
+        if (type.IsGenericType)
+        {
+            var baseTypeName = type.Name.Split('`')[0];
+            var genericArgs = type.GetGenericArguments();
+            
+            var argNames = genericArgs.Select(arg => 
+            {
+                if (arg.IsGenericType)
+                {
+                    var innerBase = arg.Name.Split('`')[0];
+                    var innerArgs = arg.GetGenericArguments();
+                    if (innerArgs.Length > 0)
+                    {
+                        return innerBase + "Of" + innerArgs[0].Name;
+                    }
+                    return innerBase;
+                }
+                else
+                {
+                    return arg.Name;
+                }
+            });
+            
+            return baseTypeName + "Of" + string.Join("And", argNames);
+        }
+        
+        var namespaceParts = fullName.Split('.');
+        if (namespaceParts.Length > 1)
+        {
+            var relevantParts = namespaceParts.Skip(Math.Max(0, namespaceParts.Length - 3)).ToArray();
+            return string.Join("", relevantParts).Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+        }
+        
+        return type.Name.Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+    });
 });
 
 var environment = builder.Environment.EnvironmentName;
@@ -117,7 +157,12 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+            providerOptions => 
+            {
+                providerOptions.EnableRetryOnFailure();
+                providerOptions.CommandTimeout(60);
+            }));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
@@ -269,7 +314,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT secret is not configured"))) { KeyId = "barq-jwt-key" },
             ClockSkew = TimeSpan.FromMinutes(5),
             RequireExpirationTime = true,
             ValidateActor = false,

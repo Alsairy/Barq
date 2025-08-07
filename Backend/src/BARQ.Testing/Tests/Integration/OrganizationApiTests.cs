@@ -6,13 +6,11 @@ using Xunit;
 
 namespace BARQ.Testing.Tests.Integration;
 
-public class OrganizationApiTests : IClassFixture<ApiTestFramework>
+[Collection("OrganizationApiTestCollection")]
+public class OrganizationApiTests : IsolatedApiTestBase
 {
-    private readonly ApiTestFramework _factory;
-
-    public OrganizationApiTests(ApiTestFramework factory)
+    public OrganizationApiTests(ApiTestFramework factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
@@ -75,11 +73,36 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        
+        System.Text.Json.JsonElement orgsArray;
+        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            orgsArray = orgsJson;
+        }
+        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var org in orgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Corporation")
+            {
+                acmeOrg = org;
+                break;
+            }
+        }
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -109,11 +132,36 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
+        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        
+        System.Text.Json.JsonElement orgsArray;
+        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            orgsArray = orgsJson;
+        }
+        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var org in orgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Corporation")
+            {
+                acmeOrg = org;
+                break;
+            }
+        }
         acmeOrg.Should().NotBeNull();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
@@ -135,11 +183,36 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
-        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaOrgsContent);
-        var betaOrg = betaOrganizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Beta Industries");
+        var betaOrgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaOrgsContent);
+        
+        System.Text.Json.JsonElement betaOrgsArray;
+        if (betaOrgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            betaOrgsArray = betaOrgsJson;
+        }
+        else if (betaOrgsJson.TryGetProperty("data", out betaOrgsArray) && betaOrgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {betaOrgsContent}");
+        }
+        
+        System.Text.Json.JsonElement? betaOrg = null;
+        foreach (var org in betaOrgsArray.EnumerateArray())
+        {
+            if (org.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Beta Industries")
+            {
+                betaOrg = org;
+                break;
+            }
+        }
         betaOrg.Should().NotBeNull();
         
-        var betaOrganizationId = betaOrg.Value.GetProperty("id").GetString();
+        var betaOrganizationId = betaOrg.HasValue && betaOrg.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/organizations/{betaOrganizationId}", acmeToken);
 

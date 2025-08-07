@@ -9,7 +9,7 @@ export interface AIProvider {
   uptime: number;
   requestsToday: number;
   costToday: number;
-  configuration: Record<string, any>;
+  configuration: Record<string, unknown>;
   capabilities: string[];
   rateLimit: {
     requestsPerMinute: number;
@@ -36,7 +36,7 @@ export interface AITask {
   inputTokens?: number;
   outputTokens?: number;
   cost?: number;
-  result?: any;
+  result?: unknown;
   errorMessage?: string;
   createdBy: string;
   tags: string[];
@@ -174,17 +174,17 @@ export const aiApi = apiSlice.injectEndpoints({
       invalidatesTags: ['AITask'],
     }),
 
-    getProviderMetrics: builder.query<Record<string, any>, string>({
+    getProviderMetrics: builder.query<Record<string, unknown>, string>({
       query: (providerId) => `/api/ai/providers/${providerId}/metrics`,
       providesTags: (_result, _error, providerId) => [{ type: 'AITask', id: providerId }],
     }),
 
-    getAIConfiguration: builder.query<Record<string, any>, void>({
+    getAIConfiguration: builder.query<Record<string, unknown>, void>({
       query: () => '/api/ai/configuration',
       providesTags: ['AITask'],
     }),
 
-    updateAIConfiguration: builder.mutation<void, Record<string, any>>({
+    updateAIConfiguration: builder.mutation<void, Record<string, unknown>>({
       query: (config) => ({
         url: '/api/ai/configuration',
         method: 'PUT',
