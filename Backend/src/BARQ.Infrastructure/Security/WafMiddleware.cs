@@ -99,7 +99,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckSqlInjectionAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
@@ -121,7 +121,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckXssAttackAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
@@ -150,7 +150,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckCommandInjectionAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
@@ -188,7 +188,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckLdapInjectionAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" ||  Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
@@ -208,7 +208,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckXmlInjectionAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
@@ -230,7 +230,7 @@ public class WafMiddleware
 
     private async Task<bool> CheckSsrfAttackAsync(HttpRequest request)
     {
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
             return false;
         }
