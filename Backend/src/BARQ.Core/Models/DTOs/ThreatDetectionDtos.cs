@@ -1,27 +1,99 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// Data transfer object representing threat assessment information (important-comment)
+/// </summary>
 public class ThreatAssessmentDto
 {
+    /// <summary>
+    /// Gets or sets the threat level
+    /// </summary>
     public string ThreatLevel { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the risk score
+    /// </summary>
     public double RiskScore { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the threat category
+    /// </summary>
     public string ThreatCategory { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the list of risk factors
+    /// </summary>
     public IEnumerable<string> RiskFactors { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// Gets or sets the recommended action
+    /// </summary>
     public string RecommendedAction { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the assessment date
+    /// </summary>
     public DateTime AssessedAt { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the assessment method
+    /// </summary>
     public string AssessmentMethod { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Data transfer object representing threat indicator information (important-comment)
+/// </summary>
 public class ThreatIndicatorDto
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for the threat indicator (important-comment)
+    /// </summary>
     public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the indicator type
+    /// </summary>
     public string IndicatorType { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the indicator value
+    /// </summary>
     public string Value { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the threat type
+    /// </summary>
     public string ThreatType { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the severity level
+    /// </summary>
     public string Severity { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the creation date
+    /// </summary>
     public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the expiration date
+    /// </summary>
     public DateTime? ExpiresAt { get; set; }
+    
+    /// <summary>
+    /// Gets or sets a value indicating whether the indicator is active (important-comment)
+    /// </summary>
     public bool IsActive { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the source of the threat indicator
+    /// </summary>
     public string Source { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the description of the threat indicator
+    /// </summary>
     public string? Description { get; set; }
 }
 
