@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -158,7 +157,7 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
             providerOptions => 
             {
                 providerOptions.EnableRetryOnFailure();
