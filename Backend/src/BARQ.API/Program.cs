@@ -12,6 +12,7 @@ using MediatR;
 using FluentValidation;
 using AutoMapper;
 using BARQ.Infrastructure.Data;
+using BARQ.Infrastructure.Data.Seeders;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.Repositories;
 using BARQ.Core.Repositories;
@@ -414,6 +415,14 @@ if (app.Environment.IsDevelopment())
         options.ShowExtensions();
         options.EnableValidator();
     });
+    
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+        var seeder = new DatabaseSeeder(context, logger);
+        await seeder.SeedAsync();
+    }
 }
 else
 {
