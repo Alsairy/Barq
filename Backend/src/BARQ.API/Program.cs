@@ -195,10 +195,38 @@ builder.Services.AddScoped<IDatabasePerformanceService, DatabasePerformanceServi
 builder.Services.Configure<BackgroundJobOptions>(builder.Configuration.GetSection("BackgroundJobs"));
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 
-builder.Services.AddSingleton<WafConfiguration>();
-builder.Services.AddSingleton<SecurityHeadersConfiguration>();
-builder.Services.AddSingleton<RateLimitConfiguration>();
-builder.Services.AddSingleton<InputValidationConfiguration>();
+builder.Services.AddSingleton<WafConfiguration>(provider =>
+{
+    var config = new WafConfiguration();
+    builder.Configuration.GetSection("Security:Waf").Bind(config);
+    
+    var logger = provider.GetService<ILogger<WafConfiguration>>();
+    logger?.LogInformation("WAF Configuration loaded: ExcludedPaths = [{ExcludedPaths}]", 
+        string.Join(", ", config.ExcludedPaths ?? Array.Empty<string>()));
+    
+    return config;
+});
+
+builder.Services.AddSingleton<SecurityHeadersConfiguration>(provider =>
+{
+    var config = new SecurityHeadersConfiguration();
+    builder.Configuration.GetSection("Security:Headers").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<RateLimitConfiguration>(provider =>
+{
+    var config = new RateLimitConfiguration();
+    builder.Configuration.GetSection("Security:RateLimit").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<InputValidationConfiguration>(provider =>
+{
+    var config = new InputValidationConfiguration();
+    builder.Configuration.GetSection("Security:InputValidation").Bind(config);
+    return config;
+});
 
 builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
 {
@@ -318,9 +346,9 @@ var app = builder.Build();
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
-// app.UseMiddleware<WafMiddleware>();
-// app.UseMiddleware<InputValidationMiddleware>();
-// app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseApiMonitoring();
 

@@ -40,49 +40,54 @@ public class WafMiddleware
     {
         var request = context.Request;
 
-        if (await CheckSqlInjectionAsync(request))
+        if (IsPathExcluded(request.Path))
+        {
+            return false;
+        }
+
+        if (_config.EnableSqlInjectionProtection && await CheckSqlInjectionAsync(request))
         {
             _logger.LogWarning("SQL injection attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckXssAttackAsync(request))
+        if (_config.EnableXssProtection && await CheckXssAttackAsync(request))
         {
             _logger.LogWarning("XSS attack attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckCommandInjectionAsync(request))
+        if (_config.EnableCommandInjectionProtection && await CheckCommandInjectionAsync(request))
         {
             _logger.LogWarning("Command injection attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckPathTraversalAsync(request))
+        if (_config.EnablePathTraversalProtection && await CheckPathTraversalAsync(request))
         {
             _logger.LogWarning("Path traversal attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckLdapInjectionAsync(request))
+        if (_config.EnableLdapInjectionProtection && await CheckLdapInjectionAsync(request))
         {
             _logger.LogWarning("LDAP injection attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckXmlInjectionAsync(request))
+        if (_config.EnableXmlInjectionProtection && await CheckXmlInjectionAsync(request))
         {
             _logger.LogWarning("XML injection attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
             return true;
         }
 
-        if (await CheckSsrfAttackAsync(request))
+        if (_config.EnableSsrfProtection && await CheckSsrfAttackAsync(request))
         {
             _logger.LogWarning("SSRF attack attempt detected from {IP} on {Path}", 
                 GetClientIpAddress(context), request.Path);
@@ -202,7 +207,6 @@ public class WafMiddleware
     {
         var ssrfPatterns = new[]
         {
-            @"(localhost|127\.0\.0\.1|0\.0\.0\.0)",
             @"(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)",
             @"(file://|ftp://|gopher://|dict://|ldap://)",
             @"(@.*:.*@)",
@@ -277,6 +281,12 @@ public class WafMiddleware
         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
     }
 
+    private bool IsPathExcluded(PathString requestPath)
+    {
+        return _config.ExcludedPaths.Any(excludedPath => 
+            requestPath.StartsWithSegments(excludedPath, StringComparison.OrdinalIgnoreCase));
+    }
+
     private string GetClientIpAddress(HttpContext context)
     {
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -303,4 +313,5 @@ public class WafConfiguration
     public bool EnableSsrfProtection { get; set; } = true;
     public int MaxRequestSizeBytes { get; set; } = 1024 * 1024; // 1MB
     public bool LogBlockedRequests { get; set; } = true;
+    public string[] ExcludedPaths { get; set; } = Array.Empty<string>();
 }
