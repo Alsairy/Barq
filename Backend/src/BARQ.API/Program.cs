@@ -370,7 +370,7 @@ builder.Services.AddCors(options =>
     {
         if (builder.Environment.IsDevelopment())
         {
-            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173")
+            policy.WithOrigins("http://localhost:3000", "https://localhost:3000", "http://localhost:5173", "https://localhost:5173", "https://localhost:7062")
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials()
@@ -391,9 +391,6 @@ var app = builder.Build();
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseMiddleware<WafMiddleware>();
-app.UseMiddleware<InputValidationMiddleware>();
-app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseApiMonitoring();
 
@@ -438,6 +435,10 @@ else
 app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseCors("SecurePolicy");
+
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
