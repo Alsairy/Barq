@@ -22,7 +22,7 @@ public class InputValidationMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_config.EnableInputValidation || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        if (!_config.EnableInputValidation || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing" ||  Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development") 
         {
             await _next(context);
             return;

@@ -1,15 +1,53 @@
 namespace BARQ.Core.Models.DTOs;
 
+/// <summary>
+/// Data transfer object representing workflow information
+/// </summary>
 public class WorkflowDto
 {
+    /// <summary>
+    /// Gets or sets the unique identifier for the workflow (important-comment)
+    /// </summary>
     public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the workflow name
+    /// </summary>
     public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the workflow description
+    /// </summary>
     public string Description { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the workflow status
+    /// </summary>
     public string Status { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the workflow priority
+    /// </summary>
     public string Priority { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the template identifier
+    /// </summary>
     public Guid TemplateId { get; set; }
+    
+    /// <summary>
+    /// Gets or sets the template name
+    /// </summary>
     public string TemplateName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Gets or sets the workflow data
+    /// </summary>
     public Dictionary<string, object> Data { get; set; } = new();
+    
+    /// <summary>
+    /// Gets or sets the creation date and time
+    /// </summary>
     public DateTime CreatedAt { get; set; }
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
