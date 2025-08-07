@@ -158,7 +158,11 @@ if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-            providerOptions => providerOptions.EnableRetryOnFailure()));
+            providerOptions => 
+            {
+                providerOptions.EnableRetryOnFailure();
+                providerOptions.CommandTimeout(60);
+            }));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
