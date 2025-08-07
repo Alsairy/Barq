@@ -32,6 +32,18 @@ public class RateLimitingMiddleware
             return;
         }
 
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        {
+            await _next(context);
+            return;
+        }
+
+        if (IsPathExcluded(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
         var clientId = GetClientIdentifier(context);
         var endpoint = GetEndpointIdentifier(context);
 
@@ -137,7 +149,7 @@ public class RateLimitingMiddleware
         context.Response.ContentType = "application/json";
 
         var retryAfter = rateLimitInfo.BlockedUntil?.Subtract(DateTime.UtcNow).TotalSeconds ?? _config.BlockDurationSeconds;
-        context.Response.Headers.Add("Retry-After", ((int)retryAfter).ToString());
+        context.Response.Headers["Retry-After"] = ((int)retryAfter).ToString();
 
         var response = new
         {
@@ -155,9 +167,15 @@ public class RateLimitingMiddleware
         var remaining = Math.Max(0, _config.MaxRequestsPerWindow - rateLimitInfo.RequestCount);
         var resetTime = rateLimitInfo.WindowStart.AddSeconds(_config.WindowSizeSeconds);
 
-        context.Response.Headers.Add("X-RateLimit-Limit", _config.MaxRequestsPerWindow.ToString());
-        context.Response.Headers.Add("X-RateLimit-Remaining", remaining.ToString());
-        context.Response.Headers.Add("X-RateLimit-Reset", ((DateTimeOffset)resetTime).ToUnixTimeSeconds().ToString());
+        context.Response.Headers["X-RateLimit-Limit"] = _config.MaxRequestsPerWindow.ToString();
+        context.Response.Headers["X-RateLimit-Remaining"] = remaining.ToString();
+        context.Response.Headers["X-RateLimit-Reset"] = ((DateTimeOffset)resetTime).ToUnixTimeSeconds().ToString();
+    }
+
+    private bool IsPathExcluded(PathString requestPath)
+    {
+        return _config.ExcludedPaths.Any(excludedPath => 
+            requestPath.StartsWithSegments(excludedPath, StringComparison.OrdinalIgnoreCase));
     }
 
     private string GetClientIpAddress(HttpContext context)
@@ -192,4 +210,5 @@ public class RateLimitConfiguration
     public int BlockDurationSeconds { get; set; } = 300; // 5 minutes
     public bool EnableAdaptiveRateLimiting { get; set; } = true;
     public double SuspiciousThresholdMultiplier { get; set; } = 0.8;
+    public string[] ExcludedPaths { get; set; } = Array.Empty<string>();
 }

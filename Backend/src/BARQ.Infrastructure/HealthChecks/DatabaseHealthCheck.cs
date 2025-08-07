@@ -31,9 +31,18 @@ public class DatabaseHealthCheck : IHealthCheck
                 ["ConnectionTime"] = stopwatch.ElapsedMilliseconds,
                 ["UserCount"] = userCount,
                 ["OrganizationCount"] = organizationCount,
-                ["DatabaseProvider"] = _context.Database.ProviderName,
-                ["ConnectionString"] = _context.Database.GetConnectionString()?.Substring(0, Math.Min(50, _context.Database.GetConnectionString()?.Length ?? 0)) + "..."
+                ["DatabaseProvider"] = _context.Database.ProviderName ?? "Unknown"
             };
+
+            if (_context.Database.IsRelational())
+            {
+                var connectionString = _context.Database.GetConnectionString();
+                data["ConnectionString"] = connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0)) + "...";
+            }
+            else
+            {
+                data["ConnectionString"] = "In-Memory Database";
+            }
 
             if (stopwatch.ElapsedMilliseconds > 5000) // 5 seconds threshold
             {

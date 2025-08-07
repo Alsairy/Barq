@@ -24,7 +24,7 @@ public class ApiMonitoringMiddleware
         var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault() ?? Guid.NewGuid().ToString();
         var tenantId = context.Request.Headers["X-Tenant-ID"].FirstOrDefault();
         
-        context.Response.Headers.Add("X-Correlation-ID", correlationId);
+        context.Response.Headers["X-Correlation-ID"] = correlationId;
         
         var requestDetails = new
         {

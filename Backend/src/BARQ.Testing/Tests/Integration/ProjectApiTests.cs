@@ -7,13 +7,10 @@ using Xunit;
 namespace BARQ.Testing.Tests.Integration
 {
 [Collection("ProjectApiTestCollection")]
-public class ProjectApiTests : IClassFixture<ApiTestFramework>
+public class ProjectApiTests : IsolatedApiTestBase
 {
-    private readonly ApiTestFramework _factory;
-
-    public ProjectApiTests(ApiTestFramework factory)
+    public ProjectApiTests(ApiTestFramework factory) : base(factory)
     {
-        _factory = factory;
     }
 
     [Fact]
@@ -53,11 +50,36 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        
+        System.Text.Json.JsonElement projectsArray;
+        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            projectsArray = projectsJson;
+        }
+        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeProject = null;
+        foreach (var project in projectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Project")
+            {
+                acmeProject = project;
+                break;
+            }
+        }
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
@@ -77,11 +99,36 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
-        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaProjectsContent);
-        var betaProject = betaProjects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
+        var betaProjectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaProjectsContent);
+        
+        System.Text.Json.JsonElement betaProjectsArray;
+        if (betaProjectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            betaProjectsArray = betaProjectsJson;
+        }
+        else if (betaProjectsJson.TryGetProperty("data", out betaProjectsArray) && betaProjectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {betaProjectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? betaProject = null;
+        foreach (var project in betaProjectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Beta Project")
+            {
+                betaProject = project;
+                break;
+            }
+        }
         betaProject.Should().NotBeNull();
         
-        var betaProjectId = betaProject.Value.GetProperty("id").GetString();
+        var betaProjectId = betaProject.HasValue && betaProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -97,11 +144,36 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        
+        System.Text.Json.JsonElement projectsArray;
+        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            projectsArray = projectsJson;
+        }
+        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
+        }
+        
+        System.Text.Json.JsonElement? acmeProject = null;
+        foreach (var project in projectsArray.EnumerateArray())
+        {
+            if (project.TryGetProperty("name", out var nameProperty) && 
+                nameProperty.GetString() == "Acme Project")
+            {
+                acmeProject = project;
+                break;
+            }
+        }
         acmeProject.Should().NotBeNull();
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         var updateRequest = new
         {
             Name = "Updated Acme Project",
@@ -129,8 +201,9 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         var createResponse = await _factory.PostJsonAsync("/api/projects", createRequest, authToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createdProject = await _factory.DeserializeResponseAsync<dynamic>(createResponse);
-        var projectId = createdProject?.id?.ToString();
+        var createdProjectContent = await createResponse.Content.ReadAsStringAsync();
+        var createdProject = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(createdProjectContent);
+        var projectId = createdProject.GetProperty("id").GetString();
 
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);

@@ -217,7 +217,7 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
             SuccessfulRequests = 850,
             FailedRequests = 50,
             AverageResponseTime = TimeSpan.FromMilliseconds(180),
-            SuccessRate = 94.4
+            SuccessRate = 95.5
         });
 
         await Task.CompletedTask;

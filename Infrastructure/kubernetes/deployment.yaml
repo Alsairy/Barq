@@ -26,7 +26,8 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-backend
-        image: ${BACKEND_IMAGE:-barq/backend:latest}@sha256:placeholder
+        image: ${BACKEND_IMAGE:-barq/backend@sha256:latest}
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
           name: http
@@ -115,7 +116,8 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-frontend
-        image: ${FRONTEND_IMAGE:-barq/frontend:latest}@sha256:placeholder
+        image: ${FRONTEND_IMAGE:-barq/frontend@sha256:latest}
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
           name: http
@@ -193,32 +195,34 @@ spec:
       serviceAccountName: barq-database
       automountServiceAccountToken: false
       containers:
-      - name: postgres
-        image: postgres:15-alpine@sha256:placeholder
+      - name: sqlserver
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 5432
+        - containerPort: 1433
         securityContext:
           allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
-          runAsUser: 65534
-          runAsGroup: 65534
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          runAsUser: 10001
           capabilities:
             drop:
             - ALL
           seccompProfile:
             type: RuntimeDefault
         env:
-        - name: POSTGRES_DB
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: barq-secrets
+              key: database-password
+        - name: MSSQL_DB
           value: "BarqDB"
-        - name: POSTGRES_USER
-          value: "barq_user"
         volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        - name: postgres-config
-          mountPath: /etc/postgresql/postgresql.conf
-          subPath: database.conf
+        - name: sqlserver-storage
+          mountPath: /var/opt/mssql
         - name: tmp
           mountPath: /tmp
         - name: database-secrets
@@ -226,36 +230,32 @@ spec:
           readOnly: true
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
+            memory: "2Gi"
             cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "1000m"
         livenessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - barq_user
-            - -d
-            - BarqDB
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           exec:
             command:
-            - pg_isready
-            - -U
-            - barq_user
-            - -d
-            - BarqDB
-          initialDelaySeconds: 5
-          periodSeconds: 5
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
+          initialDelaySeconds: 15
+          periodSeconds: 10
       volumes:
-      - name: postgres-storage
+      - name: sqlserver-storage
         persistentVolumeClaim:
           claimName: barq-database-pvc
-      - name: postgres-config
+      - name: sqlserver-config
         configMap:
           name: barq-config
       - name: tmp
@@ -289,7 +289,8 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis:7-alpine@sha256:placeholder
+        image: redis@sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+        imagePullPolicy: Always
         ports:
         - containerPort: 6379
         securityContext:

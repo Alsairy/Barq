@@ -5,8 +5,8 @@ regexes = [
     '''database-password.*PLACEHOLDER''',
     '''jwt-secret.*PLACEHOLDER''',
     '''redis-password.*PLACEHOLDER''',
-    '''POSTGRES_PASSWORD.*postgres''',
-    '''ConnectionStrings.*localhost.*postgres'''
+    '''SA_PASSWORD.*YourStrong@Passw0rd''',
+    '''ConnectionStrings.*localhost.*sa'''
 ]
 
 commits = [

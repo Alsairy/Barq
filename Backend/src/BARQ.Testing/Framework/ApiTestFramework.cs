@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using BARQ.Infrastructure.Data;
 using BARQ.Core.Entities;
 using BARQ.Core.Services;
+using BARQ.Core.Models.Responses;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text;
@@ -13,15 +14,34 @@ using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 
 namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         builder.UseEnvironment("Testing");
+        
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Key"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
+                ["Jwt:Secret"] = "test-jwt-secret-key-for-testing-only-must-be-at-least-32-chars",
+                ["Jwt:Issuer"] = "BarqAPI",
+                ["Jwt:Audience"] = "BarqClient",
+                ["Jwt:ExpiryMinutes"] = "60",
+                ["Security:MaxFailedAttempts"] = "5",
+                ["Security:LockoutDurationMinutes"] = "15",
+                ["ConnectionStrings:DefaultConnection"] = "Data Source=:memory:",
+                ["Redis:ConnectionString"] = "localhost:6379"
+            });
+        });
         
         builder.ConfigureServices(services =>
         {
@@ -37,15 +57,23 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(dbContextDescriptor);
             }
 
-            var dbName = Guid.NewGuid().ToString();
+            var uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
+
             services.AddDbContext<BarqDbContext>(options =>
             {
-                options.UseInMemoryDatabase(dbName);
+                options.UseInMemoryDatabase(uniqueDbName);
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
             });
 
+            services.RemoveAll<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+            services.AddMemoryCache();
+            services.AddSingleton<Microsoft.Extensions.Caching.Distributed.IDistributedCache, Microsoft.Extensions.Caching.Distributed.MemoryDistributedCache>();
+
+            services.RemoveAll<StackExchange.Redis.IConnectionMultiplexer>();
+
             services.RemoveAll<ITenantProvider>();
+            services.AddHttpContextAccessor();
             services.AddScoped<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
@@ -59,6 +87,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         
         var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
         await seeder.SeedTestDataAsync();
+        
+        Console.WriteLine($"DEBUG: Database initialized with {context.Organizations.Count()} organizations and {context.Projects.Count()} projects");
     }
 
     public new async Task DisposeAsync()
@@ -105,8 +135,24 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
         
         response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        var apiResponse = await DeserializeResponseAsync<BARQ.Shared.DTOs.ApiResponse<BARQ.Core.Models.Responses.AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        
+        context.Organizations.RemoveRange(context.Organizations);
+        context.Users.RemoveRange(context.Users);
+        context.Projects.RemoveRange(context.Projects);
+        await context.SaveChangesAsync();
+        
+        var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
+        await seeder.SeedTestDataAsync();
+        
+        Console.WriteLine($"DEBUG: Database reset and reseeded with {context.Organizations.Count()} organizations and {context.Projects.Count()} projects");
     }
 }
 
@@ -126,17 +172,14 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (_context.Organizations.Any())
-        {
-            return;
-        }
+        Console.WriteLine("DEBUG: Starting fresh test data seeding for isolated database...");
 
-        var acmeOrgId = Guid.NewGuid();
-        var betaOrgId = Guid.NewGuid();
-        var acmeUserId = Guid.NewGuid();
-        var betaUserId = Guid.NewGuid();
-        var acmeProjectId = Guid.NewGuid();
-        var betaProjectId = Guid.NewGuid();
+        var acmeOrgId = new Guid("11111111-1111-1111-1111-111111111111");
+        var betaOrgId = new Guid("22222222-2222-2222-2222-222222222222");
+        var acmeUserId = new Guid("33333333-3333-3333-3333-333333333333");
+        var betaUserId = new Guid("44444444-4444-4444-4444-444444444444");
+        var acmeProjectId = new Guid("55555555-5555-5555-5555-555555555555");
+        var betaProjectId = new Guid("66666666-6666-6666-6666-666666666666");
 
         var acmeOrg = new Organization
         {
@@ -216,6 +259,9 @@ public class TestDataSeeder : ITestDataSeeder
         _context.Projects.AddRange(acmeProject, betaProject);
 
         await _context.SaveChangesAsync();
+        
+        Console.WriteLine($"DEBUG: Seeded {_context.Organizations.Count()} organizations, {_context.Users.Count()} users, {_context.Projects.Count()} projects");
+        Console.WriteLine($"DEBUG: Created test user with email: test@acme.com, TenantId: {acmeOrgId}, PasswordHash length: {acmeUser.PasswordHash?.Length ?? 0}");
     }
 }
 
@@ -224,15 +270,34 @@ public class TestTenantProvider : ITenantProvider
     private Guid _tenantId;
     private string _tenantName = "Test Tenant";
     private Guid _currentUserId;
+    private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
 
-    public TestTenantProvider()
+    public TestTenantProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
     {
-        _tenantId = Guid.NewGuid();
+        _tenantId = new Guid("11111111-1111-1111-1111-111111111111");
         _currentUserId = Guid.NewGuid();
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public Guid GetTenantId()
     {
+        var httpContext = _httpContextAccessor?.HttpContext;
+        if (httpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = httpContext.User.FindFirst("sub") ?? httpContext.User.FindFirst("userId");
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                if (userId == new Guid("33333333-3333-3333-3333-333333333333"))
+                {
+                    return new Guid("11111111-1111-1111-1111-111111111111");
+                }
+                else if (userId == new Guid("44444444-4444-4444-4444-444444444444"))
+                {
+                    return new Guid("22222222-2222-2222-2222-222222222222");
+                }
+            }
+        }
+        
         return _tenantId;
     }
 
@@ -292,13 +357,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }

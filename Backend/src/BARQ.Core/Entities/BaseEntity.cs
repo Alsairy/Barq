@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BARQ.Core.Entities;
 
@@ -51,8 +52,8 @@ public abstract class BaseEntity
     /// <summary>
     /// Version number for optimistic concurrency control
     /// </summary>
-    [Timestamp]
-    public byte[]? RowVersion { get; set; }
+    [ConcurrencyCheck]
+    public uint RowVersion { get; set; }
 }
 
 /// <summary>

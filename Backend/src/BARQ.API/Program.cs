@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -11,6 +12,7 @@ using MediatR;
 using FluentValidation;
 using AutoMapper;
 using BARQ.Infrastructure.Data;
+using BARQ.Infrastructure.Data.Seeders;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.Repositories;
 using BARQ.Core.Repositories;
@@ -107,7 +109,46 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+    options.CustomSchemaIds(type => 
+    {
+        var fullName = type.FullName?.Replace("+", ".");
+        if (fullName == null) return type.Name;
+        
+        if (type.IsGenericType)
+        {
+            var baseTypeName = type.Name.Split('`')[0];
+            var genericArgs = type.GetGenericArguments();
+            
+            var argNames = genericArgs.Select(arg => 
+            {
+                if (arg.IsGenericType)
+                {
+                    var innerBase = arg.Name.Split('`')[0];
+                    var innerArgs = arg.GetGenericArguments();
+                    if (innerArgs.Length > 0)
+                    {
+                        return innerBase + "Of" + innerArgs[0].Name;
+                    }
+                    return innerBase;
+                }
+                else
+                {
+                    return arg.Name;
+                }
+            });
+            
+            return baseTypeName + "Of" + string.Join("And", argNames);
+        }
+        
+        var namespaceParts = fullName.Split('.');
+        if (namespaceParts.Length > 1)
+        {
+            var relevantParts = namespaceParts.Skip(Math.Max(0, namespaceParts.Length - 3)).ToArray();
+            return string.Join("", relevantParts).Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+        }
+        
+        return type.Name.Replace("[", "").Replace("]", "").Replace(",", "").Replace(" ", "").Replace("`", "");
+    });
 });
 
 var environment = builder.Environment.EnvironmentName;
@@ -117,7 +158,12 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+            providerOptions => 
+            {
+                providerOptions.EnableRetryOnFailure();
+                providerOptions.CommandTimeout(60);
+            }));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
@@ -195,10 +241,38 @@ builder.Services.AddScoped<IDatabasePerformanceService, DatabasePerformanceServi
 builder.Services.Configure<BackgroundJobOptions>(builder.Configuration.GetSection("BackgroundJobs"));
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 
-builder.Services.AddSingleton<WafConfiguration>();
-builder.Services.AddSingleton<SecurityHeadersConfiguration>();
-builder.Services.AddSingleton<RateLimitConfiguration>();
-builder.Services.AddSingleton<InputValidationConfiguration>();
+builder.Services.AddSingleton<WafConfiguration>(provider =>
+{
+    var config = new WafConfiguration();
+    builder.Configuration.GetSection("Security:Waf").Bind(config);
+    
+    var logger = provider.GetService<ILogger<WafConfiguration>>();
+    logger?.LogInformation("WAF Configuration loaded: ExcludedPaths = [{ExcludedPaths}]", 
+        string.Join(", ", config.ExcludedPaths ?? Array.Empty<string>()));
+    
+    return config;
+});
+
+builder.Services.AddSingleton<SecurityHeadersConfiguration>(provider =>
+{
+    var config = new SecurityHeadersConfiguration();
+    builder.Configuration.GetSection("Security:Headers").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<RateLimitConfiguration>(provider =>
+{
+    var config = new RateLimitConfiguration();
+    builder.Configuration.GetSection("Security:RateLimit").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<InputValidationConfiguration>(provider =>
+{
+    var config = new InputValidationConfiguration();
+    builder.Configuration.GetSection("Security:InputValidation").Bind(config);
+    return config;
+});
 
 builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
 {
@@ -241,7 +315,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key-for-development-only")),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"] ?? builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT secret is not configured"))) { KeyId = "barq-jwt-key" },
             ClockSkew = TimeSpan.FromMinutes(5),
             RequireExpirationTime = true,
             ValidateActor = false,
@@ -318,9 +392,9 @@ var app = builder.Build();
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
-// app.UseMiddleware<WafMiddleware>();
-// app.UseMiddleware<InputValidationMiddleware>();
-// app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseApiMonitoring();
 
@@ -341,6 +415,14 @@ if (app.Environment.IsDevelopment())
         options.ShowExtensions();
         options.EnableValidator();
     });
+    
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+        var seeder = new DatabaseSeeder(context, logger);
+        await seeder.SeedAsync();
+    }
 }
 else
 {

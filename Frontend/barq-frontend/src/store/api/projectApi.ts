@@ -67,7 +67,7 @@ export interface TeamActivity {
   userId: string;
   userName: string;
   timestamp: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export const projectApi = apiSlice.injectEndpoints({
@@ -189,7 +189,7 @@ export const projectApi = apiSlice.injectEndpoints({
       providesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
 
-    getProjectAnalytics: builder.query<Record<string, any>, { projectId: string; timeRange?: string }>({
+    getProjectAnalytics: builder.query<Record<string, unknown>, { projectId: string; timeRange?: string }>({
       query: ({ projectId, timeRange }) => ({
         url: `/api/projects/${projectId}/analytics`,
         params: { timeRange },

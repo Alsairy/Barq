@@ -66,7 +66,7 @@ public class LdapConfigurationConfiguration : IEntityTypeConfiguration<LdapConfi
             .HasMaxLength(100);
 
         builder.Property(l => l.GroupRoleMappings)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(l => l.ValidationError)
             .HasMaxLength(1000);

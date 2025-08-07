@@ -35,6 +35,17 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _mediator.Send(command);
+            
+            if (!result.Success)
+            {
+                return Unauthorized(new ApiResponse<AuthenticationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,

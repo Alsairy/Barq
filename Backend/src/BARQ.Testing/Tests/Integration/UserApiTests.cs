@@ -109,11 +109,20 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         betaUsersResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaUsersContent = await betaUsersResponse.Content.ReadAsStringAsync();
-        var betaUsers = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaUsersContent);
-        var betaUser = betaUsers?.FirstOrDefault(u => u.GetProperty("email").GetString() == "test@beta.com");
+        var betaUsers = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(betaUsersContent);
+        var betaUser = betaUsers?.FirstOrDefault(u => 
+        {
+            if (u.TryGetProperty("email", out var emailProperty))
+            {
+                return emailProperty.GetString() == "test@beta.com";
+            }
+            return false;
+        });
         betaUser.Should().NotBeNull();
         
-        var betaUserId = betaUser.Value.GetProperty("id").GetString();
+        var betaUserId = betaUser.HasValue && betaUser.Value.TryGetProperty("id", out var idProperty) 
+            ? idProperty.GetString() 
+            : null;
         
         var response = await _factory.GetAsync($"/api/users/{betaUserId}", acmeToken);
 
@@ -126,9 +135,8 @@ public class UserApiTests : IClassFixture<ApiTestFramework>
         var authToken = await _factory.GetAuthTokenAsync();
         var changePasswordRequest = new
         {
-            CurrentPassword = "TestPassword123!",
-            NewPassword = "NewTestPassword123!",
-            ConfirmPassword = "NewTestPassword123!"
+            OldPassword = "TestPassword123!",
+            NewPassword = "NewTestPassword123!"
         };
 
         var response = await _factory.PostJsonAsync("/api/users/change-password", changePasswordRequest, authToken);
