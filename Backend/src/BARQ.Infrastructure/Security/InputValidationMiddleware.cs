@@ -197,7 +197,7 @@ public class InputValidationMiddleware
         var isValid = Regex.IsMatch(headerName, @"^[a-zA-Z0-9\-_.:]+$");
         if (!isValid)
         {
-            _logger.LogWarning("Invalid header name detected - contains invalid characters");
+            _logger.LogWarning("Invalid header name detected - contains invalid characters: {HeaderName}", headerName);
         }
         return isValid;
     }
@@ -208,9 +208,17 @@ public class InputValidationMiddleware
             return true;
 
         if (headerValue.Length > _config.MaxHeaderValueLength)
+        {
+            _logger.LogWarning("Header value exceeds maximum length: {Length}", headerValue.Length);
             return false;
+        }
 
-        return !ContainsMaliciousPatterns(headerValue);
+        var containsMalicious = ContainsMaliciousPatterns(headerValue);
+        if (containsMalicious)
+        {
+            _logger.LogWarning("Header value contains malicious patterns: {HeaderValue}", headerValue);
+        }
+        return !containsMalicious;
     }
 
     private bool IsValidParameterName(string paramName)
