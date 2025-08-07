@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BARQ.Infrastructure.Migrations
 {
     [DbContext(typeof(BarqDbContext))]
-    [Migration("20250807103810_InitialCreate")]
+    [Migration("20250807110535_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
