@@ -17,25 +17,25 @@ public class WorkflowStepExecutionConfiguration : IEntityTypeConfiguration<Workf
             .HasConversion<int>();
 
         builder.Property(wse => wse.InputData)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.OutputData)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.ErrorMessage)
             .HasMaxLength(2000);
 
         builder.Property(wse => wse.ErrorDetails)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.ExecutionContext)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.ExecutionLogs)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.PerformanceMetrics)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wse => wse.RetryCount)
             .IsRequired()
