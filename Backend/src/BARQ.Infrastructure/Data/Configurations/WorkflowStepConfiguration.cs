@@ -28,25 +28,25 @@ public class WorkflowStepConfiguration : IEntityTypeConfiguration<WorkflowStep>
 
         builder.Property(ws => ws.Configuration)
             .IsRequired()
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.InputSchema)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.OutputSchema)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.ValidationRules)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.RetryConfiguration)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.ErrorHandling)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.ExecutionConditions)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(ws => ws.RequiresApproval)
             .IsRequired()

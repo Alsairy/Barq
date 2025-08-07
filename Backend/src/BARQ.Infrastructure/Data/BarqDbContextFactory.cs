@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using BARQ.Core.Services;
@@ -19,7 +20,11 @@ public class BarqDbContextFactory : IDesignTimeDbContextFactory<BarqDbContext>
         var builder = new DbContextOptionsBuilder<BarqDbContext>();
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         
-        builder.UseSqlServer(connectionString, options => options.EnableRetryOnFailure());
+        builder.UseNpgsql(connectionString, options => 
+        {
+            options.EnableRetryOnFailure();
+            options.CommandTimeout(60);
+        });
 
         var tenantProvider = new DesignTimeTenantProvider();
         return new BarqDbContext(builder.Options, tenantProvider);

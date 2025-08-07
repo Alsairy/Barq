@@ -28,19 +28,19 @@ public class WorkflowInstanceConfiguration : IEntityTypeConfiguration<WorkflowIn
             .HasConversion<int>();
 
         builder.Property(w => w.WorkflowData)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(w => w.ExecutionContext)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(w => w.ErrorMessage)
             .HasMaxLength(2000);
 
         builder.Property(w => w.ErrorDetails)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(w => w.PerformanceMetrics)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(w => w.TenantId)
             .IsRequired();
