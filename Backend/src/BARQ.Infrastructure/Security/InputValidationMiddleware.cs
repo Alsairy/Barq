@@ -197,7 +197,7 @@ public class InputValidationMiddleware
         var isValid = Regex.IsMatch(headerName, @"^[a-zA-Z0-9\-_.:]+$");
         if (!isValid)
         {
-            _logger.LogWarning("Invalid header name detected - contains invalid characters: {HeaderName}", headerName);
+            _logger.LogWarning("Invalid header name detected - contains invalid characters");
         }
         return isValid;
     }
@@ -216,7 +216,7 @@ public class InputValidationMiddleware
         var containsMalicious = ContainsMaliciousPatterns(headerValue);
         if (containsMalicious)
         {
-            _logger.LogWarning("Header value contains malicious patterns: {HeaderValue}", headerValue);
+            _logger.LogWarning("Header value contains malicious patterns");
         }
         return !containsMalicious;
     }
