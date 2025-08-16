@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 
+using BARQ.Core.Models.Responses;
+
 namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
@@ -107,10 +109,21 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         var loginRequest = new { Request = new { Email = email, Password = password } };
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
-        
         response.Should().BeSuccessful();
         var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
         return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        using var scope = Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        context.Organizations.RemoveRange(context.Organizations);
+        context.Users.RemoveRange(context.Users);
+        context.Projects.RemoveRange(context.Projects);
+        await context.SaveChangesAsync();
+        var seeder = scope.ServiceProvider.GetRequiredService<ITestDataSeeder>();
+        await seeder.SeedTestDataAsync();
     }
 }
 
@@ -300,13 +313,4 @@ public class TestAuthenticationHandler : Microsoft.AspNetCore.Authentication.Aut
 
         return Task.FromResult(Microsoft.AspNetCore.Authentication.AuthenticateResult.Success(ticket));
     }
-}
-
-public class AuthenticationResponse
-{
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
-    public bool Success { get; set; }
-    public string Message { get; set; } = string.Empty;
 }

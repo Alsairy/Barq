@@ -26,7 +26,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-backend
-        image: ${BACKEND_IMAGE:-barq/backend:latest}@sha256:placeholder
+        image: ${BACKEND_IMAGE:-barq/backend:latest}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -116,7 +116,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-frontend
-        image: ${FRONTEND_IMAGE:-barq/frontend:latest}@sha256:placeholder
+        image: ${FRONTEND_IMAGE:-barq/frontend:latest}
         imagePullPolicy: Always
         ports:
         - containerPort: 80
@@ -196,7 +196,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: sqlserver
-        image: mcr.microsoft.com/mssql/server:2022-latest@sha256:7c29dfbac885ad7519e219c7fe4aee0e67283e21a10e9c252d13b0fbde1866f8
+        image: mcr.microsoft.com/mssql/server:2022-latest
         imagePullPolicy: Always
         ports:
         - containerPort: 1433
@@ -204,7 +204,7 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: false
           runAsNonRoot: false
-          runAsUser: 0
+          runAsUser: 10001
           capabilities:
             drop:
             - ALL
@@ -219,15 +219,16 @@ spec:
         env:
         - name: ACCEPT_EULA
           value: "Y"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: barq-secrets
+              key: database-password
         - name: MSSQL_DB
           value: "BarqDB"
         volumeMounts:
         - name: sqlserver-storage
           mountPath: /var/opt/mssql
-        - name: sqlserver-data
-          mountPath: /var/opt/mssql/data
-        - name: sqlserver-log
-          mountPath: /var/opt/mssql/log
         - name: tmp
           mountPath: /tmp
         - name: database-secrets
@@ -238,47 +239,31 @@ spec:
           readOnly: true
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
+            memory: "2Gi"
             cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "1000m"
         livenessProbe:
           exec:
             command:
-            - /opt/mssql-tools/bin/sqlcmd
-            - -S
-            - localhost
-            - -U
-            - sa
-            - -P
-            - $(SA_PASSWORD)
-            - -Q
-            - "SELECT 1"
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           exec:
             command:
-            - /opt/mssql-tools/bin/sqlcmd
-            - -S
-            - localhost
-            - -U
-            - sa
-            - -P
-            - $(SA_PASSWORD)
-            - -Q
-            - "SELECT 1"
-          initialDelaySeconds: 5
-          periodSeconds: 5
+            - bash
+            - -c
+            - 'timeout 30 bash -c "</dev/tcp/localhost/1433" && echo "SQL Server is ready"'
+          initialDelaySeconds: 15
+          periodSeconds: 10
       volumes:
       - name: sqlserver-storage
         persistentVolumeClaim:
           claimName: barq-database-pvc
-      - name: sqlserver-data
-        emptyDir: {}
-      - name: sqlserver-log
-        emptyDir: {}
       - name: tmp
         emptyDir: {}
       - name: database-secrets
@@ -316,7 +301,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis:7-alpine@sha256:bb186d083732f669da90be8b0f975a37812b15e913465bb14d845db72a4e3e08
+        image: redis:7-alpine
         imagePullPolicy: Always
         ports:
         - containerPort: 6379

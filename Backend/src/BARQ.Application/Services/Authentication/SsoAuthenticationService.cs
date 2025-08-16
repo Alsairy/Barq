@@ -1347,12 +1347,12 @@ public class SsoAuthenticationService : ISsoAuthenticationService
         var secret = _configuration["Jwt:Secret"];
         if (string.IsNullOrEmpty(secret))
         {
-            throw new InvalidOperationException("JWT secret is not configured. Please set Jwt:Secret in configuration.");
+            throw new InvalidOperationException("JWT configuration is invalid.");
         }
         
         if (secret.Length < 32)
         {
-            throw new InvalidOperationException("JWT secret must be at least 32 characters long for security.");
+            throw new InvalidOperationException("JWT configuration is invalid.");
         }
         
         return secret;

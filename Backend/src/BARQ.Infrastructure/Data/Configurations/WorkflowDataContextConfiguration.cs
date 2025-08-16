@@ -23,11 +23,11 @@ public class WorkflowDataContextConfiguration : IEntityTypeConfiguration<Workflo
 
         builder.Property(wdc => wdc.Data)
             .IsRequired()
-            .HasColumnType("nvarchar(max)")
+            .HasColumnType("text")
             .HasDefaultValue("{}");
 
         builder.Property(wdc => wdc.DataSchema)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wdc => wdc.EncryptionKeyId)
             .HasMaxLength(100);
@@ -37,13 +37,13 @@ public class WorkflowDataContextConfiguration : IEntityTypeConfiguration<Workflo
             .HasDefaultValue(false);
 
         builder.Property(wdc => wdc.AccessPermissions)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wdc => wdc.ValidationRules)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wdc => wdc.TransformationRules)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(wdc => wdc.IsActive)
             .IsRequired()

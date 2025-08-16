@@ -55,6 +55,14 @@ public class AuthenticationService : IAuthenticationService
 
             var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
             var user = users.FirstOrDefault();
+            
+            _logger.LogInformation("Authentication attempt for email: {Email}", request.Email);
+            if (user != null)
+            {
+                _logger.LogInformation("User details - ID: {UserId}, Status: {Status}, EmailConfirmed: {EmailConfirmed}", 
+                    user.Id, user.Status, user.EmailConfirmed);
+            }
+            
             if (user == null || !_passwordService.VerifyPassword(request.Password, user.PasswordHash ?? string.Empty))
             {
                 await IncrementFailedLoginAttemptAsync(request.Email);
@@ -114,6 +122,8 @@ public class AuthenticationService : IAuthenticationService
 
             var accessToken = GenerateAccessToken(user, roleNames);
             var refreshToken = GenerateRefreshToken();
+            
+            _logger.LogInformation("Generated tokens successfully for user: {UserId}", user.Id);
 
             // This would need to be stored in a separate RefreshToken entity
             await _userRepository.UpdateAsync(user);
@@ -183,7 +193,7 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing token: {RefreshToken}", refreshToken);
+            _logger.LogError(ex, "Error refreshing token for user session");
             return new AuthenticationResponse
             {
                 Success = false,
@@ -228,7 +238,20 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(GetJwtSecret());
+            var jwtSecret = GetJwtSecret();
+            
+            if (string.IsNullOrEmpty(jwtSecret))
+            {
+                _logger.LogError("JWT configuration error during session validation");
+                return Task.FromResult(new SessionValidationResponse
+                {
+                    Success = false,
+                    Message = "Session validation failed - configuration error",
+                    IsValid = false
+                });
+            }
+            
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
             var validationParameters = new TokenValidationParameters
             {
@@ -267,15 +290,13 @@ public class AuthenticationService : IAuthenticationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating session token");
-            var response = new SessionValidationResponse
+            _logger.LogError(ex, "Error validating user session");
+            return Task.FromResult(new SessionValidationResponse
             {
                 Success = false,
                 Message = "Session validation failed",
                 IsValid = false
-            };
-
-            return Task.CompletedTask.ContinueWith(_ => response);
+            });
         }
     }
 
@@ -365,42 +386,80 @@ public class AuthenticationService : IAuthenticationService
 
     private string GenerateAccessToken(User user, IList<string> roles)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(GetJwtSecret());
-
-        var claims = new List<Claim>
+        try
         {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-            new("tenant_id", user.TenantId.ToString())
-        };
+            _logger.LogInformation("Generating access token for user: {UserId}, roles: {Roles}", user.Id, string.Join(",", roles));
+            
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtSecret = GetJwtSecret();
+            
+            
+            var key = Encoding.UTF8.GetBytes(jwtSecret);
 
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Email, user.Email),
+                new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new("tenant_id", user.TenantId.ToString())
+            };
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+            _logger.LogInformation("Created {ClaimsCount} claims for token", claims.Count);
+
+            var symmetricKey = new SymmetricSecurityKey(key);
+            symmetricKey.KeyId = "barq-jwt-key"; // Add KeyId to prevent validation errors
+            
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
+                SigningCredentials = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var tokenString = tokenHandler.WriteToken(token);
+            _logger.LogInformation("Successfully generated JWT token for user: {UserId}", user.Id);
+            
+            return tokenString ?? string.Empty;
+        }
+        catch (Exception ex)
         {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(GetTokenExpiryMinutes()),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
-
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+            _logger.LogError(ex, "Error generating access token for user: {UserId}", user.Id);
+            return string.Empty;
+        }
     }
 
     private string GenerateRefreshToken()
     {
-        var randomBytes = new byte[32];
-        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        rng.GetBytes(randomBytes);
-        return Convert.ToBase64String(randomBytes);
+        try
+        {
+            var randomBytes = new byte[32];
+            using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating refresh token");
+            return string.Empty;
+        }
     }
 
     private string GenerateMfaToken(Guid userId)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(GetJwtSecret());
+        var jwtSecret = GetJwtSecret();
+        
+        if (string.IsNullOrEmpty(jwtSecret))
+        {
+            _logger.LogError("JWT configuration error during MFA token generation");
+            return string.Empty;
+        }
+        
+        var key = Encoding.UTF8.GetBytes(jwtSecret);
 
         var claims = new List<Claim>
         {
@@ -408,18 +467,35 @@ public class AuthenticationService : IAuthenticationService
             new("token_type", "mfa")
         };
 
+        var symmetricKey = new SymmetricSecurityKey(key);
+        symmetricKey.KeyId = "barq-jwt-key"; // Add KeyId to prevent validation errors
+        
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddMinutes(5), // Short-lived MFA token
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            Issuer = _configuration["Jwt:Issuer"],
+            Audience = _configuration["Jwt:Audience"],
+            SigningCredentials = new SigningCredentials(symmetricKey, SecurityAlgorithms.HmacSha256Signature)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        return tokenHandler.WriteToken(token) ?? string.Empty;
     }
 
-    private string GetJwtSecret() => _configuration["Jwt:Secret"] ?? "dev-only-secret-key";
+    private string GetJwtSecret() 
+    {
+        var secret = _configuration["Jwt:Secret"];
+        if (string.IsNullOrEmpty(secret))
+        {
+            throw new InvalidOperationException("JWT configuration is invalid.");
+        }
+        if (secret.Length < 32)
+        {
+            throw new InvalidOperationException("JWT configuration is invalid.");
+        }
+        return secret;
+    }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
     private int GetMaxFailedAttempts() => int.Parse(_configuration["Security:MaxFailedAttempts"] ?? "5");
     private int GetLockoutDurationMinutes() => int.Parse(_configuration["Security:LockoutDurationMinutes"] ?? "15");

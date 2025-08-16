@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 
 const mockApiSlice = {
   reducer: (state = {}) => state,
-  middleware: () => (next: any) => (action: any) => next(action),
+  middleware: () => (next: (action: unknown) => unknown) => (action: unknown) => next(action),
   reducerPath: 'api',
 };
 

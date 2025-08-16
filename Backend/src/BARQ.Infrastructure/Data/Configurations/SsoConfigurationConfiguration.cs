@@ -24,7 +24,7 @@ public class SsoConfigurationConfiguration : IEntityTypeConfiguration<SsoConfigu
             .HasMaxLength(200);
 
         builder.Property(s => s.ConfigurationJson)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(s => s.EntityId)
             .HasMaxLength(500);
@@ -36,7 +36,7 @@ public class SsoConfigurationConfiguration : IEntityTypeConfiguration<SsoConfigu
             .HasMaxLength(1000);
 
         builder.Property(s => s.Certificate)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(s => s.ClientId)
             .HasMaxLength(200);
@@ -54,7 +54,7 @@ public class SsoConfigurationConfiguration : IEntityTypeConfiguration<SsoConfigu
             .HasMaxLength(1000);
 
         builder.Property(s => s.AttributeMappings)
-            .HasColumnType("nvarchar(max)");
+            .HasColumnType("text");
 
         builder.Property(s => s.DefaultRole)
             .HasMaxLength(100);

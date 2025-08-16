@@ -74,7 +74,7 @@ interface KPI {
   value: string | number;
   change: number;
   trend: 'up' | 'down' | 'stable';
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

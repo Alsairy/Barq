@@ -2,7 +2,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Core.Services;
 
 namespace BARQ.Infrastructure.Data

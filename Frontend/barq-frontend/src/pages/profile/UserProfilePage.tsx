@@ -100,7 +100,7 @@ export function UserProfilePage() {
       
       setSuccess('Profile updated successfully');
       setIsEditing(false);
-    } catch (error: any) {
+    } catch {
       setError('Failed to update profile. Please try again.');
     } finally {
       setSaving(false);
@@ -125,7 +125,7 @@ export function UserProfilePage() {
       }
       
       setSuccess('Security settings updated successfully');
-    } catch (error: any) {
+    } catch {
       setError('Failed to update security settings. Please try again.');
     } finally {
       setSaving(false);
@@ -452,7 +452,7 @@ export function UserProfilePage() {
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id as any)}
+              onClick={() => setActiveTab(id as 'profile' | 'security' | 'privacy' | 'activity')}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === id
                   ? 'border-blue-500 text-blue-600'

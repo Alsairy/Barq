@@ -39,7 +39,30 @@ public class UserController : ControllerBase
         try
         {
             var result = await _mediator.Send(command);
-            return Ok(new ApiResponse<UserRegistrationResponse>
+            
+            if (!result.Success)
+            {
+                if (result.Message?.Contains("already exists", StringComparison.OrdinalIgnoreCase) == true ||
+                    result.Message?.Contains("already registered", StringComparison.OrdinalIgnoreCase) == true ||
+                    result.Message?.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    return Conflict(new ApiResponse<UserRegistrationResponse>
+                    {
+                        Success = false,
+                        Data = result,
+                        Message = result.Message
+                    });
+                }
+                
+                return BadRequest(new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = false,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+            
+            return Created("", new ApiResponse<UserRegistrationResponse>
             {
                 Success = result.Success,
                 Data = result,

@@ -12,6 +12,7 @@ using MediatR;
 using FluentValidation;
 using AutoMapper;
 using BARQ.Infrastructure.Data;
+using BARQ.Infrastructure.Data.Seeders;
 using BARQ.Infrastructure.MultiTenancy;
 using BARQ.Infrastructure.BPM;
 using BARQ.Infrastructure.Repositories;
@@ -119,7 +120,7 @@ builder.Services.AddSwaggerGen(options =>
     options.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] });
     options.DocInclusionPredicate((name, api) => true);
     options.OperationFilter<StandardResponsesOperationFilter>();
-    
+
     options.CustomSchemaIds(type =>
     {
         string Sanitize(string s) => s
@@ -127,7 +128,7 @@ builder.Services.AddSwaggerGen(options =>
             .Replace("]", string.Empty)
             .Replace("`", string.Empty)
             .Replace(",", string.Empty)
-            .Replace("+", "."); // nested classes
+            .Replace("+", ".");
 
         if (!type.IsGenericType)
         {
@@ -158,7 +159,12 @@ var isTestingEnvironment = environment.Equals("Testing", StringComparison.Ordina
 if (!isTestingEnvironment)
 {
     builder.Services.AddDbContext<BarqDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+            providerOptions =>
+            {
+                providerOptions.EnableRetryOnFailure();
+                providerOptions.CommandTimeout(60);
+            }));
 }
 
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
@@ -238,10 +244,38 @@ builder.Services.AddScoped<IDatabasePerformanceService, DatabasePerformanceServi
 builder.Services.Configure<BackgroundJobOptions>(builder.Configuration.GetSection("BackgroundJobs"));
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 
-builder.Services.AddSingleton<WafConfiguration>();
-builder.Services.AddSingleton<SecurityHeadersConfiguration>();
-builder.Services.AddSingleton<RateLimitConfiguration>();
-builder.Services.AddSingleton<InputValidationConfiguration>();
+builder.Services.AddSingleton<WafConfiguration>(provider =>
+{
+    var config = new WafConfiguration();
+    builder.Configuration.GetSection("Security:Waf").Bind(config);
+    
+    var logger = provider.GetService<ILogger<WafConfiguration>>();
+    logger?.LogInformation("WAF Configuration loaded: ExcludedPaths = [{ExcludedPaths}]", 
+        string.Join(", ", config.ExcludedPaths ?? Array.Empty<string>()));
+    
+    return config;
+});
+
+builder.Services.AddSingleton<SecurityHeadersConfiguration>(provider =>
+{
+    var config = new SecurityHeadersConfiguration();
+    builder.Configuration.GetSection("Security:Headers").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<RateLimitConfiguration>(provider =>
+{
+    var config = new RateLimitConfiguration();
+    builder.Configuration.GetSection("Security:RateLimit").Bind(config);
+    return config;
+});
+
+builder.Services.AddSingleton<InputValidationConfiguration>(provider =>
+{
+    var config = new InputValidationConfiguration();
+    builder.Configuration.GetSection("Security:InputValidation").Bind(config);
+    return config;
+});
 
 builder.Services.AddHttpClient<ISiemIntegrationService, SiemIntegrationService>(client =>
 {
@@ -293,6 +327,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         }
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuredSecret));
+signingKey.KeyId = "barq-jwt-key";
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -337,7 +372,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     ctx.HttpContext.Items["AuthTokenSource"] = "None";
                 }
 
-                return Task.CompletedTask;
+                        return Task.CompletedTask;
             },
             OnTokenValidated = ctx =>
             {
@@ -467,9 +502,9 @@ if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalI
 
 // Configure security middleware pipeline in proper order
 app.UseMiddleware<SecurityHeadersMiddleware>();
-// app.UseMiddleware<WafMiddleware>();
-// app.UseMiddleware<InputValidationMiddleware>();
-// app.UseMiddleware<RateLimitingMiddleware>();
+app.UseMiddleware<WafMiddleware>();
+app.UseMiddleware<InputValidationMiddleware>();
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseApiMonitoring();
 
@@ -520,6 +555,14 @@ else if (app.Environment.EnvironmentName == "Testing")
         }
         await next();
     });
+    
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+        var seeder = new DatabaseSeeder(context, logger);
+        await seeder.SeedAsync();
+    }
 }
 else
 {

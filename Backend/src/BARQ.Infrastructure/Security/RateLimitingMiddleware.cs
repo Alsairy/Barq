@@ -32,6 +32,18 @@ public class RateLimitingMiddleware
             return;
         }
 
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing")
+        {
+            await _next(context);
+            return;
+        }
+
+        if (IsPathExcluded(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
         var clientId = GetClientIdentifier(context);
         var endpoint = GetEndpointIdentifier(context);
 
@@ -160,6 +172,12 @@ public class RateLimitingMiddleware
         context.Response.Headers["X-RateLimit-Reset"] = ((DateTimeOffset)resetTime).ToUnixTimeSeconds().ToString();
     }
 
+    private bool IsPathExcluded(PathString requestPath)
+    {
+        return _config.ExcludedPaths.Any(excludedPath => 
+            requestPath.StartsWithSegments(excludedPath, StringComparison.OrdinalIgnoreCase));
+    }
+
     private string GetClientIpAddress(HttpContext context)
     {
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -192,4 +210,5 @@ public class RateLimitConfiguration
     public int BlockDurationSeconds { get; set; } = 300; // 5 minutes
     public bool EnableAdaptiveRateLimiting { get; set; } = true;
     public double SuspiciousThresholdMultiplier { get; set; } = 0.8;
+    public string[] ExcludedPaths { get; set; } = Array.Empty<string>();
 }

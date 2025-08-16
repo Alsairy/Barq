@@ -27,7 +27,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     volumes:
@@ -57,11 +57,11 @@ services:
     image: awaragi/prometheus-mssql-exporter:latest
     container_name: barq-sqlserver-exporter
     ports:
-      - "9187:9187"
+      - "9399:9399"
     environment:
       - SERVER=${DB_HOST:-barq-database}
-      - USERNAME=${DB_USER:-barq_user}
-      - PASSWORD=${DB_PASSWORD:-changeme}
+      - USERNAME=${DB_USER:-sa}
+      - PASSWORD=${DB_PASSWORD}
       - DATABASE=${DB_NAME:-BarqDB}
     networks:
       - barq-monitoring

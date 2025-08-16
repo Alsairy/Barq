@@ -125,7 +125,7 @@ export function OrganizationUsersPage() {
     {
       header: 'User',
       accessorKey: 'user',
-      cell: ({ row }: any) => {
+      cell: ({ row }: { row: { original: OrganizationUser } }) => {
         const user = row.original;
         return (
           <div className="flex items-center space-x-3">
@@ -146,7 +146,7 @@ export function OrganizationUsersPage() {
     {
       header: 'Roles',
       accessorKey: 'roles',
-      cell: ({ row }: any) => {
+      cell: ({ row }: { row: { original: OrganizationUser } }) => {
         const roles = row.original.roles;
         return (
           <div className="flex flex-wrap gap-1">
@@ -166,12 +166,12 @@ export function OrganizationUsersPage() {
     {
       header: 'Status',
       accessorKey: 'status',
-      cell: ({ row }: any) => getStatusBadge(row.original.status),
+      cell: ({ row }: { row: { original: OrganizationUser } }) => getStatusBadge(row.original.status),
     },
     {
       header: 'Last Login',
       accessorKey: 'lastLoginAt',
-      cell: ({ row }: any) => {
+      cell: ({ row }: { row: { original: OrganizationUser } }) => {
         const lastLogin = row.original.lastLoginAt;
         return lastLogin 
           ? new Date(lastLogin).toLocaleDateString()
@@ -181,7 +181,7 @@ export function OrganizationUsersPage() {
     {
       header: 'Actions',
       id: 'actions',
-      cell: ({ row }: any) => {
+      cell: ({ row }: { row: { original: OrganizationUser } }) => {
         const user = row.original;
         return (
           <div className="flex items-center space-x-2">

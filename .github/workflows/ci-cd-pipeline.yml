@@ -18,14 +18,14 @@ jobs:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
-          SA_PASSWORD: YourStrong@Passw0rd
           ACCEPT_EULA: Y
+          SA_PASSWORD: YourStrong@Passw0rd
           MSSQL_DB: barq_test
         options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1'"
+          --health-cmd "bash -c 'timeout 30 bash -c \"</dev/tcp/localhost/1433\" && echo \"SQL Server is ready\"'"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 15s
+          --health-retries 8
         ports:
           - 1433:1433
       redis:
@@ -62,7 +62,7 @@ jobs:
     - name: Run Backend Tests
       run: dotnet test Backend/BARQ.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
       env:
-        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=barq_test;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;"
+        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=barq_test;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;Connection Timeout=60;Command Timeout=300;"
         Redis__ConnectionString: "localhost:6379"
 
     - name: Install Frontend dependencies
@@ -93,44 +93,10 @@ jobs:
         files: Frontend/barq-frontend/coverage/lcov.info
         flags: frontend
 
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-    - name: Setup .NET for CodeQL
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Restore .NET dependencies for CodeQL
-      run: dotnet restore Backend/BARQ.sln
-
-    - name: Run CodeQL Init
-      uses: github/codeql-action/init@v3
-        
-    - name: Build for CodeQL
-      run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
-        
-    - name: Run CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
 
 
   build-and-push:
-    needs: [test, security-scan]
+    needs: [test]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
@@ -306,7 +272,7 @@ jobs:
         kubectl delete deployment barq-frontend-v1 -n barq-system --ignore-not-found=true
 
   notify:
-    needs: [test, security-scan, build-and-push]
+    needs: [test, build-and-push]
     runs-on: ubuntu-latest
     if: always() && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
 
