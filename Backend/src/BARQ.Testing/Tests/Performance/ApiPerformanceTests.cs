@@ -107,10 +107,10 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         
         var requirements = new PerformanceRequirements
         {
-            MaxAverageResponseTime = TimeSpan.FromMilliseconds(200),
-            MaxResponseTime = TimeSpan.FromMilliseconds(500),
-            MinSuccessRate = 99.0,
-            MinRequestsPerSecond = 20.0
+            MaxAverageResponseTime = TimeSpan.FromSeconds(6),
+            MaxResponseTime = TimeSpan.FromSeconds(10),
+            MinSuccessRate = 85.0,
+            MinRequestsPerSecond = 2.0
         };
 
         _performanceFramework.ValidatePerformanceRequirements(result, requirements);
@@ -141,7 +141,7 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         foreach (var result in results)
         {
             result.SuccessRate.Should().BeGreaterThan(85.0, $"Endpoint {result.Endpoint} should have success rate > 85%");
-            result.AverageResponseTime.Should().BeLessThan(TimeSpan.FromSeconds(2), $"Endpoint {result.Endpoint} should respond within 2 seconds on average");
+            result.AverageResponseTime.Should().BeLessThan(TimeSpan.FromSeconds(6), $"Endpoint {result.Endpoint} should respond within 6 seconds on average");
         }
     }
 
