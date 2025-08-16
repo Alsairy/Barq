@@ -33,6 +33,7 @@ public class UserController : ControllerBase
         _userRoleService = userRoleService;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponse<UserRegistrationResponse>>> Register([FromBody] RegisterUserCommand command)
     {

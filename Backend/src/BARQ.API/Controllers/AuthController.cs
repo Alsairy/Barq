@@ -133,7 +133,12 @@ public class AuthController : ControllerBase
                 Response.Cookies.Append(cookieCfg.Name, result.AccessToken!, opts);
             }
 
-            return Ok(result);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
         }
         catch (Exception ex)
         {

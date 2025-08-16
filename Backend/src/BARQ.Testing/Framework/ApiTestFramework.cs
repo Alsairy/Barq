@@ -13,17 +13,34 @@ using Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
 
+using Microsoft.Extensions.Configuration;
 using BARQ.Core.Models.Responses;
+using BARQ.Shared.DTOs;
 
 namespace BARQ.Testing.Framework;
 
 public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private Guid _testTenantId;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
         builder.UseEnvironment("Testing");
+
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            var dict = new Dictionary<string, string?>
+            {
+                ["Jwt:Secret"] = "test-secret-32-characters-minimum-0123456789",
+                ["Jwt:Issuer"] = "https://api.test",
+                ["Jwt:Audience"] = "https://test.app",
+                ["Auth:Cookie:Enabled"] = "false"
+            };
+            config.AddInMemoryCollection(dict);
+        });
         
         builder.ConfigureServices(services =>
         {
@@ -57,8 +74,8 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         using var scope = Services.CreateScope();
         var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-        var testTenantId = Guid.NewGuid();
-        tenantProvider.SetTenantId(testTenantId);
+        _testTenantId = Guid.NewGuid();
+        tenantProvider.SetTenantId(_testTenantId);
 
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureCreatedAsync();
@@ -80,6 +97,11 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var client = CreateClient();
         if (!string.IsNullOrEmpty(authToken))
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+        if (_testTenantId != Guid.Empty)
+        {
+            client.DefaultRequestHeaders.Remove("X-Tenant-ID");
+            client.DefaultRequestHeaders.Add("X-Tenant-ID", _testTenantId.ToString());
+        }
 
         var json = JsonSerializer.Serialize(data);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -92,6 +114,11 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
         var client = CreateClient();
         if (!string.IsNullOrEmpty(authToken))
             client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
+        if (_testTenantId != Guid.Empty)
+        {
+            client.DefaultRequestHeaders.Remove("X-Tenant-ID");
+            client.DefaultRequestHeaders.Add("X-Tenant-ID", _testTenantId.ToString());
+        }
 
         return await client.GetAsync(endpoint);
     }
@@ -109,9 +136,13 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     {
         var loginRequest = new { Request = new { Email = email, Password = password } };
         var response = await PostJsonAsync("/api/auth/login", loginRequest);
-        response.Should().BeSuccessful();
-        var authResponse = await DeserializeResponseAsync<AuthenticationResponse>(response);
-        return authResponse?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Login failed with status {(int)response.StatusCode}: {content}");
+        }
+        var apiResponse = await DeserializeResponseAsync<ApiResponse<AuthenticationResponse>>(response);
+        return apiResponse?.Data?.AccessToken ?? throw new InvalidOperationException("Failed to get auth token");
     }
 
     public async Task ResetDatabaseAsync()
@@ -145,96 +176,112 @@ public class TestDataSeeder : ITestDataSeeder
 
     public async Task SeedTestDataAsync()
     {
-        if (_context.Organizations.Any())
+        var acmeDomain = "acme.com";
+        var betaDomain = "beta.com";
+        var acmeEmail = "test@acme.com";
+        var betaEmail = "test@beta.com";
+
+        var acmeOrg = _context.Organizations.FirstOrDefault(o => o.Domain == acmeDomain);
+        if (acmeOrg == null)
         {
-            return;
+            acmeOrg = new Organization
+            {
+                Id = _tenantProvider.GetTenantId() != Guid.Empty ? _tenantProvider.GetTenantId() : Guid.NewGuid(),
+                Name = "Acme Corporation",
+                Domain = acmeDomain,
+                SubscriptionPlan = Core.Enums.SubscriptionPlan.Professional,
+                Status = BARQ.Core.Enums.OrganizationStatus.Active,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Organizations.Add(acmeOrg);
         }
 
-        var acmeOrgId = _tenantProvider.GetTenantId();
-        var betaOrgId = Guid.NewGuid();
-        var acmeUserId = Guid.NewGuid();
-        var betaUserId = Guid.NewGuid();
-        var acmeProjectId = Guid.NewGuid();
-        var betaProjectId = Guid.NewGuid();
-
-        var acmeOrg = new Organization
+        var betaOrg = _context.Organizations.FirstOrDefault(o => o.Domain == betaDomain);
+        if (betaOrg == null)
         {
-            Id = acmeOrgId,
-            Name = "Acme Corporation",
-            Domain = "acme.com",
-            SubscriptionPlan = Core.Enums.SubscriptionPlan.Professional,
-            Status = BARQ.Core.Enums.OrganizationStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+            betaOrg = new Organization
+            {
+                Id = Guid.NewGuid(),
+                Name = "Beta Industries",
+                Domain = betaDomain,
+                SubscriptionPlan = Core.Enums.SubscriptionPlan.Enterprise,
+                Status = BARQ.Core.Enums.OrganizationStatus.Active,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Organizations.Add(betaOrg);
+        }
 
-        var betaOrg = new Organization
+        _tenantProvider.SetTenantId(acmeOrg.Id);
+
+        var acmeUser = _context.Users.FirstOrDefault(u => u.Email == acmeEmail);
+        if (acmeUser == null)
         {
-            Id = betaOrgId,
-            Name = "Beta Industries",
-            Domain = "beta.com",
-            SubscriptionPlan = Core.Enums.SubscriptionPlan.Enterprise,
-            Status = BARQ.Core.Enums.OrganizationStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Organizations.AddRange(acmeOrg, betaOrg);
-
-        _tenantProvider.SetTenantId(acmeOrgId);
-
-        var acmeUser = new User
-        {
-            Id = acmeUserId,
-            Email = "test@acme.com",
-            FirstName = "John",
-            LastName = "Doe",
-            TenantId = acmeOrgId,
-            Status = BARQ.Core.Enums.UserStatus.Active,
-            EmailVerified = true,
-            EmailConfirmed = true,
-            CreatedAt = DateTime.UtcNow,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
-        };
-        
-
-        var betaUser = new User
-        {
-            Id = betaUserId,
-            Email = "test@beta.com",
-            FirstName = "Jane",
-            LastName = "Smith",
-            TenantId = betaOrgId,
-            Status = BARQ.Core.Enums.UserStatus.Active,
-            EmailVerified = true,
+            acmeUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = acmeEmail,
+                FirstName = "John",
+                LastName = "Doe",
+                TenantId = acmeOrg.Id,
+                Status = BARQ.Core.Enums.UserStatus.Active,
+                EmailVerified = true,
                 EmailConfirmed = true,
                 CreatedAt = DateTime.UtcNow,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
-        };
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
+            };
+            _context.Users.Add(acmeUser);
+        }
 
-        _context.Users.AddRange(acmeUser, betaUser);
-
-        var acmeProject = new Project
+        var betaUser = _context.Users.FirstOrDefault(u => u.Email == betaEmail);
+        if (betaUser == null)
         {
-            Id = acmeProjectId,
-            Name = "Acme Project",
-            Description = "Test project for Acme",
-            TenantId = acmeOrgId,
-            CreatedById = acmeUserId,
-            Status = Core.Enums.ProjectStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+            betaUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = betaEmail,
+                FirstName = "Jane",
+                LastName = "Smith",
+                TenantId = betaOrg.Id,
+                Status = BARQ.Core.Enums.UserStatus.Active,
+                EmailVerified = true,
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
+            };
+            _context.Users.Add(betaUser);
+        }
 
-        var betaProject = new Project
+        var acmeProject = _context.Projects.FirstOrDefault(p => p.Name == "Acme Project" && p.TenantId == acmeOrg.Id);
+        if (acmeProject == null)
         {
-            Id = betaProjectId,
-            Name = "Beta Project",
-            Description = "Test project for Beta",
-            TenantId = betaOrgId,
-            CreatedById = betaUserId,
-            Status = Core.Enums.ProjectStatus.Active,
-            CreatedAt = DateTime.UtcNow
-        };
+            acmeProject = new Project
+            {
+                Id = Guid.NewGuid(),
+                Name = "Acme Project",
+                Description = "Test project for Acme",
+                TenantId = acmeOrg.Id,
+                CreatedById = acmeUser.Id,
+                Status = Core.Enums.ProjectStatus.Active,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Projects.Add(acmeProject);
+        }
 
-        _context.Projects.AddRange(acmeProject, betaProject);
+        var betaProject = _context.Projects.FirstOrDefault(p => p.Name == "Beta Project" && p.TenantId == betaOrg.Id);
+        if (betaProject == null)
+        {
+            betaProject = new Project
+            {
+                Id = Guid.NewGuid(),
+                Name = "Beta Project",
+                Description = "Test project for Beta",
+                TenantId = betaOrg.Id,
+                CreatedById = betaUser.Id,
+                Status = Core.Enums.ProjectStatus.Active,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Projects.Add(betaProject);
+        }
 
         await _context.SaveChangesAsync();
     }

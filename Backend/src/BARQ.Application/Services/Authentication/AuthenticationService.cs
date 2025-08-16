@@ -53,7 +53,8 @@ public class AuthenticationService : IAuthenticationService
                 };
             }
 
-            var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
+            var emailLower = request.Email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             
             _logger.LogInformation("Authentication attempt for email: {Email}", request.Email);
@@ -304,7 +305,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user == null)
             {
@@ -343,7 +345,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user != null)
             {
@@ -368,7 +371,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user != null)
             {
