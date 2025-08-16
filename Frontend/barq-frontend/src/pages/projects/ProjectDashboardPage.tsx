@@ -109,7 +109,7 @@ export function ProjectDashboardPage() {
           }
         };
         setProject(mockProject);
-      } catch (err) {
+      } catch {
         setError('Failed to load project data');
       } finally {
         setIsLoading(false);
