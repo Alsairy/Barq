@@ -534,44 +534,6 @@ if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalI
         await next();
     });
 }
-if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
-{
-    app.Use(async (ctx, next) =>
-    {
-        var cookieCfg = ctx.RequestServices.GetRequiredService<IOptions<BARQ.API.Options.AuthCookieOptions>>().Value;
-        if (cookieCfg.Enabled && !ctx.Request.Cookies.ContainsKey("XSRF-TOKEN"))
-        {
-            ctx.Response.Cookies.Append("XSRF-TOKEN", Guid.NewGuid().ToString("N"), new CookieOptions
-            {
-                HttpOnly = false,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Path = "/"
-            });
-        }
-        await next();
-    });
-
-    app.Use(async (ctx, next) =>
-    {
-        var cookieCfg = ctx.RequestServices.GetRequiredService<IOptions<BARQ.API.Options.AuthCookieOptions>>().Value;
-        var m = ctx.Request.Method;
-        var unsafeMethod = m == "POST" || m == "PUT" || m == "PATCH" || m == "DELETE";
-        if (cookieCfg.Enabled && unsafeMethod)
-        {
-            if (!ctx.Request.Cookies.TryGetValue("XSRF-TOKEN", out var cookie) ||
-                !ctx.Request.Headers.TryGetValue("X-XSRF-TOKEN", out var header) ||
-                string.IsNullOrWhiteSpace(cookie) || string.IsNullOrWhiteSpace(header) ||
-                !string.Equals(cookie, header, StringComparison.Ordinal))
-            {
-                ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await ctx.Response.WriteAsync("Invalid CSRF token");
-                return;
-            }
-        }
-        await next();
-    });
-}
 app.UseRouting();
 app.UseCors("DefaultCors");
 app.UseResponseCompression();
