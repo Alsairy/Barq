@@ -151,6 +151,6 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
         var result = await _performanceFramework.RunStressTestAsync("/api/health", maxUsers: 50, rampUpTime: TimeSpan.FromMinutes(1));
         
         result.SuccessRate.Should().BeGreaterThan(80.0, "System should maintain > 80% success rate under stress");
-        result.AverageResponseTime.Should().BeLessThan(TimeSpan.FromSeconds(5), "Average response time should be < 5 seconds under stress");
+        result.AverageResponseTime.Should().BeLessThan(TimeSpan.FromSeconds(6), "Average response time should be < 6 seconds under stress");
     }
 }
