@@ -53,11 +53,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
-        acmeProject.Should().NotBeNull();
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var acmeProject = projects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
@@ -77,11 +77,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
-        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaProjectsContent);
-        var betaProject = betaProjects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
-        betaProject.Should().NotBeNull();
+        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaProjectsContent);
+        var betaProject = betaProjects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
+        betaProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        var betaProjectId = betaProject.Value.GetProperty("id").GetString();
+        var betaProjectId = betaProject.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -97,11 +97,11 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projects = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(projectsContent);
-        var acmeProject = projects?.FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
-        acmeProject.Should().NotBeNull();
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var acmeProject = projects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        var projectId = acmeProject.Value.GetProperty("id").GetString();
+        var projectId = acmeProject.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Project",
@@ -129,8 +129,8 @@ public class ProjectApiTests : IClassFixture<ApiTestFramework>
         var createResponse = await _factory.PostJsonAsync("/api/projects", createRequest, authToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createdProject = await _factory.DeserializeResponseAsync<dynamic>(createResponse);
-        var projectId = createdProject?.id?.ToString();
+        var createdProject = await _factory.DeserializeResponseAsync<System.Text.Json.JsonElement>(createResponse);
+        var projectId = createdProject.GetProperty("id").GetString();
 
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);

@@ -46,7 +46,7 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
             });
 
             services.RemoveAll<ITenantProvider>();
-            services.AddScoped<ITenantProvider, TestTenantProvider>();
+            services.AddSingleton<ITenantProvider, TestTenantProvider>();
             services.AddScoped<ITestDataSeeder, TestDataSeeder>();
         });
     }
@@ -54,6 +54,10 @@ public class ApiTestFramework : WebApplicationFactory<Program>, IAsyncLifetime
     public async Task InitializeAsync()
     {
         using var scope = Services.CreateScope();
+        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+        var testTenantId = Guid.NewGuid();
+        tenantProvider.SetTenantId(testTenantId);
+
         var context = scope.ServiceProvider.GetRequiredService<BarqDbContext>();
         await context.Database.EnsureCreatedAsync();
         
@@ -118,10 +122,12 @@ public interface ITestDataSeeder
 public class TestDataSeeder : ITestDataSeeder
 {
     private readonly BarqDbContext _context;
+    private readonly ITenantProvider _tenantProvider;
 
-    public TestDataSeeder(BarqDbContext context)
+    public TestDataSeeder(BarqDbContext context, ITenantProvider tenantProvider)
     {
         _context = context;
+        _tenantProvider = tenantProvider;
     }
 
     public async Task SeedTestDataAsync()
@@ -131,7 +137,7 @@ public class TestDataSeeder : ITestDataSeeder
             return;
         }
 
-        var acmeOrgId = Guid.NewGuid();
+        var acmeOrgId = _tenantProvider.GetTenantId();
         var betaOrgId = Guid.NewGuid();
         var acmeUserId = Guid.NewGuid();
         var betaUserId = Guid.NewGuid();
@@ -160,6 +166,8 @@ public class TestDataSeeder : ITestDataSeeder
 
         _context.Organizations.AddRange(acmeOrg, betaOrg);
 
+        _tenantProvider.SetTenantId(acmeOrgId);
+
         var acmeUser = new User
         {
             Id = acmeUserId,
@@ -169,7 +177,7 @@ public class TestDataSeeder : ITestDataSeeder
             TenantId = acmeOrgId,
             Status = BARQ.Core.Enums.UserStatus.Active,
             EmailVerified = true,
-                EmailConfirmed = true,
+            EmailConfirmed = true,
             CreatedAt = DateTime.UtcNow,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!")
         };

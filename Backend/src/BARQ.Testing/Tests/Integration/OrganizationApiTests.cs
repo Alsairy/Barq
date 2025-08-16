@@ -75,9 +75,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
-        acmeOrg.Should().NotBeNull();
+        using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
+        var orgsRoot = orgsDoc.RootElement;
+        orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var el in orgsRoot.EnumerateArray())
+        {
+            if (el.TryGetProperty("name", out var n) && n.GetString() == "Acme Corporation")
+            {
+                acmeOrg = el;
+                break;
+            }
+        }
+        acmeOrg.HasValue.Should().BeTrue();
         
         var organizationId = acmeOrg.Value.GetProperty("id").GetString();
         
@@ -109,9 +119,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var organizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(orgsContent);
-        var acmeOrg = organizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Acme Corporation");
-        acmeOrg.Should().NotBeNull();
+        using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
+        var orgsRoot = orgsDoc.RootElement;
+        orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        System.Text.Json.JsonElement? acmeOrg = null;
+        foreach (var el in orgsRoot.EnumerateArray())
+        {
+            if (el.TryGetProperty("name", out var n) && n.GetString() == "Acme Corporation")
+            {
+                acmeOrg = el;
+                break;
+            }
+        }
+        acmeOrg.HasValue.Should().BeTrue();
         
         var organizationId = acmeOrg.Value.GetProperty("id").GetString();
         var updateRequest = new
@@ -135,9 +155,19 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
-        var betaOrganizations = System.Text.Json.JsonSerializer.Deserialize<dynamic[]>(betaOrgsContent);
-        var betaOrg = betaOrganizations?.FirstOrDefault(o => o.GetProperty("name").GetString() == "Beta Industries");
-        betaOrg.Should().NotBeNull();
+        using var betaDoc = System.Text.Json.JsonDocument.Parse(betaOrgsContent);
+        var betaRoot = betaDoc.RootElement;
+        betaRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        System.Text.Json.JsonElement? betaOrg = null;
+        foreach (var el in betaRoot.EnumerateArray())
+        {
+            if (el.TryGetProperty("name", out var n) && n.GetString() == "Beta Industries")
+            {
+                betaOrg = el;
+                break;
+            }
+        }
+        betaOrg.HasValue.Should().BeTrue();
         
         var betaOrganizationId = betaOrg.Value.GetProperty("id").GetString();
         
