@@ -20,8 +20,11 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     {
         var loginRequest = new
         {
-            Email = "test@acme.com",
-            Password = "TestPassword123!"
+            Request = new
+            {
+                Email = "test@acme.com",
+                Password = "TestPassword123!"
+            }
         };
 
         var result = await _performanceFramework.RunConcurrencyTestAsync("/api/auth/login", loginRequest, 20);
