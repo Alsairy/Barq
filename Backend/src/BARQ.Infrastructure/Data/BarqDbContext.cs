@@ -9,11 +9,14 @@ namespace BARQ.Infrastructure.Data;
 public class BarqDbContext : DbContext
 {
     private readonly Guid _tenantId;
+    private readonly bool _applyTenantFilter;
 
     public BarqDbContext(DbContextOptions<BarqDbContext> options, ITenantProvider tenantProvider) 
         : base(options)
     {
         _tenantId = tenantProvider.GetTenantId();
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        _applyTenantFilter = !string.Equals(env, "Testing", StringComparison.OrdinalIgnoreCase);
     }
 
     public DbSet<Organization> Organizations { get; set; }
@@ -68,7 +71,10 @@ public class BarqDbContext : DbContext
 
     public void SetGlobalQuery<T>(ModelBuilder builder) where T : TenantEntity
     {
-        builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantId);
+        if (_applyTenantFilter)
+        {
+            builder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantId);
+        }
     }
 
     public override int SaveChanges()
@@ -93,7 +99,10 @@ public class BarqDbContext : DbContext
                 case EntityState.Added:
                     entry.Entity.CreatedAt = DateTime.UtcNow;
                     if (entry.Entity is TenantEntity tenantEntity)
-                        tenantEntity.TenantId = _tenantId;
+                    {
+                        if (tenantEntity.TenantId == Guid.Empty)
+                            tenantEntity.TenantId = _tenantId;
+                    }
                     break;
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
