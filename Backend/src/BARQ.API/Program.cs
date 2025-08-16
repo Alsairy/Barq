@@ -321,6 +321,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 if (cfg.Enabled && ctx.Request.Cookies.TryGetValue(cfg.Name, out var cookieToken) && !string.IsNullOrWhiteSpace(cookieToken))
                 {
+                    ctx.HttpContext.Items["AuthTokenSource"] = "Cookie";
                     ctx.Token = cookieToken;
                     return Task.CompletedTask;
                 }
@@ -328,9 +329,38 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var authHeader = ctx.Request.Headers["Authorization"].ToString();
                 if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                 {
+                    ctx.HttpContext.Items["AuthTokenSource"] = "Header";
                     ctx.Token = authHeader.Substring("Bearer ".Length).Trim();
                 }
+                else
+                {
+                    ctx.HttpContext.Items["AuthTokenSource"] = "None";
+                }
 
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                try
+                {
+                    var source = ctx.HttpContext.Items.TryGetValue("AuthTokenSource", out var v) ? v?.ToString() : "Unknown";
+                    Log.ForContext("AuthTokenSource", source)
+                       .ForContext("Path", ctx.HttpContext.Request.Path.Value)
+                       .Information("Authentication succeeded");
+                }
+                catch { }
+                return Task.CompletedTask;
+            },
+            OnChallenge = ctx =>
+            {
+                try
+                {
+                    var source = ctx.HttpContext.Items.TryGetValue("AuthTokenSource", out var v) ? v?.ToString() : "Unknown";
+                    Log.ForContext("AuthTokenSource", source)
+                       .ForContext("Path", ctx.HttpContext.Request.Path.Value)
+                       .Warning("Authentication challenge: {Error}", ctx.Error ?? "unauthorized");
+                }
+                catch { }
                 return Task.CompletedTask;
             }
         };
