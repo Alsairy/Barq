@@ -323,9 +323,9 @@ public class ProjectController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// </summary>
-    /// <param name="userId">User ID</param>
+    /// <summary>Remove a project member.</summary> (important-comment)
+    /// <param name="projectId">Project ID</param> (important-comment)
+    /// <param name="userId">User ID</param> (important-comment)
     [HttpDelete("{projectId:guid}/members/{userId:guid}")]
     public async Task<ActionResult<ApiResponse<ProjectMemberResponse>>> RemoveProjectMember(Guid projectId, Guid userId)
     {

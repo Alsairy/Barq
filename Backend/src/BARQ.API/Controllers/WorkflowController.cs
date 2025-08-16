@@ -154,11 +154,10 @@ public class WorkflowController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Cancel a workflow instance
-    /// </summary>
-    /// <param name="reason">Cancellation reason</param>
-    /// <returns>Cancellation result</returns>
+    /// <summary>Cancel a workflow instance.</summary> (important-comment)
+    /// <param name="workflowId">Workflow ID</param> (important-comment)
+    /// <param name="reason">Cancellation reason</param> (important-comment)
+    /// <returns>Cancellation result</returns> (important-comment)
     [HttpPost("{workflowId:guid}/cancel")]
     public async Task<ActionResult<ApiResponse<WorkflowCancellationResponse>>> CancelWorkflow(Guid workflowId, [FromQuery] string reason = "")
     {
