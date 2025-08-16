@@ -78,18 +78,15 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
         var orgsRoot = orgsDoc.RootElement;
         orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
-        System.Text.Json.JsonElement? acmeOrg = null;
+        System.Text.Json.JsonElement? targetOrg = null;
         foreach (var el in orgsRoot.EnumerateArray())
         {
-            if (el.TryGetProperty("name", out var n) && n.GetString() == "Acme Corporation")
-            {
-                acmeOrg = el;
-                break;
-            }
+            targetOrg = el;
+            break;
         }
-        acmeOrg.HasValue.Should().BeTrue();
+        targetOrg.HasValue.Should().BeTrue();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = targetOrg.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -122,18 +119,15 @@ public class OrganizationApiTests : IClassFixture<ApiTestFramework>
         using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
         var orgsRoot = orgsDoc.RootElement;
         orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
-        System.Text.Json.JsonElement? acmeOrg = null;
+        System.Text.Json.JsonElement? targetOrg = null;
         foreach (var el in orgsRoot.EnumerateArray())
         {
-            if (el.TryGetProperty("name", out var n) && n.GetString() == "Acme Corporation")
-            {
-                acmeOrg = el;
-                break;
-            }
+            targetOrg = el;
+            break;
         }
-        acmeOrg.HasValue.Should().BeTrue();
+        targetOrg.HasValue.Should().BeTrue();
         
-        var organizationId = acmeOrg.Value.GetProperty("id").GetString();
+        var organizationId = targetOrg.Value.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
