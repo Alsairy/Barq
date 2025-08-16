@@ -35,13 +35,8 @@ using BARQ.Infrastructure.Caching;
 using BARQ.Infrastructure.Performance;
 using BARQ.Infrastructure.BackgroundJobs;
 using BARQ.Infrastructure.Data.SeedData;
-using BARQ.Application.Services.Authentication;
 
 using BARQ.API.Swagger;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 

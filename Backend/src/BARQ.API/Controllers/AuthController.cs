@@ -99,16 +99,17 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<AuthenticationResponse>> Login([FromBody] LoginCommand command)
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> Login([FromBody] LoginCommand command)
     {
         try
         {
             var result = await _mediator.Send(command);
             if (!result.Success)
             {
-                return Unauthorized(new AuthenticationResponse
+                return Unauthorized(new ApiResponse<AuthenticationResponse>
                 {
                     Success = false,
+                    Data = result,
                     Message = result.Message
                 });
             }
@@ -142,9 +143,14 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new AuthenticationResponse
+            return BadRequest(new ApiResponse<AuthenticationResponse>
             {
                 Success = false,
+                Data = new AuthenticationResponse
+                {
+                    Success = false,
+                    Message = ex.Message
+                },
                 Message = ex.Message
             });
         }
