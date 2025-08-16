@@ -26,9 +26,17 @@ const authApi = axios.create({
 });
 
 authApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const hasAuthCookie = typeof document !== 'undefined' && document.cookie.includes('__Host-Auth=');
+  if (!hasAuthCookie) {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      if (!config.headers) config.headers = {};
+      (config.headers as any).Authorization = `Bearer ${token}`;
+    }
+  } else {
+    if (config.headers && 'Authorization' in config.headers) {
+      delete (config.headers as any).Authorization;
+    }
   }
   return config;
 });
