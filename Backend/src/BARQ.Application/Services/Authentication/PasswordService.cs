@@ -145,7 +145,7 @@ public class PasswordService : IPasswordService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resetting password with token: {Token}", request.ResetToken);
+            _logger.LogError(ex, "Error resetting password during password reset flow.");
             return new PasswordResetResponse
             {
                 Success = false,

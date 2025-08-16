@@ -1,5 +1,7 @@
 [allowlist]
 description = "Allowlist environment-specific placeholder config files (no real secrets). Keep minimal."
+# Rationale: These environment-specific files contain placeholder values only; real secrets are provided via environment variables in CI/CD.
+# This path-level allowlist is intentionally minimal to avoid blanket disables and will be revisited if secrets management changes.
 paths = [
   "Backend/src/BARQ.API/appsettings.Staging.json",
   "Backend/src/BARQ.API/appsettings.Production.json"
