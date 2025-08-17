@@ -1,46 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Plus, Play, Edit, Trash2, RefreshCw } from 'lucide-react';
-import { workflowApi } from '../../services/api';
-import { WorkflowTemplate, WorkflowInstance } from '../../types/api';
+import {
+  useGetWorkflowTemplatesQuery,
+  useGetWorkflowExecutionsQuery,
+  useExecuteWorkflowMutation,
+  WorkflowTemplate,
+  WorkflowExecution,
+} from '../../store/api/workflowApi';
 
 export function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<WorkflowTemplate[]>([]);
-  const [recentExecutions, setRecentExecutions] = useState<WorkflowInstance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: templates = [], isLoading, error, refetch } = useGetWorkflowTemplatesQuery({});
+  const { data: executions = [] } = useGetWorkflowExecutionsQuery({});
+  const [executeWorkflow] = useExecuteWorkflowMutation();
 
-  useEffect(() => {
-    fetchWorkflows();
-    fetchRecentExecutions();
-  }, []);
-
-  const fetchWorkflows = async () => {
-    try {
-      setIsLoading(true);
-      const response = await workflowApi.getWorkflowTemplates();
-      setWorkflows(response.data || []);
-      setError(null);
-    } catch (err) {
-      console.error('Failed to fetch workflows:', err);
-      setError('Failed to load workflows');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchRecentExecutions = async () => {
-    try {
-      const response = await workflowApi.getWorkflowInstances();
-      setRecentExecutions(response.data?.slice(0, 5) || []);
-    } catch (err) {
-      console.error('Failed to fetch recent executions:', err);
-    }
-  };
+  const workflows: WorkflowTemplate[] = templates || [];
+  const recentExecutions: WorkflowExecution[] = useMemo(
+    () => (executions || []).slice(0, 5),
+    [executions]
+  );
 
   const handleStartWorkflow = async (workflowId: string) => {
     try {
-      await workflowApi.startWorkflow(workflowId, {});
-      await fetchRecentExecutions();
+      await executeWorkflow({ templateId: workflowId, context: {} }).unwrap();
+      await refetch();
     } catch (err) {
       console.error('Failed to start workflow:', err);
     }
@@ -99,7 +81,7 @@ export function WorkflowsPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
+          {(error as any)?.toString?.() ?? 'Failed to load workflows'}
         </div>
       )}
 
@@ -108,8 +90,8 @@ export function WorkflowsPage() {
           <div key={workflow.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">{workflow.name}</h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(workflow.isActive ? 'active' : 'inactive')}`}>
-                {workflow.isActive ? 'Active' : 'Inactive'}
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(workflow.isPublic ? 'active' : 'inactive')}`}>
+                {workflow.isPublic ? 'Public' : 'Private'}
               </span>
             </div>
             
@@ -119,7 +101,7 @@ export function WorkflowsPage() {
             
             <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
               <span>{workflow.version || 'v1.0'}</span>
-              <span>Updated: {formatTimeAgo(workflow.updatedAt)}</span>
+              <span>Updated: {formatTimeAgo((workflow as any).lastModified)}</span>
             </div>
             
             <div className="mb-4">
@@ -146,7 +128,7 @@ export function WorkflowsPage() {
                 </button>
               </div>
               <span className="text-xs text-gray-500">
-                SLA: {workflow.slaHours || 24}h
+                ID: {workflow.id}
               </span>
             </div>
           </div>
@@ -172,7 +154,7 @@ export function WorkflowsPage() {
               {recentExecutions.map((execution) => (
                 <tr key={execution.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {execution.workflowName || `Workflow ${execution.workflowTemplateId}`}
+                    {execution.workflowName || `Workflow ${execution.workflowId}`}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(execution.status)}`}>
