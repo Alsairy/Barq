@@ -67,8 +67,7 @@ public class PasswordService : IPasswordService
             {
                 Success = true,
                 Message = "Password reset link has been sent to your email address.",
-                ResetInitiated = true,
-                ResetToken = resetToken // In production, don't return the token
+                ResetInitiated = true
             };
         }
         catch (Exception ex)
