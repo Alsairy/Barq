@@ -443,7 +443,7 @@ builder.Services.AddCors(options =>
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
-    options.AddPolicy("DefaultCors", policy =>
+    options.AddPolicy("Default", policy =>
     {
         if (allowedOrigins.Length > 0)
         {
@@ -457,7 +457,7 @@ builder.Services.AddCors(options =>
         if (builder.Environment.IsProduction())
         {
             policy.WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                  .WithHeaders("Accept", "Content-Type", "Authorization")
+                  .WithHeaders("Accept", "Content-Type", "Authorization", "X-XSRF-TOKEN", "X-Tenant-ID", "X-Correlation-ID")
                   .WithExposedHeaders("X-Pagination", "X-Total-Count", "X-Correlation-ID")
                   .AllowCredentials()
                   .SetPreflightMaxAge(TimeSpan.FromHours(12));
@@ -594,8 +594,8 @@ if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalI
                 string.IsNullOrWhiteSpace(cookie) || string.IsNullOrWhiteSpace(header) ||
                 !string.Equals(cookie, header, StringComparison.Ordinal))
             {
-                ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await ctx.Response.WriteAsync("Invalid CSRF token");
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await ctx.Response.WriteAsync("CSRF token missing or invalid");
                 return;
             }
         }
@@ -603,7 +603,7 @@ if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalI
     });
 }
 app.UseRouting();
-app.UseCors("DefaultCors");
+app.UseCors("Default");
 app.UseResponseCompression();
 if (!app.Environment.EnvironmentName.Equals("Testing", StringComparison.OrdinalIgnoreCase))
     app.UseHttpsRedirection();
