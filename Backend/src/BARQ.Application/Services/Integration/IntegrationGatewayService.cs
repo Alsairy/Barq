@@ -241,7 +241,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         }
     }
 
-    public async Task<IEnumerable<IntegrationEndpoint>> GetRegisteredEndpointsAsync()
+    public Task<IEnumerable<IntegrationEndpoint>> GetRegisteredEndpointsAsync()
     {
         try
         {
@@ -251,12 +251,13 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             _logger.LogDebug("Retrieved {Count} endpoints for tenant {TenantId}", 
                 tenantEndpoints.Count, tenantId);
 
-            return await Task.FromResult(tenantEndpoints);
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationEndpoint>)tenantEndpoints);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving registered endpoints");
-            return new List<IntegrationEndpoint>();
+            var emptyEndpoints = new List<IntegrationEndpoint>();
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationEndpoint>)emptyEndpoints);
         }
     }
 
@@ -319,7 +320,7 @@ public class IntegrationGatewayService : IIntegrationGatewayService
         }
     }
 
-    public async Task<IEnumerable<IntegrationLog>> GetIntegrationLogsAsync(DateTime? fromDate = null, DateTime? toDate = null)
+    public Task<IEnumerable<IntegrationLog>> GetIntegrationLogsAsync(DateTime? fromDate = null, DateTime? toDate = null)
     {
         try
         {
@@ -332,12 +333,13 @@ public class IntegrationGatewayService : IIntegrationGatewayService
             if (toDate.HasValue)
                 logs = logs.Where(l => l.CreatedAt <= toDate.Value);
 
-            return await Task.FromResult(logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList());
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationLog>)logs.OrderByDescending(l => l.CreatedAt).Take(1000).ToList());
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving integration logs");
-            return new List<IntegrationLog>();
+            var emptyLogs = new List<IntegrationLog>();
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<IntegrationLog>)emptyLogs);
         }
     }
 

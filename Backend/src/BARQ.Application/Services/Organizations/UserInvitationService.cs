@@ -178,26 +178,48 @@ public class UserInvitationService : IUserInvitationService
         }
     }
 
-    public Task<UserInvitationResponse> ResendInvitationAsync(Guid invitationId)
+    public async Task<UserInvitationResponse> ResendInvitationAsync(Guid invitationId)
     {
         try
         {
             _logger.LogInformation("Resending invitation: {InvitationId}", invitationId);
 
-            return Task.FromResult(new UserInvitationResponse
+            var existingInvitation = await _userRepository.FirstOrDefaultAsync(u => 
+                u.Id == invitationId && u.EmailVerificationToken != null);
+            
+            if (existingInvitation == null)
+            {
+                return new UserInvitationResponse
+                {
+                    Success = false,
+                    Message = "Invitation not found"
+                };
+            }
+
+            var newToken = GenerateInvitationToken();
+            existingInvitation.EmailVerificationToken = newToken;
+            existingInvitation.EmailVerificationTokenExpiry = DateTime.UtcNow.AddDays(7);
+            existingInvitation.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(existingInvitation);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Invitation resent successfully: {InvitationId}", invitationId);
+
+            return new UserInvitationResponse
             {
                 Success = true,
                 Message = "Invitation resent successfully"
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error resending invitation: {InvitationId}", invitationId);
-            return Task.FromResult(new UserInvitationResponse
+            return new UserInvitationResponse
             {
                 Success = false,
                 Message = "Failed to resend invitation"
-            });
+            };
         }
     }
 
@@ -238,41 +260,88 @@ public class UserInvitationService : IUserInvitationService
         }
     }
 
-    public Task<UserInvitationResponse> CancelInvitationAsync(Guid invitationId)
+    public async Task<UserInvitationResponse> CancelInvitationAsync(Guid invitationId)
     {
         try
         {
             _logger.LogInformation("Cancelling invitation: {InvitationId}", invitationId);
 
-            return Task.FromResult(new UserInvitationResponse
+            var invitation = await _userRepository.FirstOrDefaultAsync(u => 
+                u.Id == invitationId && u.EmailVerificationToken != null);
+            
+            if (invitation == null)
+            {
+                return new UserInvitationResponse
+                {
+                    Success = false,
+                    Message = "Invitation not found"
+                };
+            }
+
+            invitation.EmailVerificationToken = null;
+            invitation.EmailVerificationTokenExpiry = null;
+            invitation.UpdatedAt = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(invitation);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation("Invitation cancelled successfully: {InvitationId}", invitationId);
+
+            return new UserInvitationResponse
             {
                 Success = true,
                 Message = "Invitation cancelled successfully"
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling invitation: {InvitationId}", invitationId);
-            return Task.FromResult(new UserInvitationResponse
+            return new UserInvitationResponse
             {
                 Success = false,
                 Message = "Failed to cancel invitation"
-            });
+            };
         }
     }
 
-    public Task<IEnumerable<UserInvitationDto>> GetPendingInvitationsAsync(Guid organizationId)
+    public async Task<IEnumerable<UserInvitationDto>> GetPendingInvitationsAsync(Guid organizationId)
     {
         try
         {
             _logger.LogInformation("Retrieving pending invitations for organization: {OrganizationId}", organizationId);
 
-            return Task.FromResult<IEnumerable<UserInvitationDto>>(new List<UserInvitationDto>());
+            var organization = await _organizationRepository.GetByIdAsync(organizationId);
+            if (organization == null)
+            {
+                return new List<UserInvitationDto>();
+            }
+
+            var pendingUsers = await _userRepository.FindAsync(u => 
+                u.TenantId == organizationId && 
+                u.EmailVerificationToken != null &&
+                u.EmailVerificationTokenExpiry > DateTime.UtcNow);
+
+            var invitations = pendingUsers.Select(u => new UserInvitationDto
+            {
+                Id = u.Id,
+                Email = u.Email,
+                OrganizationId = organizationId,
+                OrganizationName = organization.Name,
+                InvitedBy = Guid.Empty,
+                InvitedByName = "System",
+                InvitedAt = u.CreatedAt,
+                ExpiresAt = u.EmailVerificationTokenExpiry ?? DateTime.UtcNow.AddDays(7),
+                IsAccepted = false,
+                Status = "Pending",
+                AssignedRoles = new List<string>()
+            });
+
+            return invitations;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving pending invitations for organization: {OrganizationId}", organizationId);
-            return Task.FromResult<IEnumerable<UserInvitationDto>>(new List<UserInvitationDto>());
+            return new List<UserInvitationDto>();
         }
     }
 
@@ -343,17 +412,33 @@ public class UserInvitationService : IUserInvitationService
         }
     }
 
-    public Task<bool> IsInvitationValidAsync(string invitationToken)
+    public async Task<bool> IsInvitationValidAsync(string invitationToken)
     {
         try
         {
             _logger.LogInformation("Validating invitation token: {Token}", invitationToken);
-            return Task.FromResult(true);
+
+            var user = await _userRepository.FirstOrDefaultAsync(u => 
+                u.EmailVerificationToken == invitationToken);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Invalid invitation token: {Token}", invitationToken);
+                return false;
+            }
+
+            if (user.EmailVerificationTokenExpiry <= DateTime.UtcNow)
+            {
+                _logger.LogWarning("Expired invitation token: {Token}", invitationToken);
+                return false;
+            }
+
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating invitation token: {Token}", invitationToken);
-            return Task.FromResult(false);
+            return false;
         }
     }
 

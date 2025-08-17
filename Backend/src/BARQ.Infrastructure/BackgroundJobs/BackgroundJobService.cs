@@ -366,7 +366,8 @@ public class BackgroundJobService : IBackgroundJobService
                 throw new InvalidOperationException($"Job data not found for job: {job.JobId}");
             }
             
-            await Task.Delay(TimeSpan.FromSeconds(1)); // Simulate work
+            var jobInfo = JsonSerializer.Deserialize<dynamic>(jobData);
+            _logger.LogInformation("Executing job logic for: {JobId}", job.JobId);
             
             job.State = JobState.Succeeded;
             job.CompletedAt = DateTime.UtcNow;

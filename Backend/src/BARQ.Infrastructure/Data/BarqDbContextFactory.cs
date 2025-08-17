@@ -1,50 +1,42 @@
+using System;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using BARQ.Core.Services;
 
-namespace BARQ.Infrastructure.Data;
-
-public class BarqDbContextFactory : IDesignTimeDbContextFactory<BarqDbContext>
+namespace BARQ.Infrastructure.Data
 {
-    public BarqDbContext CreateDbContext(string[] args)
+    public class BarqDbContextFactory : IDesignTimeDbContextFactory<BarqDbContext>
     {
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../BARQ.API"))
-            .AddJsonFile("appsettings.json")
-            .AddJsonFile("appsettings.Development.json", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
-
-        var builder = new DbContextOptionsBuilder<BarqDbContext>();
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        
-        builder.UseNpgsql(connectionString, options => 
+        private class DesignTimeTenantProvider : ITenantProvider
         {
-            options.EnableRetryOnFailure();
-            options.CommandTimeout(60);
-        });
+            private Guid _tenantId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            private string _tenantName = "DefaultTenant";
+            public Guid GetTenantId() => _tenantId;
+            public void SetTenantId(Guid tenantId) => _tenantId = tenantId;
+            public string GetTenantName() => _tenantName;
+            public void SetTenantName(string tenantName) => _tenantName = tenantName;
+            public bool IsMultiTenant() => false;
+            public void ClearTenantContext() { _tenantId = Guid.Empty; _tenantName = string.Empty; }
+            public Guid GetCurrentUserId() => Guid.Empty;
+        }
 
-        var tenantProvider = new DesignTimeTenantProvider();
-        return new BarqDbContext(builder.Options, tenantProvider);
+        public BarqDbContext CreateDbContext(string[] args)
+        {
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(AppContext.BaseDirectory)
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile($"appsettings.{environment}.json", optional: true)
+                .AddEnvironmentVariables();
+
+            var configuration = builder.Build();
+
+            var optionsBuilder = new DbContextOptionsBuilder<BarqDbContext>();
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            optionsBuilder.UseSqlServer(connectionString);
+
+            return new BarqDbContext(optionsBuilder.Options, new DesignTimeTenantProvider());
+        }
     }
-}
-
-public class DesignTimeTenantProvider : ITenantProvider
-{
-    private Guid _tenantId = Guid.Empty;
-    private string _tenantName = "Design Time";
-
-    public Guid GetTenantId() => _tenantId;
-    public string GetTenantName() => _tenantName;
-    public bool IsMultiTenant() => false;
-    public void ClearTenantContext() 
-    { 
-        _tenantId = Guid.Empty;
-        _tenantName = string.Empty;
-    }
-    public Guid GetCurrentUserId() => Guid.Empty;
-    public void SetTenantId(Guid tenantId) => _tenantId = tenantId;
-    public void SetTenantName(string tenantName) => _tenantName = tenantName;
 }

@@ -73,7 +73,6 @@ export function ProjectDashboardPage() {
       try {
         setIsLoading(true);
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
         const mockProject: ProjectMetrics = {
           id: projectId || '1',
           name: 'BARQ Platform Development',
@@ -109,7 +108,6 @@ export function ProjectDashboardPage() {
             low: 3
           }
         };
-        
         setProject(mockProject);
       } catch {
         setError('Failed to load project data');

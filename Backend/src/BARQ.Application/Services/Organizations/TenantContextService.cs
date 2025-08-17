@@ -120,26 +120,53 @@ public class TenantContextService : ITenantContextService
         }
     }
 
-    public Task<TenantIsolationResponse> EnforceTenantIsolationAsync(Guid tenantId, string operation, object context)
+    public async Task<TenantIsolationResponse> EnforceTenantIsolationAsync(Guid tenantId, string operation, object context)
     {
         try
         {
             _logger.LogInformation("Enforcing tenant isolation for tenant: {TenantId}, Operation: {Operation}", tenantId, operation);
 
-            return Task.FromResult(new TenantIsolationResponse
+            var organization = await _organizationRepository.GetByIdAsync(tenantId);
+            if (organization == null)
+            {
+                return new TenantIsolationResponse
+                {
+                    Success = false,
+                    Message = "Tenant not found"
+                };
+            }
+
+            var userCount = await _userRepository.CountAsync(u => u.TenantId == tenantId);
+            var limits = GetTenantLimits(organization.SubscriptionPlan);
+            
+            if (operation == "CREATE_USER" && limits.ContainsKey("MaxUsers") && limits["MaxUsers"] > 0)
+            {
+                if (userCount >= limits["MaxUsers"])
+                {
+                    return new TenantIsolationResponse
+                    {
+                        Success = false,
+                        Message = "User limit exceeded for this tenant"
+                    };
+                }
+            }
+
+            _logger.LogInformation("Tenant isolation enforced successfully for tenant: {TenantId}", tenantId);
+
+            return new TenantIsolationResponse
             {
                 Success = true,
                 Message = "Tenant isolation enforced successfully"
-            });
+            };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error enforcing tenant isolation: {TenantId}, {Operation}", tenantId, operation);
-            return Task.FromResult(new TenantIsolationResponse
+            return new TenantIsolationResponse
             {
                 Success = false,
                 Message = "Failed to enforce tenant isolation"
-            });
+            };
         }
     }
 

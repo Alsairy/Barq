@@ -150,7 +150,7 @@ public class RestProtocolAdapter : IProtocolAdapter
                 return false;
             }
 
-            return await Task.FromResult(true);
+            return true;
         }
         catch (Exception ex)
         {

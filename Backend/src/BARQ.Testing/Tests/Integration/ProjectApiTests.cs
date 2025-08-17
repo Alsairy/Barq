@@ -7,10 +7,13 @@ using Xunit;
 namespace BARQ.Testing.Tests.Integration
 {
 [Collection("ProjectApiTestCollection")]
-public class ProjectApiTests : IsolatedApiTestBase
+public class ProjectApiTests : IClassFixture<ApiTestFramework>
 {
-    public ProjectApiTests(ApiTestFramework factory) : base(factory)
+    private readonly ApiTestFramework _factory;
+
+    public ProjectApiTests(ApiTestFramework factory)
     {
+        _factory = factory;
     }
 
     [Fact]
@@ -50,36 +53,11 @@ public class ProjectApiTests : IsolatedApiTestBase
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var acmeProject = projects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        System.Text.Json.JsonElement projectsArray;
-        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            projectsArray = projectsJson;
-        }
-        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
-        }
-        
-        System.Text.Json.JsonElement? acmeProject = null;
-        foreach (var project in projectsArray.EnumerateArray())
-        {
-            if (project.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Acme Project")
-            {
-                acmeProject = project;
-                break;
-            }
-        }
-        acmeProject.Should().NotBeNull();
-        
-        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var projectId = acmeProject.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{projectId}", authToken);
 
@@ -99,36 +77,11 @@ public class ProjectApiTests : IsolatedApiTestBase
         betaProjectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaProjectsContent = await betaProjectsResponse.Content.ReadAsStringAsync();
-        var betaProjectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaProjectsContent);
+        var betaProjects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaProjectsContent);
+        var betaProject = betaProjects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Beta Project");
+        betaProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        System.Text.Json.JsonElement betaProjectsArray;
-        if (betaProjectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            betaProjectsArray = betaProjectsJson;
-        }
-        else if (betaProjectsJson.TryGetProperty("data", out betaProjectsArray) && betaProjectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {betaProjectsContent}");
-        }
-        
-        System.Text.Json.JsonElement? betaProject = null;
-        foreach (var project in betaProjectsArray.EnumerateArray())
-        {
-            if (project.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Beta Project")
-            {
-                betaProject = project;
-                break;
-            }
-        }
-        betaProject.Should().NotBeNull();
-        
-        var betaProjectId = betaProject.HasValue && betaProject.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var betaProjectId = betaProject.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/projects/{betaProjectId}", acmeToken);
 
@@ -144,36 +97,11 @@ public class ProjectApiTests : IsolatedApiTestBase
         projectsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var projectsContent = await projectsResponse.Content.ReadAsStringAsync();
-        var projectsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var projects = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(projectsContent);
+        var acmeProject = projects.EnumerateArray().FirstOrDefault(p => p.GetProperty("name").GetString() == "Acme Project");
+        acmeProject.ValueKind.Should().NotBe(System.Text.Json.JsonValueKind.Undefined);
         
-        System.Text.Json.JsonElement projectsArray;
-        if (projectsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            projectsArray = projectsJson;
-        }
-        else if (projectsJson.TryGetProperty("data", out projectsArray) && projectsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {projectsContent}");
-        }
-        
-        System.Text.Json.JsonElement? acmeProject = null;
-        foreach (var project in projectsArray.EnumerateArray())
-        {
-            if (project.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Acme Project")
-            {
-                acmeProject = project;
-                break;
-            }
-        }
-        acmeProject.Should().NotBeNull();
-        
-        var projectId = acmeProject.HasValue && acmeProject.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var projectId = acmeProject.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Project",
@@ -201,8 +129,7 @@ public class ProjectApiTests : IsolatedApiTestBase
         var createResponse = await _factory.PostJsonAsync("/api/projects", createRequest, authToken);
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var createdProjectContent = await createResponse.Content.ReadAsStringAsync();
-        var createdProject = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(createdProjectContent);
+        var createdProject = await _factory.DeserializeResponseAsync<System.Text.Json.JsonElement>(createResponse);
         var projectId = createdProject.GetProperty("id").GetString();
 
         var client = _factory.CreateClient();

@@ -59,11 +59,22 @@ jobs:
     - name: Build Backend
       run: dotnet build Backend/BARQ.sln --no-restore --configuration Release
 
-    - name: Run Backend Tests
-      run: dotnet test Backend/BARQ.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+    - name: Run Backend Tests (with TRX)
+      run: |
+        dotnet test Backend/BARQ.sln --no-build --configuration Release \
+          --collect:"XPlat Code Coverage" \
+          --logger "trx;LogFileName=test-results.trx" \
+          --logger "console;verbosity=detailed"
       env:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=barq_test;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;MultipleActiveResultSets=true;Encrypt=false;Connection Timeout=60;Command Timeout=300;"
         Redis__ConnectionString: "localhost:6379"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: dotnet-test-results
+        path: "**/TestResults/*.trx"
+        if-no-files-found: warn
 
     - name: Install Frontend dependencies
       run: npm ci

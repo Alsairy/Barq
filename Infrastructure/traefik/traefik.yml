@@ -1,0 +1,94 @@
+# Traefik configuration for BARQ platform
+# This configuration implements CORS middleware before basic auth
+# and creates an unauthenticated OPTIONS router for preflight requests
+
+http:
+  middlewares:
+    barq-cors:
+      headers:
+        accessControlAllowOriginList:
+          - "https://barq-application-plu4nmbz.devinapps.com"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "Authorization"
+          - "Content-Type"
+          - "X-Tenant-ID"
+          - "X-Correlation-ID"
+          - "X-Requested-With"
+          - "DNT"
+          - "User-Agent"
+          - "If-Modified-Since"
+          - "Cache-Control"
+          - "Range"
+        accessControlAllowCredentials: true
+        addVaryHeader: true
+
+    barq-basic-auth:
+      basicAuth:
+        users:
+          - "user:$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"  # user:6b3acd7c5ad67439f79fe499f0a47eea
+
+  routers:
+    # High-priority router for OPTIONS preflight requests (unauthenticated)
+    barq-api-preflight:
+      rule: "Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`) && Method(`OPTIONS`)"
+      service: noop@internal
+      entryPoints:
+        - websecure
+      priority: 100
+      middlewares:
+        - barq-cors
+
+    # Main API router with authentication
+    barq-api:
+      rule: "Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`)"
+      service: barq-api
+      entryPoints:
+        - websecure
+      middlewares:
+        # CORS must run before basic auth
+        - barq-cors
+        - barq-basic-auth
+
+  services:
+    barq-api:
+      loadBalancer:
+        servers:
+          - url: "http://localhost:5000"
+
+# TLS configuration
+tls:
+  options:
+    default:
+      minVersion: "VersionTLS12"
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+
+# Entry points
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entrypoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+# Certificate resolvers
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@barq.com
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web

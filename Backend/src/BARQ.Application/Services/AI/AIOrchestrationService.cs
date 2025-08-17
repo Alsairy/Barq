@@ -275,20 +275,24 @@ public class AIOrchestrationService : IAIOrchestrationService
 
             var isValid = !validationErrors.Any();
 
-            return Task.FromResult(new AIProviderValidationResult
+            var result = new AIProviderValidationResult
             {
                 IsValid = isValid,
                 Errors = validationErrors
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => result);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error validating provider configuration: {ProviderId}", configuration.Id);
-            return Task.FromResult(new AIProviderValidationResult
+            var result = new AIProviderValidationResult
             {
                 IsValid = false,
                 Errors = new List<string> { ex.Message }
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => result);
         }
     }
 
@@ -406,7 +410,7 @@ public class AIOrchestrationService : IAIOrchestrationService
         {
             var startTime = DateTime.UtcNow;
 
-            await Task.Delay(1000, cancellationToken);
+            var resultData = await ExecuteAITaskWithProvider(task, provider, cancellationToken);
 
             var endTime = DateTime.UtcNow;
             var executionTime = endTime - startTime;
@@ -415,10 +419,10 @@ public class AIOrchestrationService : IAIOrchestrationService
             {
                 TaskId = task.Id,
                 Success = true,
-                ResultData = $"Mock AI task result for {task.TaskType}",
+                ResultData = resultData,
                 ExecutionTimeMs = (long)executionTime.TotalMilliseconds,
-                Cost = 0.10m,
-                Provider = AIProvider.OpenAI
+                Cost = CalculateTaskCost(task, provider, executionTime),
+                Provider = provider.Provider
             };
 
             await LogAuditAsync("AI_TASK_EXECUTED", $"AI task executed with provider {provider.Name}", task.Id);
@@ -991,5 +995,253 @@ public class AIOrchestrationService : IAIOrchestrationService
             _logger.LogError(ex, "Error getting cost analysis");
             return new { Error = ex.Message };
         }
+    }
+
+    private async Task<string> ExecuteAITaskWithProvider(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
+    {
+        try
+        {
+            switch (task.TaskType)
+            {
+                case AITaskType.TextGeneration:
+                    return await ExecuteTextGenerationTask(task, provider, cancellationToken);
+                case AITaskType.TextAnalysis:
+                    return await ExecuteTextAnalysisTask(task, provider, cancellationToken);
+                case AITaskType.DocumentProcessing:
+                    return await ExecuteDocumentProcessingTask(task, provider, cancellationToken);
+                case AITaskType.DataExtraction:
+                    return await ExecuteDataExtractionTask(task, provider, cancellationToken);
+                default:
+                    return $"Task type {task.TaskType} completed successfully with provider {provider.Name}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing AI task {TaskId} with provider {ProviderId}", task.Id, provider.Id);
+            return $"Error executing task: {ex.Message}";
+        }
+    }
+
+    private async Task<string> ExecuteTextGenerationTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
+    {
+        var prompt = task.InputData?.ToString() ?? "Generate text based on the provided context";
+        
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {provider.ApiKey}");
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+            var parameters = ParseParameters(task.Parameters);
+            var requestBody = new
+            {
+                model = provider.DefaultModel ?? "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                max_tokens = parameters.ContainsKey("max_tokens") ? 
+                    Convert.ToInt32(parameters["max_tokens"]) : (provider.MaxTokens ?? 1000),
+                temperature = parameters.ContainsKey("temperature") ? 
+                    Convert.ToDouble(parameters["temperature"]) : 0.7
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync(provider.EndpointUrl, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseJson = System.Text.Json.JsonDocument.Parse(responseContent);
+            
+            return responseJson.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "No response generated";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing text generation task with provider {ProviderId}", provider.Id);
+            throw new InvalidOperationException($"Text generation failed: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string> ExecuteTextAnalysisTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
+    {
+        var text = task.InputData?.ToString() ?? "";
+        
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {provider.ApiKey}");
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+            var analysisPrompt = $"Analyze the following text for sentiment, key topics, and entities: {text}";
+            var requestBody = new
+            {
+                model = provider.DefaultModel ?? "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new { role = "system", content = "You are an expert text analyst. Provide detailed analysis including sentiment, confidence score, key topics, and named entities." },
+                    new { role = "user", content = analysisPrompt }
+                },
+                max_tokens = 500,
+                temperature = 0.3
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync(provider.EndpointUrl, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseJson = System.Text.Json.JsonDocument.Parse(responseContent);
+            
+            return responseJson.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "Analysis could not be completed";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing text analysis task with provider {ProviderId}", provider.Id);
+            throw new InvalidOperationException($"Text analysis failed: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string> ExecuteDocumentProcessingTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {provider.ApiKey}");
+            httpClient.Timeout = TimeSpan.FromSeconds(60);
+
+            var documentContent = task.InputData?.ToString() ?? "";
+            var processingPrompt = $"Process this document and extract key sections, entities, and action items: {documentContent}";
+            
+            var requestBody = new
+            {
+                model = provider.DefaultModel ?? "gpt-4",
+                messages = new[]
+                {
+                    new { role = "system", content = "You are a document processing expert. Extract and organize key information from documents including sections, entities, and actionable items." },
+                    new { role = "user", content = processingPrompt }
+                },
+                max_tokens = provider.MaxTokens ?? 1500,
+                temperature = 0.2
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync(provider.EndpointUrl, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseJson = System.Text.Json.JsonDocument.Parse(responseContent);
+            
+            return responseJson.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "Document processing could not be completed";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing document processing task with provider {ProviderId}", provider.Id);
+            throw new InvalidOperationException($"Document processing failed: {ex.Message}", ex);
+        }
+    }
+
+    private async Task<string> ExecuteDataExtractionTask(AITask task, AIProviderConfiguration provider, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {provider.ApiKey}");
+            httpClient.Timeout = TimeSpan.FromSeconds(45);
+
+            var sourceData = task.InputData?.ToString() ?? "";
+            var extractionPrompt = $"Extract structured data from the following source: {sourceData}";
+            
+            var requestBody = new
+            {
+                model = provider.DefaultModel ?? "gpt-4",
+                messages = new[]
+                {
+                    new { role = "system", content = "You are a data extraction specialist. Extract structured information and provide accuracy metrics for the extraction process." },
+                    new { role = "user", content = extractionPrompt }
+                },
+                max_tokens = provider.MaxTokens ?? 1000,
+                temperature = 0.1
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync(provider.EndpointUrl, content, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseJson = System.Text.Json.JsonDocument.Parse(responseContent);
+            
+            return responseJson.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? "Data extraction could not be completed";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing data extraction task with provider {ProviderId}", provider.Id);
+            throw new InvalidOperationException($"Data extraction failed: {ex.Message}", ex);
+        }
+    }
+
+    private Dictionary<string, object> ParseParameters(string? parametersJson)
+    {
+        if (string.IsNullOrEmpty(parametersJson))
+            return new Dictionary<string, object>();
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(parametersJson) 
+                   ?? new Dictionary<string, object>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse parameters JSON: {Parameters}", parametersJson);
+            return new Dictionary<string, object>();
+        }
+    }
+
+    private decimal CalculateTaskCost(AITask task, AIProviderConfiguration provider, TimeSpan executionTime)
+    {
+        var baseCost = task.TaskType switch
+        {
+            AITaskType.TextGeneration => 0.15m,
+            AITaskType.TextAnalysis => 0.08m,
+            AITaskType.DocumentProcessing => 0.25m,
+            AITaskType.DataExtraction => 0.20m,
+            _ => 0.10m
+        };
+
+        var providerMultiplier = provider.Provider switch
+        {
+            AIProvider.OpenAI => 1.2m,
+            AIProvider.Azure => 1.1m,
+            AIProvider.AWS => 1.0m,
+            AIProvider.Google => 1.05m,
+            _ => 1.0m
+        };
+
+        var executionMultiplier = executionTime.TotalSeconds > 30 ? 1.5m : 1.0m;
+
+        return baseCost * providerMultiplier * executionMultiplier;
     }
 }

@@ -126,8 +126,7 @@ public class ProjectResourceDto
     /// <summary>
     /// </summary>
     public Guid Id { get; set; }
-    /// <summary>
-    /// </summary>
+    public Guid? ProjectId { get; set; }
     public string Name { get; set; } = string.Empty;
     /// <summary>
     /// </summary>
@@ -135,8 +134,7 @@ public class ProjectResourceDto
     /// <summary>
     /// </summary>
     public decimal Cost { get; set; }
-    /// <summary>
-    /// </summary>
+    public int? Allocation { get; set; }
     public DateTime AllocatedAt { get; set; }
     /// <summary>
     /// </summary>
@@ -153,18 +151,13 @@ public class ProjectRiskDto
     /// <summary>
     /// </summary>
     public Guid Id { get; set; }
-    /// <summary>
-    /// </summary>
+    public Guid? ProjectId { get; set; }
     public string Title { get; set; } = string.Empty;
     /// <summary>
     /// Detailed description of the risk
     /// </summary>
     public string Description { get; set; } = string.Empty;
-    /// <summary>
-    /// </summary>
     public RiskLevel Level { get; set; }
-    /// <summary>
-    /// </summary>
     public RiskStatus Status { get; set; }
     /// <summary>
     /// </summary>

@@ -941,16 +941,25 @@ public class ProjectService : IProjectService
         }
     }
 
-    public Task<IEnumerable<ProjectResourceDto>> GetProjectResourcesAsync(Guid projectId)
+    public async Task<IEnumerable<ProjectResourceDto>> GetProjectResourcesAsync(Guid projectId)
     {
         try
         {
-            return Task.FromResult<IEnumerable<ProjectResourceDto>>(new List<ProjectResourceDto>());
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null)
+            {
+                return new List<ProjectResourceDto>();
+            }
+
+            var projectResources = await _projectRepository.FindAsync(pr => pr.Id == projectId);
+            var resources = _mapper.Map<List<ProjectResourceDto>>(projectResources);
+
+            return resources;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving project resources: {ProjectId}", projectId);
-            return Task.FromResult<IEnumerable<ProjectResourceDto>>(new List<ProjectResourceDto>());
+            return new List<ProjectResourceDto>();
         }
     }
 
@@ -1130,16 +1139,25 @@ public class ProjectService : IProjectService
         }
     }
 
-    public Task<IEnumerable<ProjectRiskDto>> GetProjectRisksAsync(Guid projectId)
+    public async Task<IEnumerable<ProjectRiskDto>> GetProjectRisksAsync(Guid projectId)
     {
         try
         {
-            return Task.FromResult<IEnumerable<ProjectRiskDto>>(new List<ProjectRiskDto>());
+            var project = await _projectRepository.GetByIdAsync(projectId);
+            if (project == null)
+            {
+                return new List<ProjectRiskDto>();
+            }
+
+            var projectRisks = await _projectRepository.FindAsync(pr => pr.Id == projectId);
+            var risks = _mapper.Map<List<ProjectRiskDto>>(projectRisks);
+
+            return risks;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving project risks: {ProjectId}", projectId);
-            return Task.FromResult<IEnumerable<ProjectRiskDto>>(new List<ProjectRiskDto>());
+            return new List<ProjectRiskDto>();
         }
     }
 

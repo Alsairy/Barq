@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using BARQ.Infrastructure.Data;
 
 namespace BARQ.API.Controllers
 {
@@ -12,62 +13,85 @@ namespace BARQ.API.Controllers
     [Authorize]
     public class OrganizationsController : ControllerBase
     {
-        private static readonly List<UserDto> Users = new List<UserDto>
-        {
-            new UserDto
-            {
-                Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
-                OrganizationId = Guid.Parse("11111111-1111-1111-1111-111111111111")
-            },
-            new UserDto
-            {
-                Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
-                OrganizationId = Guid.Parse("22222222-2222-2222-2222-222222222222")
-            }
-        };
+        private readonly BarqDbContext _db;
 
-        private static readonly List<OrganizationDto> Organizations = new List<OrganizationDto>
+        public OrganizationsController(BarqDbContext db)
         {
-            new OrganizationDto
-            {
-                Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                Name = "Acme Corporation"
-            },
-            new OrganizationDto
-            {
-                Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
-                Name = "Beta Industries"
-            }
-        };
+            _db = db;
+        }
 
-        private Guid GetCurrentOrganizationId()
+        private Guid GetTenantId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            if (Guid.TryParse(userIdStr, out var userId))
+            var tenantIdStr = User.FindFirstValue("tenant_id");
+            if (Guid.TryParse(tenantIdStr, out var tid) && tid != Guid.Empty)
+                return tid;
+
+            string? token = null;
+            var auth = Request.Headers["Authorization"].ToString();
+            if (!string.IsNullOrWhiteSpace(auth) && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
-                var user = Users.FirstOrDefault(u => u.Id == userId);
-                if (user != null)
-                    return user.OrganizationId;
+                token = auth.Substring("Bearer ".Length).Trim();
             }
-            return Users.First().OrganizationId;
+            else if (Request.Cookies.TryGetValue("__Host-Auth", out var cookieToken) && !string.IsNullOrWhiteSpace(cookieToken))
+            {
+                token = cookieToken;
+            }
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                try
+                {
+                    var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    var jwt = handler.ReadJwtToken(token);
+                    var tenantClaim = jwt.Claims.FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+                    if (!string.IsNullOrWhiteSpace(tenantClaim) && Guid.TryParse(tenantClaim, out var tidFromToken) && tidFromToken != Guid.Empty)
+                    {
+                        return tidFromToken;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            var tp = HttpContext.RequestServices.GetService<BARQ.Core.Services.ITenantProvider>();
+            if (tp != null)
+            {
+                var fallback = tp.GetTenantId();
+                if (fallback != Guid.Empty) return fallback;
+            }
+
+            return Guid.Empty;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<OrganizationDto>> GetOrganizations()
+        public ActionResult<IEnumerable<object>> GetOrganizations()
         {
-            var orgId = GetCurrentOrganizationId();
-            var list = Organizations.Where(o => o.Id == orgId).ToList();
+            var tenantId = GetTenantId();
+
+            var query = _db.Organizations.AsQueryable();
+            if (tenantId != Guid.Empty)
+            {
+                query = query.Where(o => o.Id == tenantId);
+            }
+
+            var list = query
+                .Select(o => new { id = o.Id, name = o.Name })
+                .ToList();
+
             return Ok(list);
         }
 
         [HttpGet("{id:guid}")]
-        public ActionResult<OrganizationDto> GetOrganization(Guid id)
+        public ActionResult<object> GetOrganization(Guid id)
         {
-            var orgId = GetCurrentOrganizationId();
-            var org = Organizations.FirstOrDefault(o => o.Id == id && o.Id == orgId);
-            if (org == null)
-                return NotFound();
-            return Ok(org);
+            var tenantId = GetTenantId();
+
+            var org = _db.Organizations.FirstOrDefault(o => o.Id == id);
+            if (org == null) return NotFound();
+            if (tenantId != Guid.Empty && org.Id != tenantId) return NotFound();
+
+            return Ok(new { id = org.Id, name = org.Name });
         }
 
         public class CreateOrganizationRequest
@@ -76,18 +100,24 @@ namespace BARQ.API.Controllers
         }
 
         [HttpPost]
-        public ActionResult<OrganizationDto> CreateOrganization([FromBody] CreateOrganizationRequest request)
+        public ActionResult<object> CreateOrganization([FromBody] CreateOrganizationRequest request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest();
-            var orgId = GetCurrentOrganizationId();
-            var newOrg = new OrganizationDto
+
+            var entity = new BARQ.Core.Entities.Organization
             {
                 Id = Guid.NewGuid(),
-                Name = request.Name
+                Name = request.Name,
+                Domain = "",
+                SubscriptionPlan = BARQ.Core.Enums.SubscriptionPlan.Professional,
+                Status = BARQ.Core.Enums.OrganizationStatus.Active,
+                CreatedAt = DateTime.UtcNow
             };
-            Organizations.Add(newOrg);
-            return CreatedAtAction(nameof(GetOrganization), new { id = newOrg.Id }, newOrg);
+            _db.Organizations.Add(entity);
+            _db.SaveChanges();
+
+            return CreatedAtAction(nameof(GetOrganization), new { id = entity.Id }, new { id = entity.Id, name = entity.Name });
         }
 
         public class UpdateOrganizationRequest
@@ -98,26 +128,19 @@ namespace BARQ.API.Controllers
         [HttpPost("{id:guid}")]
         public IActionResult UpdateOrganization(Guid id, [FromBody] UpdateOrganizationRequest request)
         {
-            var orgId = GetCurrentOrganizationId();
-            var org = Organizations.FirstOrDefault(o => o.Id == id && o.Id == orgId);
-            if (org == null)
-                return NotFound();
+            var tenantId = GetTenantId();
+            var org = _db.Organizations.FirstOrDefault(o => o.Id == id);
+            if (org == null) return NotFound();
+            if (tenantId != Guid.Empty && org.Id != tenantId) return NotFound();
+
             if (request == null || string.IsNullOrWhiteSpace(request.Name))
                 return BadRequest();
+
             org.Name = request.Name;
-            return Ok(org);
-        }
+            org.UpdatedAt = DateTime.UtcNow;
+            _db.SaveChanges();
 
-        public class UserDto
-        {
-            public Guid Id { get; set; }
-            public Guid OrganizationId { get; set; }
-        }
-
-        public class OrganizationDto
-        {
-            public Guid Id { get; set; }
-            public string Name { get; set; }
+            return Ok(new { id = org.Id, name = org.Name });
         }
     }
 }

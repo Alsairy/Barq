@@ -1,6 +1,10 @@
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using BARQ.Application.Commands.Authentication;
+using BARQ.Application.Commands.Users;
+using Microsoft.AspNetCore.Authorization;
 using BARQ.Core.Services;
 using BARQ.Core.Models.Requests;
 using BARQ.Core.Models.Responses;
@@ -9,33 +13,97 @@ using BARQ.Shared.DTOs;
 namespace BARQ.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IAuthenticationService _authenticationService;
     private readonly IMultiFactorAuthService _mfaService;
     private readonly IPasswordService _passwordService;
+    private readonly ISsoAuthenticationService _ssoAuthenticationService;
+    private readonly IUserRegistrationService _userRegistrationService;
 
     public AuthController(
         IMediator mediator,
         IAuthenticationService authenticationService,
         IMultiFactorAuthService mfaService,
-        IPasswordService passwordService)
+        IPasswordService passwordService,
+        ISsoAuthenticationService ssoAuthenticationService,
+        IUserRegistrationService userRegistrationService)
     {
         _mediator = mediator;
         _authenticationService = authenticationService;
         _mfaService = mfaService;
         _passwordService = passwordService;
+        _ssoAuthenticationService = ssoAuthenticationService;
+        _userRegistrationService = userRegistrationService;
+    }
+    [AllowAnonymous]
+    [HttpGet("login")]
+    public ActionResult<ApiResponse<string>> GetLogin()
+    {
+        return Ok(new ApiResponse<string> { Success = true, Data = "login endpoint available" });
     }
 
+    [AllowAnonymous]
+    [HttpGet("register")]
+    public ActionResult<ApiResponse<string>> GetRegister()
+    {
+        return Ok(new ApiResponse<string> { Success = true, Data = "register endpoint available" });
+    }
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserRegistrationRequest request)
+    {
+        try
+        {
+            var isAvailable = await _userRegistrationService.IsEmailAvailableAsync(request.Email);
+            if (!isAvailable)
+            {
+                return Conflict(new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = false,
+                    Message = "Email is already registered"
+                });
+            }
+
+            var result = await _mediator.Send(new BARQ.Application.Commands.Users.RegisterUserCommand(request));
+            if (result.Success)
+            {
+                return StatusCode(StatusCodes.Status201Created, new ApiResponse<UserRegistrationResponse>
+                {
+                    Success = true,
+                    Data = result,
+                    Message = result.Message
+                });
+            }
+
+            return BadRequest(new ApiResponse<UserRegistrationResponse>
+            {
+                Success = false,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<UserRegistrationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+
+
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> Login([FromBody] LoginCommand command)
     {
         try
         {
             var result = await _mediator.Send(command);
-            
             if (!result.Success)
             {
                 return Unauthorized(new ApiResponse<AuthenticationResponse>
@@ -45,7 +113,27 @@ public class AuthController : ControllerBase
                     Message = result.Message
                 });
             }
-            
+
+            var cookieCfg = HttpContext.RequestServices.GetRequiredService<IOptions<BARQ.API.Options.AuthCookieOptions>>().Value;
+            if (cookieCfg.Enabled && !string.IsNullOrWhiteSpace(result.AccessToken))
+            {
+                var sameSite = cookieCfg.SameSite?.ToLowerInvariant() == "none"
+                    ? SameSiteMode.None
+                    : cookieCfg.SameSite?.ToLowerInvariant() == "lax"
+                        ? SameSiteMode.Lax
+                        : SameSiteMode.Strict;
+
+                var opts = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = cookieCfg.Secure,
+                    SameSite = sameSite,
+                    Path = cookieCfg.Path,
+                    Domain = string.IsNullOrWhiteSpace(cookieCfg.Domain) ? null : cookieCfg.Domain
+                };
+                Response.Cookies.Append(cookieCfg.Name, result.AccessToken!, opts);
+            }
+
             return Ok(new ApiResponse<AuthenticationResponse>
             {
                 Success = result.Success,
@@ -58,6 +146,11 @@ public class AuthController : ControllerBase
             return BadRequest(new ApiResponse<AuthenticationResponse>
             {
                 Success = false,
+                Data = new AuthenticationResponse
+                {
+                    Success = false,
+                    Message = ex.Message
+                },
                 Message = ex.Message
             });
         }
@@ -69,6 +162,25 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authenticationService.LogoutAsync(request.UserId);
+
+            var cookieCfg = HttpContext.RequestServices.GetRequiredService<IOptions<BARQ.API.Options.AuthCookieOptions>>().Value;
+            if (cookieCfg.Enabled)
+            {
+                var sameSite = cookieCfg.SameSite?.ToLowerInvariant() == "none"
+                    ? SameSiteMode.None
+                    : cookieCfg.SameSite?.ToLowerInvariant() == "lax"
+                        ? SameSiteMode.Lax
+                        : SameSiteMode.Strict;
+
+                Response.Cookies.Delete(cookieCfg.Name, new CookieOptions
+                {
+                    Path = cookieCfg.Path,
+                    Domain = string.IsNullOrWhiteSpace(cookieCfg.Domain) ? null : cookieCfg.Domain,
+                    Secure = cookieCfg.Secure,
+                    SameSite = sameSite
+                });
+            }
+
             return Ok(new ApiResponse<LogoutResponse>
             {
                 Success = result.Success,
@@ -86,6 +198,7 @@ public class AuthController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("refresh-token")]
     public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> RefreshToken([FromBody] RefreshTokenRequest request)
     {
@@ -109,12 +222,19 @@ public class AuthController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public Task<ActionResult<ApiResponse<AuthenticationResponse>>> Refresh([FromBody] RefreshTokenRequest request)
+        => RefreshToken(request);
+
+    [AllowAnonymous]
     [HttpPost("forgot-password")]
     public async Task<ActionResult<ApiResponse<PasswordResetResponse>>> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         try
         {
             var result = await _passwordService.InitiatePasswordResetAsync(request.Email);
+
             return Ok(new ApiResponse<PasswordResetResponse>
             {
                 Success = result.Success,
@@ -132,6 +252,7 @@ public class AuthController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpPost("reset-password")]
     public async Task<ActionResult<ApiResponse<PasswordResetResponse>>> ResetPassword([FromBody] ResetPasswordRequest request)
     {
@@ -297,6 +418,190 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return BadRequest(new ApiResponse<BackupCodesResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oauth/initiate")]
+    public async Task<ActionResult<ApiResponse<OAuthAuthenticationResponse>>> InitiateOAuth([FromBody] OAuthAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateOAuthAuthenticationAsync(request);
+            return Ok(new ApiResponse<OAuthAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<OAuthAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oauth/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> OAuthCallback([FromBody] OAuthCallbackRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessOAuthCallbackAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oidc/initiate")]
+    public async Task<ActionResult<ApiResponse<OpenIdConnectAuthenticationResponse>>> InitiateOpenIdConnect([FromBody] OpenIdConnectAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateOpenIdConnectAuthenticationAsync(request);
+            return Ok(new ApiResponse<OpenIdConnectAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<OpenIdConnectAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("oidc/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> OpenIdConnectCallback([FromBody] OpenIdConnectCallbackRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessOpenIdConnectCallbackAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("saml/initiate")]
+    public async Task<ActionResult<ApiResponse<SamlAuthenticationResponse>>> InitiateSaml([FromBody] SamlAuthenticationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.InitiateSamlAuthenticationAsync(request);
+            return Ok(new ApiResponse<SamlAuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SamlAuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("saml/callback")]
+    public async Task<ActionResult<ApiResponse<AuthenticationResponse>>> SamlCallback([FromBody] SamlResponseRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.ProcessSamlResponseAsync(request);
+            return Ok(new ApiResponse<AuthenticationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<AuthenticationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpGet("sso/configuration/{tenantId:guid}")]
+    public async Task<ActionResult<ApiResponse<SsoConfigurationResponse>>> GetSsoConfiguration(Guid tenantId)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.GetSsoConfigurationAsync(tenantId);
+            return Ok(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("sso/configuration")]
+    public async Task<ActionResult<ApiResponse<SsoConfigurationResponse>>> UpdateSsoConfiguration([FromBody] UpdateSsoConfigurationRequest request)
+    {
+        try
+        {
+            var result = await _ssoAuthenticationService.UpdateSsoConfigurationAsync(request);
+            return Ok(new ApiResponse<SsoConfigurationResponse>
+            {
+                Success = result.Success,
+                Data = result,
+                Message = result.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<SsoConfigurationResponse>
             {
                 Success = false,
                 Message = ex.Message

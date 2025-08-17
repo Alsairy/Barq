@@ -110,140 +110,9 @@ export default function WorkflowExecutionPage() {
   const fetchExecutions = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockExecutions: WorkflowExecution[] = [
-        {
-          id: '1',
-          workflowId: 'wf-001',
-          workflowName: 'Customer Onboarding Process',
-          status: 'running',
-          startedAt: '2024-01-15T10:30:00Z',
-          progress: 65,
-          currentStep: 'Document Verification',
-          totalSteps: 8,
-          completedSteps: 5,
-          triggeredBy: 'john.doe@example.com',
-          priority: 'high',
-          executionContext: {
-            environment: 'production',
-            version: '1.2.0',
-            inputs: {
-              customerId: 'CUST-12345',
-              documentType: 'passport',
-              priority: 'high'
-            }
-          },
-          steps: [
-            {
-              id: 'step-1',
-              stepName: 'Initial Validation',
-              stepType: 'validation',
-              status: 'completed',
-              startedAt: '2024-01-15T10:30:00Z',
-              completedAt: '2024-01-15T10:31:00Z',
-              duration: 60000,
-              retryCount: 0,
-              maxRetries: 3
-            },
-            {
-              id: 'step-2',
-              stepName: 'Document Verification',
-              stepType: 'ai_task',
-              status: 'running',
-              startedAt: '2024-01-15T10:35:00Z',
-              retryCount: 0,
-              maxRetries: 3
-            }
-          ],
-          metrics: {
-            cpuUsage: 45,
-            memoryUsage: 512,
-            networkCalls: 12,
-            dataProcessed: 2.5
-          }
-        },
-        {
-          id: '2',
-          workflowId: 'wf-002',
-          workflowName: 'Invoice Processing',
-          status: 'completed',
-          startedAt: '2024-01-15T09:15:00Z',
-          completedAt: '2024-01-15T09:45:00Z',
-          duration: 1800000,
-          progress: 100,
-          currentStep: 'Completed',
-          totalSteps: 6,
-          completedSteps: 6,
-          triggeredBy: 'system',
-          priority: 'medium',
-          executionContext: {
-            environment: 'production',
-            version: '1.1.0',
-            inputs: {
-              invoiceId: 'INV-67890',
-              amount: 1250.00,
-              vendor: 'ACME Corp'
-            },
-            outputs: {
-              processedAmount: 1250.00,
-              approvalStatus: 'approved',
-              paymentScheduled: true
-            }
-          },
-          steps: [],
-          metrics: {
-            cpuUsage: 25,
-            memoryUsage: 256,
-            networkCalls: 8,
-            dataProcessed: 1.2
-          }
-        },
-        {
-          id: '3',
-          workflowId: 'wf-003',
-          workflowName: 'Data Migration',
-          status: 'failed',
-          startedAt: '2024-01-15T08:00:00Z',
-          completedAt: '2024-01-15T08:30:00Z',
-          duration: 1800000,
-          progress: 45,
-          currentStep: 'Data Transformation',
-          totalSteps: 10,
-          completedSteps: 4,
-          triggeredBy: 'admin@example.com',
-          priority: 'critical',
-          executionContext: {
-            environment: 'staging',
-            version: '2.0.0-beta',
-            inputs: {
-              sourceDatabase: 'legacy_db',
-              targetDatabase: 'new_db',
-              recordCount: 50000
-            }
-          },
-          steps: [],
-          errors: [
-            {
-              id: 'err-1',
-              stepId: 'step-5',
-              errorType: 'ValidationError',
-              message: 'Data format mismatch in column "customer_id"',
-              timestamp: '2024-01-15T08:25:00Z',
-              severity: 'high',
-              resolved: false
-            }
-          ],
-          metrics: {
-            cpuUsage: 80,
-            memoryUsage: 1024,
-            networkCalls: 25,
-            dataProcessed: 15.8
-          }
-        }
-      ];
-
-      setExecutions(mockExecutions);
+      const response = await fetch('/api/workflows/executions');
+      const data = await response.json();
+      setExecutions(data);
     } catch (error) {
       console.error('Failed to fetch executions:', error);
     } finally {
@@ -253,19 +122,9 @@ export default function WorkflowExecutionPage() {
 
   const fetchMetrics = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockMetrics: ExecutionMetrics = {
-        totalExecutions: 1247,
-        runningExecutions: 8,
-        completedExecutions: 1156,
-        failedExecutions: 83,
-        averageExecutionTime: 450000,
-        successRate: 93.3,
-        resourceUtilization: 67
-      };
-
-      setMetrics(mockMetrics);
+      const response = await fetch('/api/workflows/execution-metrics');
+      const data = await response.json();
+      setMetrics(data);
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }

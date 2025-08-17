@@ -1,0 +1,53 @@
+http:
+  middlewares:
+    barq-cors:
+      headers:
+        accessControlAllowOriginList:
+          - "https://barq-application-plu4nmbz.devinapps.com"
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "Authorization"
+          - "Content-Type"
+          - "X-Tenant-ID"
+          - "X-Correlation-ID"
+          - "X-Requested-With"
+        accessControlAllowCredentials: true
+        addVaryHeader: true
+
+    barq-basic-auth:
+      basicAuth:
+        users:
+          - "user:$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi"
+
+  routers:
+    # High-priority router for OPTIONS preflight requests (unauthenticated)
+    barq-api-preflight:
+      rule: "Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`) && Method(`OPTIONS`)"
+      service: noop@internal
+      entryPoints:
+        - websecure
+      priority: 100
+      middlewares:
+        - barq-cors
+
+    # Main API router with CORS headers applied before authentication
+    barq-api:
+      rule: "Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`)"
+      service: barq-api
+      entryPoints:
+        - websecure
+      middlewares:
+        - barq-cors
+        - barq-basic-auth
+
+  services:
+    barq-api:
+      loadBalancer:
+        servers:
+          - url: "http://internal-api:80"

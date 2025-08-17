@@ -271,6 +271,7 @@ public class IntegrationMessage
     /// Name of the queue where the message is processed
     /// </summary>
     public string QueueName { get; set; } = string.Empty;
+    public DateTime? NextRetryAt { get; set; }
     /// <summary>
     /// Type classification of the message content
     /// </summary>

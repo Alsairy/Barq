@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:flowable="http://flowable.org/bpmn"
+                  id="Definitions_MultiLevelApproval"
+                  targetNamespace="http://barq.app/bpmn"
+                  exporter="Barq BPM Designer"
+                  exporterVersion="1.0">
+
+  <bpmn:process id="multi-level-approval-process" name="Multi-Level Approval Process" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="start-approval" name="Approval Required">
+      <bpmn:outgoing>flow-to-level-check</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Determine Approval Level -->
+    <bpmn:serviceTask id="determine-approval-level" name="Determine Required Approval Level" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.DetermineApprovalLevelDelegate">
+      <bpmn:incoming>flow-to-level-check</bpmn:incoming>
+      <bpmn:outgoing>flow-to-level-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Approval Level Gateway -->
+    <bpmn:exclusiveGateway id="approval-level-gateway" name="Approval Level Required?">
+      <bpmn:incoming>flow-to-level-gateway</bpmn:incoming>
+      <bpmn:outgoing>flow-to-level1</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-level2</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-level3</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Level 1 Approval -->
+    <bpmn:userTask id="level1-approval" name="Level 1 Approval" 
+                   flowable:assignee="${level1Approver}"
+                   flowable:dueDate="${now().plusDays(1)}">
+      <bpmn:incoming>flow-to-level1</bpmn:incoming>
+      <bpmn:outgoing>flow-from-level1</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Level 2 Approval -->
+    <bpmn:userTask id="level2-approval" name="Level 2 Approval" 
+                   flowable:assignee="${level2Approver}"
+                   flowable:dueDate="${now().plusDays(2)}">
+      <bpmn:incoming>flow-to-level2</bpmn:incoming>
+      <bpmn:incoming>flow-from-level1-to-level2</bpmn:incoming>
+      <bpmn:outgoing>flow-from-level2</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Level 3 Approval -->
+    <bpmn:userTask id="level3-approval" name="Level 3 Approval" 
+                   flowable:assignee="${level3Approver}"
+                   flowable:dueDate="${now().plusDays(3)}">
+      <bpmn:incoming>flow-to-level3</bpmn:incoming>
+      <bpmn:incoming>flow-from-level2-to-level3</bpmn:incoming>
+      <bpmn:outgoing>flow-from-level3</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Level 1 Result Gateway -->
+    <bpmn:exclusiveGateway id="level1-result-gateway" name="Level 1 Approved?">
+      <bpmn:incoming>flow-from-level1</bpmn:incoming>
+      <bpmn:outgoing>flow-from-level1-to-level2</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-rejection</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-approval-complete</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Level 2 Result Gateway -->
+    <bpmn:exclusiveGateway id="level2-result-gateway" name="Level 2 Approved?">
+      <bpmn:incoming>flow-from-level2</bpmn:incoming>
+      <bpmn:outgoing>flow-from-level2-to-level3</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-rejection</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-approval-complete</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Level 3 Result Gateway -->
+    <bpmn:exclusiveGateway id="level3-result-gateway" name="Level 3 Approved?">
+      <bpmn:incoming>flow-from-level3</bpmn:incoming>
+      <bpmn:outgoing>flow-to-approval-complete</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-rejection</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Delegation Check -->
+    <bpmn:serviceTask id="check-delegation" name="Check for Delegation" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.CheckDelegationDelegate">
+      <bpmn:incoming>flow-to-delegation-check</bpmn:incoming>
+      <bpmn:outgoing>flow-from-delegation-check</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- SLA Monitoring -->
+    <bpmn:boundaryEvent id="sla-timer" name="SLA Timer" attachedToRef="level1-approval">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT24H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <bpmn:boundaryEvent id="sla-timer-level2" name="SLA Timer Level 2" attachedToRef="level2-approval">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT48H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <bpmn:boundaryEvent id="sla-timer-level3" name="SLA Timer Level 3" attachedToRef="level3-approval">
+      <bpmn:timerEventDefinition>
+        <bpmn:timeDuration>PT72H</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+      <bpmn:outgoing>flow-to-escalation</bpmn:outgoing>
+    </bpmn:boundaryEvent>
+    
+    <!-- Escalation Task -->
+    <bpmn:serviceTask id="escalate-approval" name="Escalate Approval" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.EscalateApprovalDelegate">
+      <bpmn:incoming>flow-to-escalation</bpmn:incoming>
+      <bpmn:outgoing>flow-from-escalation</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Approval Complete -->
+    <bpmn:serviceTask id="approval-complete" name="Complete Approval Process" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.CompleteApprovalDelegate">
+      <bpmn:incoming>flow-to-approval-complete</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-approved</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Approval Rejection -->
+    <bpmn:serviceTask id="approval-rejection" name="Process Approval Rejection" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.ProcessApprovalRejectionDelegate">
+      <bpmn:incoming>flow-to-rejection</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-rejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="end-approved" name="Approval Completed">
+      <bpmn:incoming>flow-to-end-approved</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="end-rejected" name="Approval Rejected">
+      <bpmn:incoming>flow-to-end-rejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow-to-level-check" sourceRef="start-approval" targetRef="determine-approval-level"/>
+    <bpmn:sequenceFlow id="flow-to-level-gateway" sourceRef="determine-approval-level" targetRef="approval-level-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-level1" sourceRef="approval-level-gateway" targetRef="level1-approval">
+      <bpmn:conditionExpression>${approvalLevel == 1}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-level2" sourceRef="approval-level-gateway" targetRef="level2-approval">
+      <bpmn:conditionExpression>${approvalLevel == 2}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-level3" sourceRef="approval-level-gateway" targetRef="level3-approval">
+      <bpmn:conditionExpression>${approvalLevel == 3}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-level1" sourceRef="level1-approval" targetRef="level1-result-gateway"/>
+    <bpmn:sequenceFlow id="flow-from-level1-to-level2" sourceRef="level1-result-gateway" targetRef="level2-approval">
+      <bpmn:conditionExpression>${approved == true and requiresLevel2 == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-level2" sourceRef="level2-approval" targetRef="level2-result-gateway"/>
+    <bpmn:sequenceFlow id="flow-from-level2-to-level3" sourceRef="level2-result-gateway" targetRef="level3-approval">
+      <bpmn:conditionExpression>${approved == true and requiresLevel3 == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-level3" sourceRef="level3-approval" targetRef="level3-result-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-approval-complete" sourceRef="level1-result-gateway" targetRef="approval-complete">
+      <bpmn:conditionExpression>${approved == true and requiresLevel2 == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-approval-complete" sourceRef="level2-result-gateway" targetRef="approval-complete">
+      <bpmn:conditionExpression>${approved == true and requiresLevel3 == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-approval-complete" sourceRef="level3-result-gateway" targetRef="approval-complete">
+      <bpmn:conditionExpression>${approved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-rejection" sourceRef="level1-result-gateway" targetRef="approval-rejection">
+      <bpmn:conditionExpression>${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-rejection" sourceRef="level2-result-gateway" targetRef="approval-rejection">
+      <bpmn:conditionExpression>${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-rejection" sourceRef="level3-result-gateway" targetRef="approval-rejection">
+      <bpmn:conditionExpression>${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-escalation" sourceRef="sla-timer" targetRef="escalate-approval"/>
+    <bpmn:sequenceFlow id="flow-to-escalation" sourceRef="sla-timer-level2" targetRef="escalate-approval"/>
+    <bpmn:sequenceFlow id="flow-to-escalation" sourceRef="sla-timer-level3" targetRef="escalate-approval"/>
+    <bpmn:sequenceFlow id="flow-from-escalation" sourceRef="escalate-approval" targetRef="approval-complete"/>
+    <bpmn:sequenceFlow id="flow-to-end-approved" sourceRef="approval-complete" targetRef="end-approved"/>
+    <bpmn:sequenceFlow id="flow-to-end-rejected" sourceRef="approval-rejection" targetRef="end-rejected"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

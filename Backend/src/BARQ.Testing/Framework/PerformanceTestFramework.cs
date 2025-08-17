@@ -21,16 +21,18 @@ public class PerformanceTestFramework
     public async Task<PerformanceTestResult> RunLoadTestAsync(string endpoint, int virtualUsers = 10, TimeSpan? duration = null)
     {
         duration ??= TimeSpan.FromMinutes(1);
+        var effectiveDuration = duration.Value < TimeSpan.FromSeconds(30)
+            ? TimeSpan.FromSeconds(30)
+            : duration.Value;
 
         var scenario = Scenario.Create($"load_test_{endpoint.Replace("/", "_")}", async context =>
         {
             var response = await _httpClient.GetAsync(endpoint);
-            
             return response.IsSuccessStatusCode ? Response.Ok() : Response.Fail();
         })
         .WithoutWarmUp()
         .WithLoadSimulations(
-            Simulation.Inject(rate: virtualUsers, interval: TimeSpan.FromSeconds(1), during: duration.Value)
+            Simulation.Inject(rate: virtualUsers, interval: TimeSpan.FromSeconds(1), during: effectiveDuration)
         );
 
         var stats = NBomberRunner
@@ -43,14 +45,14 @@ public class PerformanceTestFramework
         {
             Endpoint = endpoint,
             VirtualUsers = virtualUsers,
-            Duration = duration.Value,
+            Duration = effectiveDuration,
             TotalRequests = sceneStats.Ok.Request.Count + sceneStats.Fail.Request.Count,
             SuccessfulRequests = sceneStats.Ok.Request.Count,
             FailedRequests = sceneStats.Fail.Request.Count,
             AverageResponseTime = TimeSpan.FromMilliseconds(sceneStats.Ok.Latency.Percent50),
             MinResponseTime = TimeSpan.FromMilliseconds(sceneStats.Ok.Latency.MinMs),
             MaxResponseTime = TimeSpan.FromMilliseconds(sceneStats.Ok.Latency.MaxMs),
-            RequestsPerSecond = sceneStats.Ok.Request.Count / duration.Value.TotalSeconds,
+            RequestsPerSecond = sceneStats.Ok.Request.Count / effectiveDuration.TotalSeconds,
             SuccessRate = (double)sceneStats.Ok.Request.Count / (sceneStats.Ok.Request.Count + sceneStats.Fail.Request.Count) * 100
         };
     }
@@ -100,7 +102,6 @@ public class PerformanceTestFramework
             var loadTestResult = await RunLoadTestAsync(endpoint, virtualUsers: 5, duration: TimeSpan.FromSeconds(30));
             results.Add(loadTestResult);
 
-            await Task.Delay(TimeSpan.FromSeconds(5));
         }
 
         return results;

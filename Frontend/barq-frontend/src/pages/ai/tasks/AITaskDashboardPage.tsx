@@ -88,78 +88,9 @@ export default function AITaskDashboardPage() {
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockTasks: AITask[] = [
-        {
-          id: '1',
-          name: 'Document Summarization - Q4 Report',
-          type: 'summarization',
-          status: 'running',
-          priority: 'high',
-          provider: 'OpenAI GPT-4',
-          startTime: '2024-01-15T10:30:00Z',
-          progress: 65,
-          inputTokens: 15000,
-          outputTokens: 2500,
-          cost: 0.45,
-          retryCount: 0,
-          maxRetries: 3
-        },
-        {
-          id: '2',
-          name: 'Customer Feedback Analysis',
-          type: 'text-generation',
-          status: 'completed',
-          priority: 'medium',
-          provider: 'Anthropic Claude',
-          startTime: '2024-01-15T09:15:00Z',
-          endTime: '2024-01-15T09:18:30Z',
-          duration: 210000,
-          progress: 100,
-          inputTokens: 8500,
-          outputTokens: 1200,
-          cost: 0.28,
-          qualityScore: 92,
-          retryCount: 0,
-          maxRetries: 3
-        },
-        {
-          id: '3',
-          name: 'Image Classification Batch',
-          type: 'image-analysis',
-          status: 'failed',
-          priority: 'low',
-          provider: 'Azure OpenAI',
-          startTime: '2024-01-15T08:45:00Z',
-          endTime: '2024-01-15T08:47:15Z',
-          duration: 135000,
-          progress: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          cost: 0.00,
-          errorMessage: 'Provider timeout - connection failed',
-          retryCount: 3,
-          maxRetries: 3
-        },
-        {
-          id: '4',
-          name: 'Multi-language Translation',
-          type: 'translation',
-          status: 'pending',
-          priority: 'critical',
-          provider: 'OpenAI GPT-4',
-          startTime: '2024-01-15T10:45:00Z',
-          progress: 0,
-          inputTokens: 0,
-          outputTokens: 0,
-          cost: 0.00,
-          retryCount: 0,
-          maxRetries: 3
-        }
-      ];
-      
-      setTasks(mockTasks);
+      const response = await fetch('/api/ai/tasks');
+      const tasks = await response.json();
+      setTasks(tasks);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     } finally {
@@ -169,20 +100,9 @@ export default function AITaskDashboardPage() {
 
   const fetchMetrics = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const mockMetrics: TaskMetrics = {
-        totalTasks: 156,
-        runningTasks: 8,
-        completedTasks: 142,
-        failedTasks: 6,
-        averageResponseTime: 2.3,
-        totalCost: 45.67,
-        averageQualityScore: 89.5,
-        throughput: 24.5
-      };
-      
-      setMetrics(mockMetrics);
+      const response = await fetch('/api/ai/tasks/metrics');
+      const metrics = await response.json();
+      setMetrics(metrics);
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
     }
@@ -190,16 +110,9 @@ export default function AITaskDashboardPage() {
 
   const fetchQueueStats = async () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const mockQueueStats: QueueStats = {
-        pending: 12,
-        running: 8,
-        capacity: 20,
-        estimatedWaitTime: 4.5
-      };
-      
-      setQueueStats(mockQueueStats);
+      const response = await fetch('/api/ai/tasks/queue-stats');
+      const queueStats = await response.json();
+      setQueueStats(queueStats);
     } catch (error) {
       console.error('Failed to fetch queue stats:', error);
     }

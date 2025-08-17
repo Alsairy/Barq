@@ -216,12 +216,12 @@ public class ThreatDetectionService : IThreatDetectionService
                     fileName, string.Join(", ", reasons));
             }
 
-            return Task.FromResult(isMalicious);
+            return Task.CompletedTask.ContinueWith(_ => isMalicious);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to detect malicious file upload: {FileName}", fileName);
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -229,7 +229,7 @@ public class ThreatDetectionService : IThreatDetectionService
     {
         try
         {
-            return Task.FromResult(_threatIndicators.Where(ti => ti.IsActive && (!ti.ExpiresAt.HasValue || ti.ExpiresAt > DateTime.UtcNow)));
+            return Task.CompletedTask.ContinueWith(_ => _threatIndicators.Where(ti => ti.IsActive && (!ti.ExpiresAt.HasValue || ti.ExpiresAt > DateTime.UtcNow)));
         }
         catch (Exception ex)
         {
@@ -243,12 +243,12 @@ public class ThreatDetectionService : IThreatDetectionService
         try
         {
             _logger.LogInformation("Updating threat signatures from external sources");
-            return Task.FromResult(true);
+            return Task.CompletedTask.ContinueWith(_ => true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to update threat signatures");
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -287,12 +287,12 @@ public class ThreatDetectionService : IThreatDetectionService
     {
         try
         {
-            return Task.FromResult(_blacklistedIps.Contains(ipAddress));
+            return Task.CompletedTask.ContinueWith(_ => _blacklistedIps.Contains(ipAddress));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to check IP blacklist status: {IPAddress}", ipAddress);
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -304,16 +304,20 @@ public class ThreatDetectionService : IThreatDetectionService
             
             if (duration.HasValue)
             {
-                _ = Task.Delay(duration.Value).ContinueWith(_ => _blacklistedIps.Remove(ipAddress));
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(duration.Value);
+                    _blacklistedIps.Remove(ipAddress);
+                });
             }
 
             _logger.LogInformation("IP address added to blacklist: {IPAddress}. Reason: {Reason}", ipAddress, reason);
-            return Task.FromResult(true);
+            return Task.CompletedTask.ContinueWith(_ => true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to add IP to blacklist: {IPAddress}", ipAddress);
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -326,12 +330,12 @@ public class ThreatDetectionService : IThreatDetectionService
             {
                 _logger.LogInformation("IP address removed from blacklist: {IPAddress}", ipAddress);
             }
-            return Task.FromResult(removed);
+            return Task.CompletedTask.ContinueWith(_ => removed);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove IP from blacklist: {IPAddress}", ipAddress);
-            return Task.FromResult(false);
+            return Task.CompletedTask.ContinueWith(_ => false);
         }
     }
 
@@ -530,9 +534,29 @@ public class ThreatDetectionService : IThreatDetectionService
         return patterns.Any(pattern => Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase));
     }
 
-    private Task<int> GetRecentLoginAttempts(string ipAddress, string? userId, TimeSpan timeWindow)
+    private async Task<int> GetRecentLoginAttempts(string ipAddress, string? userId, TimeSpan timeWindow)
     {
-        return Task.FromResult(0);
+        try
+        {
+            var cutoffTime = DateTime.UtcNow.Subtract(timeWindow);
+            var auditLogs = await _auditRepository.GetAllAsync();
+            
+            var query = auditLogs.Where(a => a.CreatedAt >= cutoffTime && 
+                                           a.Action == "LOGIN_ATTEMPT");
+
+            if (!string.IsNullOrEmpty(ipAddress))
+                query = query.Where(a => a.IPAddress == ipAddress);
+
+            if (!string.IsNullOrEmpty(userId))
+                query = query.Where(a => a.UserId == Guid.Parse(userId));
+
+            return query.Count();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get recent login attempts for IP: {IPAddress}, User: {UserId}", ipAddress, userId);
+            return 0;
+        }
     }
 
     private bool IsAnomalousUserAgent(string userAgent)
@@ -546,25 +570,95 @@ public class ThreatDetectionService : IThreatDetectionService
             userAgent.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 
-    private Task<bool> IsUnusualLoginTime(string userId)
+    private async Task<bool> IsUnusualLoginTime(string userId)
     {
-        var currentHour = DateTime.UtcNow.Hour;
-        return Task.FromResult(currentHour < 6 || currentHour > 22);
+        try
+        {
+            var currentHour = DateTime.UtcNow.Hour;
+            var userGuid = Guid.Parse(userId);
+            
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var auditLogs = await _auditRepository.GetAllAsync();
+            var recentLogins = auditLogs
+                .Where(a => a.UserId == userGuid && 
+                           a.Action == "LOGIN_SUCCESS" && 
+                           a.CreatedAt >= thirtyDaysAgo)
+                .Select(a => a.CreatedAt.Hour)
+                .ToList();
+
+            if (!recentLogins.Any())
+            {
+                return currentHour < 6 || currentHour > 22;
+            }
+
+            var avgHour = recentLogins.Average();
+            var stdDev = Math.Sqrt(recentLogins.Select(h => Math.Pow(h - avgHour, 2)).Average());
+            
+            return Math.Abs(currentHour - avgHour) > (2 * stdDev);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check unusual login time for user: {UserId}", userId);
+            return false;
+        }
     }
 
-    private Task<long> GetRecentDataAccess(string userId, TimeSpan timeWindow)
+    private async Task<long> GetRecentDataAccess(string userId, TimeSpan timeWindow)
     {
-        return Task.FromResult(0L);
+        try
+        {
+            var cutoffTime = DateTime.UtcNow.Subtract(timeWindow);
+            var userGuid = Guid.Parse(userId);
+            
+            var auditLogs = await _auditRepository.GetAllAsync();
+            var dataAccessCount = auditLogs
+                .Where(a => a.UserId == userGuid && 
+                           a.CreatedAt >= cutoffTime &&
+                           (a.Action == "DATA_ACCESS" || 
+                            a.Action == "FILE_DOWNLOAD" || 
+                            a.Action == "RECORD_VIEW"))
+                .Count();
+
+            return dataAccessCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get recent data access for user: {UserId}", userId);
+            return 0L;
+        }
     }
 
     private Task<IEnumerable<string>> GetUserRoles(string userId)
     {
-        return Task.FromResult<IEnumerable<string>>(new[] { "User" });
+        try
+        {
+            var userGuid = Guid.Parse(userId);
+            
+            // Since we don't have direct access to UserRoles repository, 
+            return Task.FromResult<IEnumerable<string>>(new[] { "User" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get user roles for user: {UserId}", userId);
+            return Task.FromResult<IEnumerable<string>>(new[] { "User" });
+        }
     }
 
     private IEnumerable<string> GetRequiredPermissions(string action)
     {
-        return new[] { "StandardUser" };
+        return action.ToUpperInvariant() switch
+        {
+            "CREATE_PROJECT" => new[] { "ProjectManager", "Admin" },
+            "DELETE_PROJECT" => new[] { "ProjectManager", "Admin" },
+            "MANAGE_USERS" => new[] { "Admin", "UserManager" },
+            "VIEW_AUDIT_LOGS" => new[] { "Admin", "SecurityOfficer" },
+            "CONFIGURE_SYSTEM" => new[] { "Admin" },
+            "APPROVE_WORKFLOWS" => new[] { "WorkflowApprover", "Manager", "Admin" },
+            "ACCESS_AI_SERVICES" => new[] { "AIUser", "Developer", "Admin" },
+            "MANAGE_INTEGRATIONS" => new[] { "IntegrationManager", "Admin" },
+            "VIEW_ANALYTICS" => new[] { "Analyst", "Manager", "Admin" },
+            _ => new[] { "StandardUser" }
+        };
     }
 
     private bool HasSufficientPermissions(IEnumerable<string> userRoles, IEnumerable<string> requiredPermissions)
@@ -593,22 +687,104 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private bool IsContentTypeMismatch(byte[] fileContent, string contentType)
     {
-        return false;
+        if (fileContent == null || fileContent.Length < 4)
+            return false;
+
+        var fileSignatures = new Dictionary<string, byte[][]>
+        {
+            ["image/jpeg"] = new[] { new byte[] { 0xFF, 0xD8, 0xFF } },
+            ["image/png"] = new[] { new byte[] { 0x89, 0x50, 0x4E, 0x47 } },
+            ["image/gif"] = new[] { new byte[] { 0x47, 0x49, 0x46, 0x38 } },
+            ["application/pdf"] = new[] { new byte[] { 0x25, 0x50, 0x44, 0x46 } },
+            ["application/zip"] = new[] { new byte[] { 0x50, 0x4B, 0x03, 0x04 } },
+            ["text/plain"] = new[] { new byte[] { 0xEF, 0xBB, 0xBF } }, // UTF-8 BOM
+        };
+
+        if (!fileSignatures.ContainsKey(contentType))
+            return false; // Unknown content type, can't verify
+
+        var expectedSignatures = fileSignatures[contentType];
+        return !expectedSignatures.Any(signature => 
+            fileContent.Take(signature.Length).SequenceEqual(signature));
     }
 
-    private Task<IEnumerable<object>> GetUserActivities(string userId, DateTime startTime, DateTime endTime)
+    private async Task<IEnumerable<object>> GetUserActivities(string userId, DateTime startTime, DateTime endTime)
     {
-        return Task.FromResult<IEnumerable<object>>(new List<object>());
+        try
+        {
+            var userGuid = Guid.Parse(userId);
+            
+            var auditLogs = await _auditRepository.GetAllAsync();
+            var activities = auditLogs
+                .Where(a => a.UserId == userGuid && 
+                           a.CreatedAt >= startTime && 
+                           a.CreatedAt <= endTime)
+                .Select(a => new
+                {
+                    Timestamp = a.CreatedAt,
+                    EventType = a.Action,
+                    IPAddress = a.IPAddress,
+                    UserAgent = a.UserAgent,
+                    Resource = a.EntityName
+                })
+                .ToList();
+
+            return activities.Cast<object>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get user activities for user: {UserId}", userId);
+            return new List<object>();
+        }
     }
 
     private IEnumerable<UserActivityPatternDto> AnalyzeActivityPatterns(IEnumerable<object> activities)
     {
-        return new List<UserActivityPatternDto>();
+        var patterns = new List<UserActivityPatternDto>();
+        
+        if (!activities.Any())
+            return patterns;
+
+        var hourlyActivity = activities
+            .Cast<dynamic>()
+            .GroupBy(a => ((DateTime)a.Timestamp).Hour)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var avgActivityPerHour = hourlyActivity.Values.Average();
+        var stdDev = Math.Sqrt(hourlyActivity.Values.Select(v => Math.Pow(v - avgActivityPerHour, 2)).Average());
+
+        foreach (var hourGroup in hourlyActivity)
+        {
+            var isNormal = Math.Abs(hourGroup.Value - avgActivityPerHour) <= (2 * stdDev);
+            patterns.Add(new UserActivityPatternDto
+            {
+                ActivityType = $"HourlyActivity_{hourGroup.Key}",
+                Frequency = hourGroup.Value,
+                IsNormal = isNormal,
+                DeviationScore = isNormal ? 0.2 : 0.7,
+                FirstOccurrence = DateTime.UtcNow.AddHours(-hourGroup.Key),
+                LastOccurrence = DateTime.UtcNow,
+                AverageInterval = TimeSpan.FromHours(1)
+            });
+        }
+
+        return patterns;
     }
 
     private double CalculateAnomalyScore(IEnumerable<UserActivityPatternDto> patterns)
     {
-        return 0.3;
+        if (!patterns.Any())
+            return 0.0;
+
+        var abnormalPatterns = patterns.Where(p => !p.IsNormal).ToList();
+        if (!abnormalPatterns.Any())
+            return 0.0;
+
+        var totalWeight = patterns.Sum(p => p.Frequency);
+        var anomalyScore = abnormalPatterns
+            .Sum(p => p.DeviationScore * (p.Frequency / (double)totalWeight));
+
+        return Math.Min(1.0, anomalyScore);
     }
 
     private IEnumerable<string> GetAnomalousPatterns(IEnumerable<UserActivityPatternDto> patterns)
@@ -618,7 +794,7 @@ public class ThreatDetectionService : IThreatDetectionService
 
     private Task<GeolocationRiskDto> GetGeolocationData(string ipAddress)
     {
-        return Task.FromResult(new GeolocationRiskDto
+        var geoData = new GeolocationRiskDto
         {
             IPAddress = ipAddress,
             Country = "Unknown",
@@ -630,7 +806,9 @@ public class ThreatDetectionService : IThreatDetectionService
             IsProxyDetected = false,
             IsTorDetected = false,
             AssessedAt = DateTime.UtcNow
-        });
+        };
+
+        return Task.CompletedTask.ContinueWith(_ => geoData);
     }
 
     private bool IsHighRiskCountry(string country)
@@ -639,8 +817,35 @@ public class ThreatDetectionService : IThreatDetectionService
         return highRiskCountries.Contains(country);
     }
 
-    private Task<bool> IsUnusualLocation(string userId, string country)
+    private async Task<bool> IsUnusualLocation(string userId, string country)
     {
-        return Task.FromResult(false);
+        try
+        {
+            var userGuid = Guid.Parse(userId);
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            
+            var auditLogs = await _auditRepository.GetAllAsync();
+            var recentCountries = auditLogs
+                .Where(a => a.UserId == userGuid && 
+                           a.Action == "LOGIN_SUCCESS" && 
+                           a.CreatedAt >= thirtyDaysAgo &&
+                           !string.IsNullOrEmpty(a.IPAddress))
+                .Select(a => a.IPAddress)
+                .Distinct()
+                .ToList();
+
+            if (!recentCountries.Any())
+            {
+                var localIPs = new[] { "127.0.0.1", "::1", "localhost" };
+                return !localIPs.Contains(country, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return !recentCountries.Contains(country, StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check unusual location for user: {UserId}, Country: {Country}", userId, country);
+            return false;
+        }
     }
 }

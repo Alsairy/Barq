@@ -1,19 +1,8 @@
 [allowlist]
-description = "Allowlist for placeholder values and test configurations"
-
-regexes = [
-    '''database-password.*PLACEHOLDER''',
-    '''jwt-secret.*PLACEHOLDER''',
-    '''redis-password.*PLACEHOLDER''',
-    '''SA_PASSWORD.*YourStrong@Passw0rd''',
-    '''ConnectionStrings.*localhost.*sa'''
-]
-
-commits = [
-    "db4e3630279d0f149a561f0324b05b4ea116b0f5"
-]
-
+description = "Allowlist environment-specific placeholder config files (no real secrets). Keep minimal."
+# Rationale: These environment-specific files contain placeholder values only; real secrets are provided via environment variables in CI/CD.
+# This path-level allowlist is intentionally minimal to avoid blanket disables and will be revisited if secrets management changes.
 paths = [
-    "Backend/src/BARQ.API/appsettings.Development.json",
-    ".github/workflows/ci-cd-pipeline.yml"
+  "Backend/src/BARQ.API/appsettings.Staging.json",
+  "Backend/src/BARQ.API/appsettings.Production.json"
 ]

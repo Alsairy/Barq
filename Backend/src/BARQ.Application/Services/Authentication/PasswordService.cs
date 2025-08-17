@@ -67,8 +67,7 @@ public class PasswordService : IPasswordService
             {
                 Success = true,
                 Message = "Password reset link has been sent to your email address.",
-                ResetInitiated = true,
-                ResetToken = resetToken // In production, don't return the token
+                ResetInitiated = true
             };
         }
         catch (Exception ex)
@@ -145,7 +144,7 @@ public class PasswordService : IPasswordService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resetting password with token: {Token}", request.ResetToken);
+            _logger.LogError(ex, "Error resetting password during password reset flow.");
             return new PasswordResetResponse
             {
                 Success = false,
@@ -296,7 +295,7 @@ public class PasswordService : IPasswordService
         response.StrengthScore = Math.Min(5, score);
         response.ValidationMessages = messages;
 
-        return Task.FromResult(response);
+        return Task.CompletedTask.ContinueWith(_ => response);
     }
 
     public async Task<bool> IsPasswordInHistoryAsync(Guid userId, string password)

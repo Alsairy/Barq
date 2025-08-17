@@ -53,7 +53,8 @@ public class AuthenticationService : IAuthenticationService
                 };
             }
 
-            var users = await _userRepository.FindAsync(u => u.Email == request.Email.ToLowerInvariant());
+            var emailLower = request.Email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             
             _logger.LogInformation("Authentication attempt for email: {Email}", request.Email);
@@ -267,22 +268,26 @@ public class AuthenticationService : IAuthenticationService
 
             if (Guid.TryParse(userIdClaim, out var userId))
             {
-                return Task.FromResult(new SessionValidationResponse
+                var validResponse = new SessionValidationResponse
                 {
                     Success = true,
                     Message = "Session is valid",
                     IsValid = true,
                     UserId = userId,
                     ExpiresAt = validatedToken.ValidTo
-                });
+                };
+
+                return Task.CompletedTask.ContinueWith(_ => validResponse);
             }
 
-            return Task.FromResult(new SessionValidationResponse
+            var invalidResponse = new SessionValidationResponse
             {
                 Success = false,
                 Message = "Invalid session",
                 IsValid = false
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => invalidResponse);
         }
         catch (Exception ex)
         {
@@ -300,7 +305,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user == null)
             {
@@ -339,7 +345,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user != null)
             {
@@ -364,7 +371,8 @@ public class AuthenticationService : IAuthenticationService
     {
         try
         {
-            var users = await _userRepository.FindAsync(u => u.Email == email.ToLowerInvariant());
+            var emailLower = email.ToLowerInvariant();
+            var users = await _userRepository.FindAsync(u => u.Email == emailLower);
             var user = users.FirstOrDefault();
             if (user != null)
             {
@@ -486,12 +494,10 @@ public class AuthenticationService : IAuthenticationService
         {
             throw new InvalidOperationException("JWT configuration is invalid.");
         }
-        
         if (secret.Length < 32)
         {
             throw new InvalidOperationException("JWT configuration is invalid.");
         }
-        
         return secret;
     }
     private int GetTokenExpiryMinutes() => int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");

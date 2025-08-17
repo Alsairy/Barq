@@ -83,7 +83,24 @@ public enum AITaskType
     /// <summary>
     /// Quality assurance analysis
     /// </summary>
-    QualityAssurance = 15
+    QualityAssurance = 15,
+
+    /// <summary>
+    /// </summary>
+    TextGeneration = 16,
+
+    /// <summary>
+    /// </summary>
+    TextAnalysis = 17,
+
+    /// <summary>
+    /// Document processing tasks
+    /// </summary>
+    DocumentProcessing = 18,
+
+    /// <summary>
+    /// </summary>
+    DataExtraction = 19
 }
 
 /// <summary>
@@ -195,7 +212,16 @@ public enum AIProvider
     /// <summary>
     /// Custom AI provider
     /// </summary>
-    Custom = 10
+    Custom = 10,
+
+    /// <summary>
+    /// Microsoft Azure AI services
+    /// </summary>
+    Azure = 11,
+
+    /// <summary>
+    /// </summary>
+    AWS = 12
 }
 
 /// <summary>

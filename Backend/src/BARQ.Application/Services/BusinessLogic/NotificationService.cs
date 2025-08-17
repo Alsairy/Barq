@@ -96,7 +96,7 @@ public class NotificationService : INotificationService
         {
             _logger.LogInformation("Sending email notification to: {To}, Subject: {Subject}", request.ToEmail, request.Subject);
 
-            return Task.FromResult(new NotificationResponse
+            var response = new NotificationResponse
             {
                 Success = true,
                 Message = "Email sent successfully",
@@ -104,18 +104,22 @@ public class NotificationService : INotificationService
                 NotificationSent = true,
                 SentAt = DateTime.UtcNow,
                 DeliveryStatus = "Sent"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email notification to: {To}", request.ToEmail);
-            return Task.FromResult(new NotificationResponse
+            var response = new NotificationResponse
             {
                 Success = false,
                 Message = "Failed to send email",
                 NotificationSent = false,
                 DeliveryStatus = "Failed"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -126,7 +130,7 @@ public class NotificationService : INotificationService
             _logger.LogInformation("Sending workflow notification to workflow: {WorkflowInstanceId}, Type: {NotificationType}", 
                 request.WorkflowInstanceId, request.NotificationType);
 
-            return Task.FromResult(new NotificationResponse
+            var response = new NotificationResponse
             {
                 Success = true,
                 Message = "Notification sent successfully",
@@ -134,18 +138,22 @@ public class NotificationService : INotificationService
                 NotificationSent = true,
                 SentAt = DateTime.UtcNow,
                 DeliveryStatus = "Sent"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending workflow notification to workflow: {WorkflowInstanceId}", request.WorkflowInstanceId);
-            return Task.FromResult(new NotificationResponse
+            var response = new NotificationResponse
             {
                 Success = false,
                 Message = "Failed to send notification",
                 NotificationSent = false,
                 DeliveryStatus = "Failed"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -167,21 +175,25 @@ public class NotificationService : INotificationService
             _logger.LogInformation("Email template created: {TemplateId} - {TemplateName}", 
                 template.Id, template.TemplateName);
 
-            return Task.FromResult(new NotificationTemplateResponse
+            var response = new NotificationTemplateResponse
             {
                 Success = true,
                 Message = "Email template created successfully",
                 Template = template
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating email template: {TemplateName}", request.TemplateName);
-            return Task.FromResult(new NotificationTemplateResponse
+            var response = new NotificationTemplateResponse
             {
                 Success = false,
                 Message = "Failed to create email template"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -202,21 +214,25 @@ public class NotificationService : INotificationService
                 UpdatedAt = DateTime.UtcNow
             };
 
-            return Task.FromResult(new NotificationTemplateResponse
+            var response = new NotificationTemplateResponse
             {
                 Success = true,
                 Message = "Email template updated successfully",
                 Template = template
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating email template: {TemplateId}", request.TemplateId);
-            return Task.FromResult(new NotificationTemplateResponse
+            var response = new NotificationTemplateResponse
             {
                 Success = false,
                 Message = "Failed to update email template"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -226,7 +242,7 @@ public class NotificationService : INotificationService
         {
             _logger.LogInformation("Getting notification delivery status: {NotificationId}", notificationId);
 
-            return Task.FromResult(new NotificationDeliveryResponse
+            var response = new NotificationDeliveryResponse
             {
                 Success = true,
                 Message = "Delivery status retrieved successfully",
@@ -241,19 +257,23 @@ public class NotificationService : INotificationService
                 },
                 TotalSent = 1,
                 TotalFailed = 0
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting notification delivery status: {NotificationId}", notificationId);
-            return Task.FromResult(new NotificationDeliveryResponse
+            var response = new NotificationDeliveryResponse
             {
                 Success = false,
                 Message = "Failed to get delivery status",
                 DeliveryResults = new List<NotificationDeliveryDto>(),
                 TotalSent = 0,
                 TotalFailed = 1
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -278,12 +298,13 @@ public class NotificationService : INotificationService
                 }
             };
 
-            return Task.FromResult<IEnumerable<NotificationDto>>(notifications);
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<NotificationDto>)notifications);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting user notifications: {UserId}", userId);
-            return Task.FromResult<IEnumerable<NotificationDto>>(new List<NotificationDto>());
+            var emptyNotifications = new List<NotificationDto>();
+            return Task.CompletedTask.ContinueWith(_ => (IEnumerable<NotificationDto>)emptyNotifications);
         }
     }
 
@@ -293,7 +314,7 @@ public class NotificationService : INotificationService
         {
             _logger.LogInformation("Updating notification preferences for user: {UserId}", request.UserId);
 
-            return Task.FromResult(new NotificationPreferencesResponse
+            var response = new NotificationPreferencesResponse
             {
                 Success = true,
                 Message = "Notification preferences updated successfully",
@@ -305,16 +326,20 @@ public class NotificationService : INotificationService
                     WorkflowNotifications = true,
                     LastUpdated = DateTime.UtcNow
                 }
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating notification preferences for user: {UserId}", request.UserId);
-            return Task.FromResult(new NotificationPreferencesResponse
+            var response = new NotificationPreferencesResponse
             {
                 Success = false,
                 Message = "Failed to update notification preferences"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 
@@ -484,23 +509,27 @@ public class NotificationService : INotificationService
         {
             _logger.LogInformation("Queuing notification for delivery at: {ScheduledFor}", request.ScheduledFor);
 
-            return Task.FromResult(new NotificationQueueResponse
+            var response = new NotificationQueueResponse
             {
                 Success = true,
                 Message = "Notification queued successfully",
                 QueueId = Guid.NewGuid().ToString(),
                 QueuePosition = 1,
                 EstimatedDelivery = DateTime.UtcNow.AddMinutes(5)
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error queuing notification");
-            return Task.FromResult(new NotificationQueueResponse
+            var response = new NotificationQueueResponse
             {
                 Success = false,
                 Message = "Failed to queue notification"
-            });
+            };
+
+            return Task.CompletedTask.ContinueWith(_ => response);
         }
     }
 

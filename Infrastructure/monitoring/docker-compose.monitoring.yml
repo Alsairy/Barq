@@ -54,14 +54,15 @@ services:
       - barq-monitoring
 
   sqlserver-exporter:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: awaragi/prometheus-mssql-exporter:latest
     container_name: barq-sqlserver-exporter
     ports:
       - "9399:9399"
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD}
-      - CONNECTION_STRING=Server=barq-database,1433;Database=BarqDB;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=true;
+      - SERVER=${DB_HOST:-barq-database}
+      - USERNAME=${DB_USER:-sa}
+      - PASSWORD=${DB_PASSWORD}
+      - DATABASE=${DB_NAME:-BarqDB}
     networks:
       - barq-monitoring
     depends_on:

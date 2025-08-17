@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:flowable="http://flowable.org/bpmn"
+                  id="Definitions_AIRequestProcessing"
+                  targetNamespace="http://barq.app/bpmn"
+                  exporter="Barq BPM Designer"
+                  exporterVersion="1.0">
+
+  <bpmn:process id="ai-request-processing" name="AI Request Processing Workflow" isExecutable="true">
+    
+    <!-- Start Event -->
+    <bpmn:startEvent id="start-ai-request" name="AI Request Submitted">
+      <bpmn:outgoing>flow-to-validation</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <!-- Initial Validation -->
+    <bpmn:serviceTask id="validate-request" name="Validate AI Request" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.ValidateAIRequestDelegate">
+      <bpmn:incoming>flow-to-validation</bpmn:incoming>
+      <bpmn:outgoing>flow-to-approval-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Approval Gateway -->
+    <bpmn:exclusiveGateway id="approval-required-gateway" name="Approval Required?">
+      <bpmn:incoming>flow-to-approval-gateway</bpmn:incoming>
+      <bpmn:outgoing>flow-to-approval</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-processing</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Multi-Level Approval Subprocess -->
+    <bpmn:callActivity id="multi-level-approval" name="Multi-Level Approval Process" 
+                       calledElement="multi-level-approval-process">
+      <bpmn:incoming>flow-to-approval</bpmn:incoming>
+      <bpmn:outgoing>flow-from-approval</bpmn:outgoing>
+    </bpmn:callActivity>
+    
+    <!-- Approval Result Gateway -->
+    <bpmn:exclusiveGateway id="approval-result-gateway" name="Approved?">
+      <bpmn:incoming>flow-from-approval</bpmn:incoming>
+      <bpmn:outgoing>flow-to-processing</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-rejection</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- AI Processing -->
+    <bpmn:serviceTask id="process-ai-request" name="Process AI Request" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.ProcessAIRequestDelegate">
+      <bpmn:incoming>flow-to-processing</bpmn:incoming>
+      <bpmn:outgoing>flow-to-quality-check</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Quality Assurance -->
+    <bpmn:callActivity id="quality-assurance" name="Quality Assurance Process" 
+                       calledElement="quality-assurance-process">
+      <bpmn:incoming>flow-to-quality-check</bpmn:incoming>
+      <bpmn:outgoing>flow-from-quality</bpmn:outgoing>
+    </bpmn:callActivity>
+    
+    <!-- Quality Result Gateway -->
+    <bpmn:exclusiveGateway id="quality-result-gateway" name="Quality Passed?">
+      <bpmn:incoming>flow-from-quality</bpmn:incoming>
+      <bpmn:outgoing>flow-to-completion</bpmn:outgoing>
+      <bpmn:outgoing>flow-to-rework</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Rework Task -->
+    <bpmn:userTask id="rework-request" name="Rework AI Request" 
+                   flowable:assignee="${requesterId}">
+      <bpmn:incoming>flow-to-rework</bpmn:incoming>
+      <bpmn:outgoing>flow-to-reprocessing</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Request Rejection -->
+    <bpmn:serviceTask id="reject-request" name="Reject AI Request" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.RejectAIRequestDelegate">
+      <bpmn:incoming>flow-to-rejection</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-rejected</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Completion Task -->
+    <bpmn:serviceTask id="complete-request" name="Complete AI Request" 
+                      flowable:class="BARQ.Infrastructure.BPM.Delegates.CompleteAIRequestDelegate">
+      <bpmn:incoming>flow-to-completion</bpmn:incoming>
+      <bpmn:outgoing>flow-to-end-completed</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- End Events -->
+    <bpmn:endEvent id="end-completed" name="Request Completed">
+      <bpmn:incoming>flow-to-end-completed</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="end-rejected" name="Request Rejected">
+      <bpmn:incoming>flow-to-end-rejected</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="flow-to-validation" sourceRef="start-ai-request" targetRef="validate-request"/>
+    <bpmn:sequenceFlow id="flow-to-approval-gateway" sourceRef="validate-request" targetRef="approval-required-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-approval" sourceRef="approval-required-gateway" targetRef="multi-level-approval">
+      <bpmn:conditionExpression>${approvalRequired == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-processing" sourceRef="approval-required-gateway" targetRef="process-ai-request">
+      <bpmn:conditionExpression>${approvalRequired == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-from-approval" sourceRef="multi-level-approval" targetRef="approval-result-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-processing" sourceRef="approval-result-gateway" targetRef="process-ai-request">
+      <bpmn:conditionExpression>${approved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-rejection" sourceRef="approval-result-gateway" targetRef="reject-request">
+      <bpmn:conditionExpression>${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-quality-check" sourceRef="process-ai-request" targetRef="quality-assurance"/>
+    <bpmn:sequenceFlow id="flow-from-quality" sourceRef="quality-assurance" targetRef="quality-result-gateway"/>
+    <bpmn:sequenceFlow id="flow-to-completion" sourceRef="quality-result-gateway" targetRef="complete-request">
+      <bpmn:conditionExpression>${qualityPassed == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-rework" sourceRef="quality-result-gateway" targetRef="rework-request">
+      <bpmn:conditionExpression>${qualityPassed == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-to-reprocessing" sourceRef="rework-request" targetRef="process-ai-request"/>
+    <bpmn:sequenceFlow id="flow-to-end-completed" sourceRef="complete-request" targetRef="end-completed"/>
+    <bpmn:sequenceFlow id="flow-to-end-rejected" sourceRef="reject-request" targetRef="end-rejected"/>
+    
+  </bpmn:process>
+  
+</bpmn:definitions>

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using BARQ.Application.Commands.Users;
 using BARQ.Application.Queries.Users;
@@ -12,6 +13,7 @@ namespace BARQ.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class UserController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -31,6 +33,7 @@ public class UserController : ControllerBase
         _userRoleService = userRoleService;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<ActionResult<ApiResponse<UserRegistrationResponse>>> Register([FromBody] RegisterUserCommand command)
     {

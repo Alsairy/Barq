@@ -6,11 +6,13 @@ using Xunit;
 
 namespace BARQ.Testing.Tests.Integration;
 
-[Collection("OrganizationApiTestCollection")]
-public class OrganizationApiTests : IsolatedApiTestBase
+public class OrganizationApiTests : IClassFixture<ApiTestFramework>
 {
-    public OrganizationApiTests(ApiTestFramework factory) : base(factory)
+    private readonly ApiTestFramework _factory;
+
+    public OrganizationApiTests(ApiTestFramework factory)
     {
+        _factory = factory;
     }
 
     [Fact]
@@ -73,36 +75,18 @@ public class OrganizationApiTests : IsolatedApiTestBase
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
+        var orgsRoot = orgsDoc.RootElement;
+        orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        System.Text.Json.JsonElement? targetOrg = null;
+        foreach (var el in orgsRoot.EnumerateArray())
+        {
+            targetOrg = el;
+            break;
+        }
+        targetOrg.HasValue.Should().BeTrue();
         
-        System.Text.Json.JsonElement orgsArray;
-        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            orgsArray = orgsJson;
-        }
-        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
-        }
-        
-        System.Text.Json.JsonElement? acmeOrg = null;
-        foreach (var org in orgsArray.EnumerateArray())
-        {
-            if (org.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Acme Corporation")
-            {
-                acmeOrg = org;
-                break;
-            }
-        }
-        acmeOrg.Should().NotBeNull();
-        
-        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var organizationId = targetOrg.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{organizationId}", authToken);
 
@@ -132,36 +116,18 @@ public class OrganizationApiTests : IsolatedApiTestBase
         orgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var orgsContent = await orgsResponse.Content.ReadAsStringAsync();
-        var orgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(orgsContent);
+        using var orgsDoc = System.Text.Json.JsonDocument.Parse(orgsContent);
+        var orgsRoot = orgsDoc.RootElement;
+        orgsRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
+        System.Text.Json.JsonElement? targetOrg = null;
+        foreach (var el in orgsRoot.EnumerateArray())
+        {
+            targetOrg = el;
+            break;
+        }
+        targetOrg.HasValue.Should().BeTrue();
         
-        System.Text.Json.JsonElement orgsArray;
-        if (orgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            orgsArray = orgsJson;
-        }
-        else if (orgsJson.TryGetProperty("data", out orgsArray) && orgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {orgsContent}");
-        }
-        
-        System.Text.Json.JsonElement? acmeOrg = null;
-        foreach (var org in orgsArray.EnumerateArray())
-        {
-            if (org.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Acme Corporation")
-            {
-                acmeOrg = org;
-                break;
-            }
-        }
-        acmeOrg.Should().NotBeNull();
-        
-        var organizationId = acmeOrg.HasValue && acmeOrg.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var organizationId = targetOrg.Value.GetProperty("id").GetString();
         var updateRequest = new
         {
             Name = "Updated Acme Corporation",
@@ -183,36 +149,21 @@ public class OrganizationApiTests : IsolatedApiTestBase
         betaOrgsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var betaOrgsContent = await betaOrgsResponse.Content.ReadAsStringAsync();
-        var betaOrgsJson = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(betaOrgsContent);
-        
-        System.Text.Json.JsonElement betaOrgsArray;
-        if (betaOrgsJson.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-            betaOrgsArray = betaOrgsJson;
-        }
-        else if (betaOrgsJson.TryGetProperty("data", out betaOrgsArray) && betaOrgsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
-        {
-        }
-        else
-        {
-            throw new InvalidOperationException($"Unexpected JSON structure: {betaOrgsContent}");
-        }
-        
+        using var betaDoc = System.Text.Json.JsonDocument.Parse(betaOrgsContent);
+        var betaRoot = betaDoc.RootElement;
+        betaRoot.ValueKind.Should().Be(System.Text.Json.JsonValueKind.Array);
         System.Text.Json.JsonElement? betaOrg = null;
-        foreach (var org in betaOrgsArray.EnumerateArray())
+        foreach (var el in betaRoot.EnumerateArray())
         {
-            if (org.TryGetProperty("name", out var nameProperty) && 
-                nameProperty.GetString() == "Beta Industries")
+            if (el.TryGetProperty("name", out var n) && n.GetString() == "Beta Industries")
             {
-                betaOrg = org;
+                betaOrg = el;
                 break;
             }
         }
-        betaOrg.Should().NotBeNull();
+        betaOrg.HasValue.Should().BeTrue();
         
-        var betaOrganizationId = betaOrg.HasValue && betaOrg.Value.TryGetProperty("id", out var idProperty) 
-            ? idProperty.GetString() 
-            : null;
+        var betaOrganizationId = betaOrg.Value.GetProperty("id").GetString();
         
         var response = await _factory.GetAsync($"/api/organizations/{betaOrganizationId}", acmeToken);
 

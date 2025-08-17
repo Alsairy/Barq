@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: barq-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./acme.json:/acme.json
+    environment:
+      - TRAEFIK_API_DASHBOARD=true
+      - TRAEFIK_API_INSECURE=true
+    networks:
+      - barq-network
+
+  barq-backend:
+    image: barq-backend:latest
+    container_name: barq-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+    networks:
+      - barq-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.barq-api.rule=Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`)"
+      - "traefik.http.routers.barq-api.entrypoints=websecure"
+      - "traefik.http.routers.barq-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.barq-api.middlewares=barq-cors,barq-basic-auth"
+      - "traefik.http.routers.barq-api-preflight.rule=Host(`technology-stack-app-tunnel-phn9uram.devinapps.com`) && Method(`OPTIONS`)"
+      - "traefik.http.routers.barq-api-preflight.entrypoints=websecure"
+      - "traefik.http.routers.barq-api-preflight.priority=100"
+      - "traefik.http.routers.barq-api-preflight.middlewares=barq-cors"
+      - "traefik.http.routers.barq-api-preflight.service=noop@internal"
+      - "traefik.http.services.barq-api.loadbalancer.server.port=5000"
+
+networks:
+  barq-network:
+    driver: bridge

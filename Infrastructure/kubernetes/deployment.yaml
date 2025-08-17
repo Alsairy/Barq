@@ -26,7 +26,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-backend
-        image: ${BACKEND_IMAGE:-barq/backend@sha256:latest}
+        image: ${BACKEND_IMAGE:-barq/backend:latest}
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -116,7 +116,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: barq-frontend
-        image: ${FRONTEND_IMAGE:-barq/frontend@sha256:latest}
+        image: ${FRONTEND_IMAGE:-barq/frontend:latest}
         imagePullPolicy: Always
         ports:
         - containerPort: 80
@@ -208,6 +208,12 @@ spec:
           capabilities:
             drop:
             - ALL
+            add:
+            - CHOWN
+            - DAC_OVERRIDE
+            - FOWNER
+            - SETGID
+            - SETUID
           seccompProfile:
             type: RuntimeDefault
         env:
@@ -227,6 +233,9 @@ spec:
           mountPath: /tmp
         - name: database-secrets
           mountPath: /etc/secrets
+          readOnly: true
+        - name: sa-password-file
+          mountPath: /etc/sa-password
           readOnly: true
         resources:
           requests:
@@ -255,14 +264,17 @@ spec:
       - name: sqlserver-storage
         persistentVolumeClaim:
           claimName: barq-database-pvc
-      - name: sqlserver-config
-        configMap:
-          name: barq-config
       - name: tmp
         emptyDir: {}
       - name: database-secrets
         secret:
           secretName: barq-secrets
+      - name: sa-password-file
+        secret:
+          secretName: barq-secrets
+          items:
+          - key: sa-password
+            path: sa-password
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -289,7 +301,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: redis
-        image: redis@sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+        image: redis:7-alpine
         imagePullPolicy: Always
         ports:
         - containerPort: 6379

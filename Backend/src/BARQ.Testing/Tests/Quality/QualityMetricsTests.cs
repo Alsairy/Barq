@@ -214,10 +214,10 @@ public class QualityMetricsTests : IClassFixture<ApiTestFramework>
             VirtualUsers = 15,
             Duration = TimeSpan.FromMinutes(1),
             TotalRequests = 900,
-            SuccessfulRequests = 850,
-            FailedRequests = 50,
+            SuccessfulRequests = 870,
+            FailedRequests = 30,
             AverageResponseTime = TimeSpan.FromMilliseconds(180),
-            SuccessRate = 95.5
+            SuccessRate = 96.8
         });
 
         await Task.CompletedTask;
