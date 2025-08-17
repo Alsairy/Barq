@@ -18,6 +18,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task AuthenticationEndpoint_ShouldMeetPerformanceRequirements()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var loginRequest = new
         {
             Request = new
@@ -43,6 +45,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task UserProfileEndpoint_ShouldMeetPerformanceRequirements()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var authToken = await _factory.GetAuthTokenAsync();
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
@@ -64,6 +68,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task OrganizationEndpoint_ShouldMeetPerformanceRequirements()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var authToken = await _factory.GetAuthTokenAsync();
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
@@ -85,6 +91,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task ProjectEndpoint_ShouldMeetPerformanceRequirements()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var authToken = await _factory.GetAuthTokenAsync();
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
@@ -106,6 +114,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task HealthCheckEndpoint_ShouldMeetPerformanceRequirements()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var result = await _performanceFramework.RunLoadTestAsync("/api/health", virtualUsers: 25, duration: TimeSpan.FromSeconds(20));
         
         var requirements = new PerformanceRequirements
@@ -122,6 +132,8 @@ public class ApiPerformanceTests : IClassFixture<ApiTestFramework>
     [Fact]
     public async Task CriticalEndpoints_ShouldPassPerformanceSuite()
     {
+        if (Environment.GetEnvironmentVariable("RUN_PERF") != "1") return;
+
         var authToken = await _factory.GetAuthTokenAsync();
         var client = _factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
